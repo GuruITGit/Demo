@@ -1,0 +1,196 @@
+/* Mobile layer: โหลดหลัง style.css
+   กติกา: ตัวอักษรไม่ต่ำกว่า 14px · ช่องกรอก 16px (กัน iOS ซูม) · ปุ่มกดไม่ต่ำกว่า 44px */
+body{line-height:1.5}
+main{padding-bottom:110px}
+
+/* ตัวอักษรเล็กที่หลุดจาก style.css ให้ไม่ต่ำกว่า 14px */
+.help,.privacy-note,.page-heading p,.section-head p,.notice p,.eyebrow,.scan-title small,.search-prompt small,
+.bill-title small,.month-card-info small,.review-info small,.metric span,.metric em,.event-card p,.activity,
+.pay-choice-btn small,.service small,.location-fields small,.plan-head small,.first-month-estimate small,
+.first-month-estimate span,.plan-editor-toggle small,.location-manager-toggle small,.payment-months>div span small,
+.status,.charge-line,.month-card .charge-line .status,.charge-line .status,.legend span{font-size:14px}
+.search-card label,.field-label,.location-add .field-label{font-size:15px;font-weight:600}
+
+/* ช่องกรอก 16px กัน iOS ซูม · ปุ่มกดได้ 44px */
+input,select,textarea{font-size:16px!important}
+.search-row input,.field input,.field select,.outside-tenant-add input,.location-add input,.location-fields input,
+.location-rate-config select,.location-rate-config input{min-height:44px}
+.search-row button,.primary-btn,.modal-actions button,.selection-box button,.qr-demo,.outside-tenant-add button,
+.location-add button,.area-switch button{min-height:44px}
+.small-btn,.danger-btn{min-height:44px}
+.close-btn{width:44px;height:44px}
+.checkline input,.consent input,.month-select input{width:22px;height:22px}
+
+/* เมนูล่าง: ไอคอน SVG ขนาดกลาง ตัวอักษร 14px */
+.nav-item{min-height:56px;font-size:14px;gap:2px;justify-content:center}
+.nav-item .nav-icon{display:grid;place-items:center;line-height:1}
+.nav-item .nav-icon svg{width:24px;height:24px}
+
+/* ปุ่มจ่ายเงินหลัก */
+.pay-summary{bottom:72px;padding:12px 14px;border:1.5px solid #bcd3ee}
+.pay-summary b{font-size:20px;color:var(--forest)}
+.pay-method-actions{flex:1}
+.pay-summary .pay-method-actions button.pay-now{width:100%;min-height:48px;font-size:17px;font-weight:700;border-radius:14px;display:flex;justify-content:center;gap:8px}
+.cash-btn{background:#2a7a4b!important}
+
+/* ผังแผงประจำ: 5 ช่องต่อบรรทัด */
+.plan-card{padding:12px 8px}
+.plan-canvas{padding:10px 6px}
+.plan-row{grid-template-columns:30px minmax(0,1fr);gap:5px}
+.plan-stalls{grid-template-columns:repeat(5,minmax(0,1fr));gap:5px}
+.plan-stall{min-height:50px;padding:8px 0 5px;border-radius:9px;gap:2px}
+.plan-stall b{font-size:14px}.plan-stall span{font-size:12px;font-weight:700}
+.plan-row-title{min-height:50px}
+.plan-walkway{height:20px;font-size:12px}
+.legend i{width:14px;height:14px}
+
+/* การ์ดเจ้าหน้าที่ */
+.outside-location-admin{border:1px solid #cfdcec;border-radius:14px;padding:12px;margin:12px 0;background:#fff}
+.outside-location-admin .location-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px;border-top:0;padding:0}
+.outside-location-admin .location-fields{flex:1 1 100%}
+.outside-location-admin .location-fields input{font-weight:700;padding:8px 12px}
+.outside-location-admin .location-row .checkline{flex:1;min-height:44px;gap:8px}
+.location-rate-config{grid-template-columns:1fr 1fr;gap:10px;margin:10px 0 0}
+.location-rate-config .field-label{font-size:14px!important;min-height:0!important;margin:0 0 4px!important;display:block!important}
+.location-rate-config select,.location-rate-config input{width:100%;box-sizing:border-box;border:1px solid #c7d4e2!important;border-radius:10px!important;background:#fff;padding:0 10px!important}
+.outside-tenant-list{margin-top:10px;border-top:1px solid var(--line);padding-top:2px}
+.outside-tenant-row{flex-wrap:wrap;gap:6px 8px;min-height:0;padding:8px 2px}
+.outside-tenant-row>b{flex:1 1 100%;font-size:15px}
+.outside-tenant-row .checkline{flex:1;min-height:44px;gap:8px}
+.outside-tenant-add{margin-top:10px}
+.location-add{grid-template-columns:1fr;gap:8px}.location-add button{width:100%}
+
+@media(min-width:560px){.outside-tenant-row>b{flex:1 1 auto}.outside-tenant-row .checkline{flex:0 0 auto}}
+@media(min-width:900px){
+  /* เดสก์ท็อปของเจ้าหน้าที่: ผังแผงมี 10 ช่องต่อแถว */
+  body.staff-mode .plan-stalls{grid-template-columns:repeat(10,minmax(0,1fr))}
+}
+@media(max-width:360px){
+  .nav-item{font-size:13px}
+  .plan-stall b{font-size:13px}
+}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+
+/* ผังแผงบนมือถือ: ช่องแผงยังกดได้ 44px แต่ส่วนประกอบรอบ ๆ ย่อให้เล็กลง */
+.plan-card{padding:10px 6px}
+.plan-canvas{padding:8px 4px}
+.plan-facilities{padding:0 2px 6px;gap:6px}
+.plan-facility{min-height:30px;font-size:12px;padding:0 8px;border-radius:9px}
+.plan-facility span{font-size:12px}
+.plan-row{gap:4px;margin-bottom:2px}
+.plan-row-title{min-height:44px;padding:2px 0}
+.plan-stalls{gap:4px}
+.plan-stall{min-height:44px;padding:6px 0 4px;gap:1px}
+.plan-walkway{height:14px;padding:0 4px;font-size:11px}
+.plan-sides{padding:2px 6px;font-size:11px}
+.plan-bottom{margin-top:4px;gap:4px}
+.parking-area,.market-entry,.trash-area{padding:4px 2px;border-radius:10px}
+.parking-area span,.market-entry small{font-size:11px}
+.legend{margin-top:8px;padding:6px 8px;gap:6px 12px}
+.plan-head{margin-bottom:8px}
+
+/* โซนในการ์ดพื้นที่แผงลอย: หัวข้อแยกชัด ปุ่มลบอยู่ท้ายการ์ด */
+.zone-title{font-size:14px;color:var(--muted);margin:14px 0 6px;font-weight:700}
+.zone-danger{margin-top:14px;padding-top:12px;border-top:1px dashed var(--line)}
+.zone-danger button{width:100%}
+
+/* เพิ่มพื้นที่ใหม่: ช่องกับปุ่มอยู่บรรทัดเดียว ปุ่มเล็กแต่ยังกดได้ 44px */
+.location-add{display:flex;grid-template-columns:none;align-items:flex-end;gap:8px;margin:0 0 12px}
+.location-add label{flex:1;min-width:0}
+.location-add button{width:auto;flex:none;min-height:44px;padding:0 14px;font-size:14px}
+
+/* หน้าหลัก: ส่วนหัว ปุ่มจ่ายหลัก และไอคอนลัด */
+.home-hero{padding:14px 2px 6px}
+.home-hero h1{font-size:24px;margin:2px 0 4px}
+.home-hero h1 span{color:var(--forest)}
+.home-sub{margin:0;font-size:14px;color:var(--muted)}
+.pay-cta{width:100%;margin-top:12px;min-height:76px;display:flex;align-items:center;gap:14px;padding:14px 16px;border:0;border-radius:20px;background:linear-gradient(135deg,#0B7FC7,#075E96);color:#fff;box-shadow:0 10px 24px #075E9640;text-align:left}
+.pay-cta-icon{width:50px;height:50px;flex:none;border-radius:16px;background:#ffffff26;display:grid;place-items:center;font-size:26px;font-weight:700}
+.pay-cta-text{flex:1;min-width:0}
+.pay-cta-text b{display:block;font-size:18px}
+.pay-cta-text small{display:block;margin-top:2px;font-size:14px;opacity:.92}
+.pay-cta-arrow{font-size:30px;line-height:1}
+
+/* เว้นระยะระหว่างปุ่มจ่ายกับข่าว และไม่ให้ปุ่มเจ้าหน้าที่ตัดบรรทัด */
+.news-slider{margin-top:18px}
+.mode-switch{white-space:nowrap;padding:8px 10px;gap:4px}
+
+/* ไอคอนปุ่มเจ้าหน้าที่: เส้นเดียวกับไอคอนเมนู */
+.mode-icon{display:grid;place-items:center;color:var(--forest)}
+
+/* หน้าหลักบนจอกว้าง: หัวข้อกับแจ้งเตือนเต็มแถว ปุ่มจ่ายกับข่าววางคู่กัน */
+@media(min-width:900px){
+  body:not(.staff-mode) #app.public-home>.home-hero,body:not(.staff-mode) #app.public-home>.notice{grid-column:1/-1}
+  body:not(.staff-mode) #app.public-home>.news-slider{height:330px;margin:0;align-self:start}
+  body:not(.staff-mode) #app.public-home>.pay-cta{align-self:center;margin:0}
+  body:not(.staff-mode) .nav-item.active{background:#E3F2FD;color:#075E96}
+}
+.nav-item.active{color:#075E96}
+
+/* รูปแบบหน้าหลักตามอ้างอิง: แบนเนอร์ปุ่มคู่ และการ์ดบริการพาสเทล */
+.cz-hero{margin-top:6px;padding:22px 20px;border-radius:24px;background:linear-gradient(135deg,#EAF6FF,#D6ECFB);color:#0F2A44}
+.cz-hero h1{font-size:24px;line-height:1.35;margin:0 0 8px;font-weight:700}
+.cz-hero h1 span{color:#0B7FC7}
+.cz-hero p{margin:0;font-size:14px;color:#4A6378}
+.cz-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.cz-btn{min-height:46px;padding:0 18px;border-radius:999px;font-size:15px;font-weight:600;border:1px solid #0B7FC7}
+.cz-btn.primary{background:#0B7FC7;color:#fff}
+.cz-btn.ghost{background:#fff;color:#0B7FC7}
+.cz-head{margin:22px 2px 10px}.cz-head h2{font-size:20px;margin:0}
+.cz-tiles{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.cz-tile{position:relative;min-height:120px;border:0;border-radius:20px;padding:14px;text-align:left;color:#0F2A44;display:flex;flex-direction:column;justify-content:flex-end;gap:2px}
+.cz-tile b{font-size:16px}.cz-tile small{font-size:13px;color:#4A6378}
+.cz-tile .cz-arrow{position:absolute;top:12px;right:12px;width:32px;height:32px;border-radius:50%;background:#fff;display:grid;place-items:center;color:#0B7FC7;font-size:16px}
+.t-blue{background:#E3F2FD}.t-green{background:#E7F7EC}.t-orange{background:#FFF3DC}.t-purple{background:#F1EBFF}
+@media(min-width:900px){
+  body:not(.staff-mode) #app.public-home>.cz-hero,body:not(.staff-mode) #app.public-home>.notice{grid-column:1/-1}
+  body:not(.staff-mode) #app.public-home>.cz-head,body:not(.staff-mode) #app.public-home>.cz-tiles{grid-column:2}
+  body:not(.staff-mode) #app.public-home>.news-slider{height:330px;margin:0;grid-column:1;grid-row:3}
+}
+
+/* ส่วนท้ายตามเว็บหลัก (smartgov): ขาว ขอบฟ้าอ่อน · เว้นท้ายให้เมนูล่าง */
+.site-footer{display:flex;flex-direction:column;gap:6px;padding:18px 18px 110px;border-top:1px solid #DCEBF8;background:#fff;font-size:14px;color:#475569}
+.site-footer-note{color:#94A3B8}
+
+/* หัว/ท้ายเว็บแบบเดียวกับพอร์ทัลประชาชน SAO */
+.sao-header{background:#fff;border-bottom:1px solid #DCEBF8;color:#0F2A44;position:sticky;top:0;z-index:20}
+.sao-header-in{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 24px;padding:10px 16px}
+.sao-brand{display:flex;align-items:center;gap:10px;min-width:0;color:inherit;text-decoration:none}
+.sao-logo{display:flex;flex:none;align-items:center;justify-content:center;width:36px;height:36px;border-radius:8px;background:#0284c7;color:#fff}
+.sao-name{display:block;min-width:0;line-height:1.25}.sao-name strong{display:block;font-size:16px;font-weight:600}.sao-name small{display:block;font-size:14px;color:#64748B}
+.sao-nav{display:flex;align-items:center;justify-content:space-between;gap:4px;width:100%;border-top:1px solid #EAF5FE;padding-top:6px;font-size:14px;font-weight:500}
+.sao-nav a{display:inline-flex;align-items:center;min-height:48px;padding:0 4px;color:inherit;text-decoration:none}
+.sao-nav .sao-staff{padding:0 10px;border:1px solid #CFE4F6;border-radius:10px;font-weight:600;color:#0369a1;white-space:nowrap}
+.sao-lg{display:none}
+@media(min-width:721px){.sao-header-in{padding:14px 24px}.sao-nav{width:auto;border:0;padding:0;gap:20px;font-size:16px}.sao-lg{display:inline}.sao-name strong{font-size:19px}.sao-logo{width:44px;height:44px;border-radius:12px}}
+
+/* ชำระเงิน: เลือกวิธี · QR พร้อมเพย์ · แอปธนาคาร · เงินสด · สลิป (ปุ่มสูง ≥48px) */
+.pay-methods{display:flex;gap:4px;background:#eaf1f8;padding:4px;border-radius:13px;margin:14px 0 12px}
+.pay-methods button{flex:1;min-height:48px;border:0;border-radius:10px;background:transparent;color:var(--muted);font:inherit;font-size:14px;font-weight:600}
+.pay-methods button.active{background:#fff;color:var(--forest);box-shadow:0 1px 3px rgba(15,42,68,.12)}
+.pay-qr{display:flex;flex-direction:column;align-items:center;gap:4px;padding:14px;border:1px solid var(--line);border-radius:14px;background:#fff;text-align:center}
+.pay-qr .qr-svg{width:min(220px,70vw);height:auto;display:block}
+.pay-qr b{font-size:20px}.pay-qr small{font-size:13px;color:var(--muted)}
+.pay-qr .cash-ref{font-size:22px;letter-spacing:.04em}
+.pay-steps{margin:12px 0 8px;padding-left:20px;font-size:14px;line-height:1.6}.pay-steps li{margin-bottom:6px}
+.bank-list{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:6px 0 10px}
+.bank-list button,button.secondary.small{min-height:48px;border:1px solid #CFE4F6;border-radius:12px;background:#fff;color:#0369a1;font:inherit;font-size:14px;font-weight:600;padding:0 12px}
+.cash-info{display:flex;flex-direction:column;gap:4px;margin-top:12px;padding:14px;border-radius:14px;background:#f5f9fd;border:1px solid #DCEBF8;font-size:14px}
+.cash-info small{font-size:13px;color:var(--muted)}.cash-info ol{margin:8px 0 0;padding-left:20px;line-height:1.7}
+.slip-box{margin-top:12px}.slip-box .upload{font-size:14px;min-height:48px}
+.slip-preview{display:flex;align-items:center;gap:10px;margin-top:8px;font-size:13px;color:var(--muted)}
+.slip-preview img{width:56px;height:72px;object-fit:cover;border-radius:8px;border:1px solid var(--line)}
+.modal-actions button:disabled{opacity:.45}
+.cash-ref-btn{border:0;font:inherit;font-size:12px;cursor:pointer;min-height:36px}
+/* แท็บแอปธนาคาร: โลโก้แตะแล้วเด้งเข้าแอป */
+.bank-title{margin:2px 0 8px;font-size:14px;font-weight:600}
+.bank-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.bank-tile{display:flex;flex-direction:column;align-items:center;gap:6px;min-height:88px;padding:10px 4px;border:1px solid var(--line);border-radius:12px;background:#fff;font:inherit;font-size:13px;color:var(--ink);cursor:pointer}
+.bank-tile:active{background:#f1f6fb}
+.bank-tile img,.bank-logo{width:44px;height:44px;border-radius:10px;object-fit:contain}
+.bank-logo{display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;letter-spacing:.02em}
+.save-qr{width:100%;margin-top:10px}
+/* ใบสมัคร: รูปบัตรประชาชน */
+.id-upload{font-size:14px;min-height:48px}
+.id-card-preview img{width:96px;height:62px}
+.id-card-preview .text-link{min-height:36px;padding:0;border:0;background:none;color:var(--red);font:inherit;font-size:13px}

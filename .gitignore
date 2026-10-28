@@ -1,0 +1,102 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
+dist/
+.next/
+out/
+build/
+*.tsbuildinfo
+
+# Environment files (ห้าม commit ขึ้น GitHub)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.production
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Database exports
+supabase-import.sql
+*.sql.gz
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Test files / Debug scripts
+test-*.js
+check-*.js
+fix-*.js
+reset-*.js
+seed-*.js
+export-*.js
+cleanup-*.js
+final-*.js
+live-*.js
+verify-*.js
+
+# MinIO data
+minio-data/
+
+# Temp
+*.tmp
+*.temp
+err.txt
+out.txt
+
+# Playwright MCP transient output (console logs, page snapshots)
+.playwright-mcp/
+
+# local dev storage (filesystem fallback) + MinIO data
+.storage/
+.minio-data/
+
+# scratch / tooling / personal reference (ไม่ commit)
+.agents/
+skills-lock.json
+From user/
+
+# ไฟล์สำรองข้อมูล (สร้างโดย backup service — ห้าม commit)
+infrastructure/backups/
+
+# ไฟล์งานนำเสนอ/ภาพประกอบ (ไฟล์ใหญ่ + เป็นไฟล์ทำงานส่วนตัว ไม่เข้า repo)
+docs/*.pptx
+docs/screenshots/
+
+# รายชื่อรหัสผ่าน (แม้เป็นบัญชีเดโม ก็ไม่ควรอยู่ใน git history ถาวร)
+docs/*.xlsx
+
+# Claude Code (เครื่องมือ dev ส่วนตัว — ไม่ต้องขึ้น repo)
+.mcp.json
+.claude/settings.local.json
+
+# ─────────────────────────────────────────────────────────────────────
+# ข้อมูลจริงของประชาชน + ไฟล์ศึกษาระบบภายนอก (PII/ลิขสิทธิ์ — ห้ามขึ้น GitHub เด็ดขาด)
+#   Citizen system/ = ชื่อ-สกุลชาวบ้านทั้งตำบล 2,059 ราย, บัญชีลูกหนี้, บิล,
+#                     ไฟล์ศึกษาระบบเก่าของ vendor (screenshot/APK), เว็บ อบต.อ้างอิง
+Citizen system/
+*.apk
+pdf-v*.png
+
+# เครื่องมือทำงานนำเสนอส่วนตัว (ไม่ขึ้น repo)
+/tools/
+
+# ข้อมูลดิบที่ดึงจากระบบประปาเดิม (มีข้อมูลส่วนบุคคล) — npm run sync:prapa
+prapa-backup/

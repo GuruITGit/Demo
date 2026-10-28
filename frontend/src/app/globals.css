@@ -1,0 +1,443 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f4f5fb; /* ลาเวนเดอร์อ่อน (สไตล์ PEAK) */
+  --foreground: #111827;
+  /* ฟอนต์เริ่มต้น = Sarabun (ฟอนต์ราชการ) — สลับได้ผ่าน [data-font] */
+  --font-sans: var(--font-sarabun), 'Sarabun', 'TH Sarabun New', sans-serif;
+  /* สีกราฟ (recharts) — ปรับตามโหมดสว่าง/มืดผ่านตัวแปร (SVG อ่าน CSS var ได้) */
+  --chart-grid: #eef1f6;
+  --chart-tick: #6b7280;
+  --chart-hover: #eff6ff; /* แถบไฮไลต์เมื่อชี้แท่งกราฟ */
+}
+
+* { box-sizing: border-box; }
+
+/* ──────────────────────────────────────────────────────────
+   ลดความมนของกล่อง/การ์ด/อินพุต/ดรอปดาวน์ ให้ดูเหลี่ยมขึ้น (เป็นทางการ)
+   ยกเว้น rounded-full (ปุ่มกด / badge สถานะ / ความเร่งด่วน / avatar) ที่คงความมนเต็มไว้
+   ทำที่เดียวครอบทั้งระบบ — ไม่ต้องไล่แก้ทุกไฟล์
+   ────────────────────────────────────────────────────────── */
+.rounded-lg, .rounded-xl { border-radius: 0.25rem !important; }
+.rounded-2xl, .rounded-3xl { border-radius: 0.375rem !important; }
+/* แบบระบุด้าน (เช่น หัวตาราง rounded-t-lg) */
+.rounded-t-lg, .rounded-t-xl { border-top-left-radius: 0.25rem !important; border-top-right-radius: 0.25rem !important; }
+.rounded-b-lg, .rounded-b-xl { border-bottom-left-radius: 0.25rem !important; border-bottom-right-radius: 0.25rem !important; }
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  /* ฟอนต์เริ่มต้น = Sarabun (ฟอนต์ราชการ) */
+  font-family: var(--font-sarabun), 'Sarabun', 'TH Sarabun New', sans-serif;
+  /* Sarabun อ่านง่ายขึ้นเมื่อระยะบรรทัดกว้าง + เปิด ligature ไทย */
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* ผู้ใช้เลือกฟอนต์เองได้ (ในปุ่มธีม) — bind ที่ body เพราะตัวแปร next/font อยู่บน body
+   และ specificity [data-font] body (0,1,1) ชนะคลาส .font-sans (0,1,0) */
+[data-font='sarabun'] body { font-family: var(--font-sarabun), 'Sarabun', sans-serif; }
+[data-font='plex'] body    { font-family: var(--font-plex), 'IBM Plex Sans Thai', sans-serif; }
+[data-font='anuphan'] body { font-family: var(--font-anuphan), 'Anuphan', sans-serif; }
+[data-font='noto'] body    { font-family: var(--font-noto), 'Noto Sans Thai', sans-serif; }
+
+html, body, #__next { height: 100%; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* กระดิ่งแจ้งเตือนสั่นต่อเนื่องเมื่อยังมีรายการที่ยังไม่ได้อ่าน
+   (สั่นเป็นช่วงสั้นๆ แล้วพัก วนซ้ำจนกว่าจะเปิดอ่าน) */
+@keyframes bell-shake {
+  0%   { transform: rotate(0); }
+  3%   { transform: rotate(-16deg); }
+  6%   { transform: rotate(14deg); }
+  9%   { transform: rotate(-12deg); }
+  12%  { transform: rotate(10deg); }
+  15%  { transform: rotate(-7deg); }
+  18%  { transform: rotate(5deg); }
+  21%  { transform: rotate(-3deg); }
+  24%  { transform: rotate(0); }
+  100% { transform: rotate(0); }
+}
+.bell-ring { animation: bell-shake 2.2s ease-in-out infinite; transform-origin: top center; }
+
+/* ── Animation หน้า landing/ประชาชน (portal สาธิต) ── */
+@keyframes cz-fade-up { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes cz-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes cz-scale-in { from { opacity: 0; transform: scale(.92); } to { opacity: 1; transform: scale(1); } }
+@keyframes cz-slide-in-r { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes cz-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+@keyframes cz-blob { 0%,100% { transform: translate(0,0) scale(1); } 33% { transform: translate(20px,-16px) scale(1.06); } 66% { transform: translate(-14px,12px) scale(.96); } }
+.cz-anim-up { animation: cz-fade-up .5s cubic-bezier(.22,1,.36,1) both; }
+.cz-anim-in { animation: cz-fade-in .45s ease both; }
+.cz-anim-scale { animation: cz-scale-in .5s cubic-bezier(.22,1,.36,1) both; }
+.cz-anim-slide { animation: cz-slide-in-r .5s cubic-bezier(.22,1,.36,1) both; }
+.cz-float { animation: cz-float 5s ease-in-out infinite; }
+.cz-blob { animation: cz-blob 14s ease-in-out infinite; }
+.cz-delay-1 { animation-delay: .08s; }
+.cz-delay-2 { animation-delay: .16s; }
+.cz-delay-3 { animation-delay: .24s; }
+.cz-delay-4 { animation-delay: .32s; }
+
+/* ── Route transition (ใช้ผ่าน template.tsx ทุก section) — เนื้อหา fade+เลื่อนขึ้นนุ่ม ๆ ทุกครั้งที่เปลี่ยนหน้า ── */
+@keyframes cz-page-enter { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+/* ไม่ใส่ fill-mode both: ถ้าค้างเฟรมท้ายที่มี transform (แม้ translateY(0)/none → identity matrix)
+   .cz-page จะกลายเป็น containing block ของ position:fixed ทำให้ popup (modal) ยึดกล่องนี้แทน viewport
+   → พออนิเมชันจบให้ transform กลับเป็น none จริง (base) modal จะยึดทั้งจอ */
+.cz-page { animation: cz-page-enter .42s cubic-bezier(.22,1,.36,1); }
+
+/* ── Stagger: ลูกในคอนเทนเนอร์ไล่ขึ้นทีละชิ้น (การ์ด/รายการ) ── */
+.cz-stagger > * { animation: cz-fade-up .5s cubic-bezier(.22,1,.36,1) both; }
+.cz-stagger > *:nth-child(1){animation-delay:.03s}
+.cz-stagger > *:nth-child(2){animation-delay:.08s}
+.cz-stagger > *:nth-child(3){animation-delay:.13s}
+.cz-stagger > *:nth-child(4){animation-delay:.18s}
+.cz-stagger > *:nth-child(5){animation-delay:.23s}
+.cz-stagger > *:nth-child(6){animation-delay:.28s}
+.cz-stagger > *:nth-child(7){animation-delay:.33s}
+.cz-stagger > *:nth-child(8){animation-delay:.38s}
+.cz-stagger > *:nth-child(n+9){animation-delay:.42s}
+
+/* ── Skeleton shimmer (สถานะโหลดข้อมูล) ── */
+@keyframes cz-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+.cz-skeleton {
+  background: linear-gradient(90deg, rgb(226 232 240 / .75) 25%, rgb(241 245 249 / .95) 37%, rgb(226 232 240 / .75) 63%);
+  background-size: 200% 100%;
+  animation: cz-shimmer 1.4s ease-in-out infinite;
+  border-radius: .5rem;
+}
+[data-mode='dark'] .cz-skeleton {
+  background: linear-gradient(90deg, rgb(51 65 85 / .6) 25%, rgb(71 85 105 / .75) 37%, rgb(51 65 85 / .6) 63%);
+  background-size: 200% 100%;
+}
+
+/* เคารพ reduce-motion เฉพาะ "ลูปต่อเนื่อง" ที่รบกวนจริง (ลอย/blob/shimmer)
+   ส่วน transition สั้น ๆ ครั้งเดียว (เข้าหน้า/เปลี่ยนหน้า/ไล่การ์ด) ให้เล่นเสมอ ตามที่ต้องการ animation จัดเต็ม */
+@media (prefers-reduced-motion: reduce) {
+  .cz-float, .cz-blob, .cz-skeleton { animation: none; }
+}
+
+/* ── สีแถวรายการสารบรรณ (หน้ารายการ 4 แท็บ) ──
+   คุมทั้ง light/dark เอง เพราะ dark-tint system รวม bg-amber-50/100 เป็นสีเดียว
+   ทำให้แยก "ใหม่ (เข้ม)" กับ "อ่านแล้ว (อ่อน)" ในโหมดมืดไม่ได้ */
+.sb-row-new   { background: #fde68a; }  /* เหลืองเข้ม = เรื่องใหม่ยังไม่อ่าน */
+.sb-row-new:hover   { background: #fcd34d; }
+.sb-row-read  { background: #fffbeb; }  /* เหลืองอ่อน = อ่านแล้ว */
+.sb-row-read:hover  { background: #fef3c7; }
+.sb-row-doing { background: #f1f5f9; }  /* เทา = กำลังดำเนินการ */
+.sb-row-doing:hover { background: #e2e8f0; }
+.sb-row-done  { background: #ecfdf5; }  /* เขียวอ่อน = เสร็จสิ้น */
+.sb-row-done:hover  { background: #d1fae5; }
+.sb-row-plain:hover { background: #f8fafc; } /* ลงรับ = ขาวปกติ */
+
+[data-mode='dark'] .sb-row-new   { background: #4a3a10 !important; color: #fde68a !important; }
+[data-mode='dark'] .sb-row-new:hover   { background: #5c4813 !important; }
+[data-mode='dark'] .sb-row-read  { background: #2a2410 !important; }
+[data-mode='dark'] .sb-row-read:hover  { background: #362e14 !important; }
+[data-mode='dark'] .sb-row-doing { background: #2f3947 !important; }
+[data-mode='dark'] .sb-row-doing:hover { background: #3a4658 !important; }
+[data-mode='dark'] .sb-row-done  { background: #0e2b1e !important; }
+[data-mode='dark'] .sb-row-done:hover  { background: #123a29 !important; }
+[data-mode='dark'] .sb-row-plain:hover { background: #334155 !important; }
+
+/* แผ่นวาด/รูปลายเซ็น — พื้นขาวเสมอทั้งโหมดสว่าง/มืด
+   (หมึกลายเซ็นเป็นสีเข้ม #1a1a2e ถ้าพื้นมืดจะมองไม่เห็น) */
+.sig-surface { background-color: #ffffff !important; }
+
+/* ── โหมดมืด (Dark mode) ──
+   ใช้ร่วมกับธีมสีได้ทุกสี — อ้างอิงตัวแปร --color-blue-* เพื่อให้ accent
+   เปลี่ยนตามธีมที่เลือก ใช้โทน slate ที่นุ่มตา (ไม่ดำสนิท) อ่านสบายกว่าโหมดคมชัดเดิม */
+[data-mode='dark'] {
+  --background: #0f172a;
+  --foreground: #e2e8f0;
+  /* กราฟ: เส้นตารางจางลงให้กลืนพื้นมืด + ป้ายแกนสว่างพออ่านออก */
+  --chart-grid: #26324a;
+  --chart-tick: #94a3b8;
+  --chart-hover: #223049;
+  color-scheme: dark;
+}
+/* กล่อง tooltip ของ recharts (พื้นขาว default) → โทนมืดในโหมดมืด */
+[data-mode='dark'] .recharts-default-tooltip { background: #1e293b !important; border-color: #334155 !important; }
+[data-mode='dark'] .recharts-tooltip-item,
+[data-mode='dark'] .recharts-tooltip-label { color: #e2e8f0 !important; }
+[data-mode='dark'] body { background: #0f172a !important; color: #e2e8f0 !important; }
+
+/* พื้นผิว (surfaces) */
+[data-mode='dark'] .bg-white { background-color: #1e293b !important; }
+[data-mode='dark'] .bg-gray-50 { background-color: #0f172a !important; }
+[data-mode='dark'] .bg-gray-100 { background-color: #334155 !important; }
+[data-mode='dark'] .bg-gray-200 { background-color: #475569 !important; }
+/* slate = palette กลางอีกชุด (news/บางคอมโพเนนต์ใหม่ใช้) — mirror gray ไม่งั้นพื้นขาวหลุด */
+[data-mode='dark'] .bg-slate-50 { background-color: #0f172a !important; }
+[data-mode='dark'] .bg-slate-100 { background-color: #334155 !important; }
+[data-mode='dark'] .bg-slate-200 { background-color: #475569 !important; }
+[data-mode='dark'] .text-slate-900 { color: #f1f5f9 !important; }
+[data-mode='dark'] .text-slate-800 { color: #e2e8f0 !important; }
+[data-mode='dark'] .text-slate-700 { color: #cbd5e1 !important; }
+[data-mode='dark'] .text-slate-600 { color: #aab4c4 !important; }
+[data-mode='dark'] .text-slate-500 { color: #94a3b8 !important; }
+[data-mode='dark'] .text-slate-400 { color: #7c8aa0 !important; }
+[data-mode='dark'] .border-slate-100 { border-color: #1e293b !important; }
+[data-mode='dark'] .border-slate-200, [data-mode='dark'] .border-slate-300 { border-color: #334155 !important; }
+[data-mode='dark'] header { background-color: #1e293b !important; border-color: #334155 !important; }
+[data-mode='dark'] aside { background-color: #0b1220 !important; border-color: #334155 !important; }
+
+/* ข้อความเทา → โทนสว่างบนพื้นมืด */
+[data-mode='dark'] .text-gray-900 { color: #f1f5f9 !important; }
+[data-mode='dark'] .text-gray-800 { color: #e2e8f0 !important; }
+[data-mode='dark'] .text-gray-700 { color: #cbd5e1 !important; }
+[data-mode='dark'] .text-gray-600 { color: #aab4c4 !important; }
+[data-mode='dark'] .text-gray-500 { color: #94a3b8 !important; }
+[data-mode='dark'] .text-gray-400 { color: #7c8aa0 !important; }
+[data-mode='dark'] .text-gray-300 { color: #cbd5e1 !important; }
+
+/* ข้อความ accent (ตามธีม) → ใช้เฉดสว่างของชุดสีหลัก (ครอบทุกเฉดที่ใช้) */
+[data-mode='dark'] [class*='text-blue-'] { color: var(--color-blue-400) !important; }
+
+/* ข้อความสี (semantic — คงความหมาย) → เฉดสว่างอ่านง่ายบนพื้นมืด
+   ใช้ [class*=] กับ text-* ได้ปลอดภัย เพราะปรับให้สว่างเท่ากันทุกเฉด */
+[data-mode='dark'] [class*='text-green-'], [data-mode='dark'] [class*='text-emerald-'],
+[data-mode='dark'] [class*='text-teal-'] { color: #4ade80 !important; }
+[data-mode='dark'] [class*='text-red-'], [data-mode='dark'] [class*='text-rose-'] { color: #f87171 !important; }
+[data-mode='dark'] [class*='text-amber-'], [data-mode='dark'] [class*='text-orange-'],
+[data-mode='dark'] [class*='text-yellow-'] { color: #fbbf24 !important; }
+[data-mode='dark'] [class*='text-purple-'], [data-mode='dark'] [class*='text-violet-'],
+[data-mode='dark'] [class*='text-fuchsia-'] { color: #d8b4fe !important; }
+[data-mode='dark'] [class*='text-indigo-'] { color: #a5b4fc !important; }
+[data-mode='dark'] [class*='text-pink-'] { color: #f9a8d4 !important; }
+[data-mode='dark'] [class*='text-sky-'], [data-mode='dark'] [class*='text-cyan-'] { color: #7dd3fc !important; }
+
+/* พื้นหลัง tint อ่อน (badge/alert/card) → เข้มตามธีม/สถานะ
+   ใช้ exact class (.bg-x-50/100/200) ไม่ใช่ [class*=] เพราะ 'bg-blue-50'
+   จะ match 'bg-blue-500' (สีพื้นทึบ เช่น avatar) ทำให้เพี้ยน */
+[data-mode='dark'] .bg-blue-50, [data-mode='dark'] .bg-blue-100, [data-mode='dark'] .bg-blue-200 { background-color: var(--color-blue-950) !important; }
+[data-mode='dark'] .bg-green-50, [data-mode='dark'] .bg-green-100, [data-mode='dark'] .bg-green-200,
+[data-mode='dark'] .bg-emerald-50, [data-mode='dark'] .bg-emerald-100,
+[data-mode='dark'] .bg-teal-50, [data-mode='dark'] .bg-teal-100 { background-color: #07301d !important; }
+[data-mode='dark'] .bg-red-50, [data-mode='dark'] .bg-red-100, [data-mode='dark'] .bg-red-200,
+[data-mode='dark'] .bg-rose-50, [data-mode='dark'] .bg-rose-100 { background-color: #3f1518 !important; }
+[data-mode='dark'] .bg-amber-50, [data-mode='dark'] .bg-amber-100,
+[data-mode='dark'] .bg-orange-50, [data-mode='dark'] .bg-orange-100,
+[data-mode='dark'] .bg-yellow-50, [data-mode='dark'] .bg-yellow-100, [data-mode='dark'] .bg-yellow-200 { background-color: #3a2c0a !important; }
+[data-mode='dark'] .bg-purple-50, [data-mode='dark'] .bg-purple-100, [data-mode='dark'] .bg-purple-200,
+[data-mode='dark'] .bg-violet-50, [data-mode='dark'] .bg-violet-100,
+[data-mode='dark'] .bg-fuchsia-50, [data-mode='dark'] .bg-fuchsia-100 { background-color: #2a1758 !important; }
+[data-mode='dark'] .bg-indigo-50, [data-mode='dark'] .bg-indigo-100 { background-color: #1e1b4b !important; }
+[data-mode='dark'] .bg-pink-50, [data-mode='dark'] .bg-pink-100 { background-color: #3f0d28 !important; }
+[data-mode='dark'] .bg-sky-50, [data-mode='dark'] .bg-sky-100,
+[data-mode='dark'] .bg-cyan-50, [data-mode='dark'] .bg-cyan-100 { background-color: #08334a !important; }
+
+/* ปุ่มหลัก (ตามธีม) — คงสี ตัวอักษรขาว */
+[data-mode='dark'] .bg-blue-600, [data-mode='dark'] .bg-blue-700 { color: #ffffff !important; }
+
+/* tint แบบมี opacity (เช่น bg-gray-50/70, bg-blue-50/40) — exact-class override ด้านบนจับไม่ได้
+   ⚠ ต้อง match เฉพาะ "คลาสเดี่ยว" (ขึ้นต้นสตริง หรือมีเว้นวรรคนำหน้า) เท่านั้น
+   ไม่งั้น [class*="bg-orange-50/"] จะไปโดน hover:bg-orange-50/40 → ทาสีตลอดเวลาแทนที่จะเป็นแค่ตอน hover */
+[data-mode='dark'] [class^="bg-gray-50/"], [data-mode='dark'] [class*=" bg-gray-50/"],
+[data-mode='dark'] [class^="bg-gray-100/"], [data-mode='dark'] [class*=" bg-gray-100/"] { background-color: #182234 !important; }
+[data-mode='dark'] [class^="bg-blue-50/"], [data-mode='dark'] [class*=" bg-blue-50/"] { background-color: var(--color-blue-950) !important; }
+[data-mode='dark'] [class^="bg-green-50/"], [data-mode='dark'] [class*=" bg-green-50/"],
+[data-mode='dark'] [class^="bg-emerald-50/"], [data-mode='dark'] [class*=" bg-emerald-50/"] { background-color: #07301d !important; }
+[data-mode='dark'] [class^="bg-red-50/"], [data-mode='dark'] [class*=" bg-red-50/"],
+[data-mode='dark'] [class^="bg-rose-50/"], [data-mode='dark'] [class*=" bg-rose-50/"] { background-color: #3f1518 !important; }
+[data-mode='dark'] [class^="bg-amber-50/"], [data-mode='dark'] [class*=" bg-amber-50/"],
+[data-mode='dark'] [class^="bg-yellow-50/"], [data-mode='dark'] [class*=" bg-yellow-50/"] { background-color: #3a2c0a !important; }
+[data-mode='dark'] [class^="bg-orange-50/"], [data-mode='dark'] [class*=" bg-orange-50/"] { background-color: #3a2c0a !important; }
+[data-mode='dark'] [class^="bg-purple-50/"], [data-mode='dark'] [class*=" bg-purple-50/"],
+[data-mode='dark'] [class^="bg-violet-50/"], [data-mode='dark'] [class*=" bg-violet-50/"] { background-color: #2a1758 !important; }
+[data-mode='dark'] [class^="bg-indigo-50/"], [data-mode='dark'] [class*=" bg-indigo-50/"] { background-color: #1e1b4b !important; }
+[data-mode='dark'] [class^="bg-sky-50/"], [data-mode='dark'] [class*=" bg-sky-50/"],
+[data-mode='dark'] [class^="bg-cyan-50/"], [data-mode='dark'] [class*=" bg-cyan-50/"] { background-color: #08334a !important; }
+
+/* hover tint (hover:bg-*-50/*) — ไฮไลต์ตอน hover เป็นโทนมืดกลาง (แทนพาสเทลสว่าง) */
+[data-mode='dark'] [class*="hover:bg-"][class*="-50/"]:hover { background-color: #28344a !important; }
+
+/* ฟอร์ม input/select/textarea */
+[data-mode='dark'] input,
+[data-mode='dark'] select,
+[data-mode='dark'] textarea {
+  background-color: #1e293b !important;
+  color: #f1f5f9 !important;
+  border-color: #475569 !important;
+}
+[data-mode='dark'] ::placeholder { color: #64748b !important; }
+
+/* เทาเข้ม (track/แถบ/avatar placeholder) */
+[data-mode='dark'] .bg-gray-300 { background-color: #475569 !important; }
+[data-mode='dark'] .bg-gray-400 { background-color: #64748b !important; }
+
+/* เส้นขอบ/เงา */
+[data-mode='dark'] .border-gray-200, [data-mode='dark'] .border-gray-300,
+[data-mode='dark'] .border-gray-400 { border-color: #334155 !important; }
+[data-mode='dark'] .border-gray-100 { border-color: #1e293b !important; }
+
+/* เส้นขอบสี semantic — พาสเทลสว่าง (200/300) กลายเป็นโทนเข้มกลืนแถบ/ชิปมืด
+   (เช่น แถบเตือนส้ม, badge สถานะ) ให้ดูตั้งใจ ไม่ลอยขาว */
+[data-mode='dark'] [class*='border-blue-2'], [data-mode='dark'] [class*='border-blue-3'] { border-color: #1e3a8a !important; }
+[data-mode='dark'] [class*='border-emerald-2'], [data-mode='dark'] [class*='border-emerald-3'],
+[data-mode='dark'] [class*='border-green-2'], [data-mode='dark'] [class*='border-teal-2'] { border-color: #14543a !important; }
+[data-mode='dark'] [class*='border-amber-2'], [data-mode='dark'] [class*='border-amber-3'],
+[data-mode='dark'] [class*='border-orange-2'], [data-mode='dark'] [class*='border-orange-3'],
+[data-mode='dark'] [class*='border-yellow-2'] { border-color: #7c5314 !important; }
+[data-mode='dark'] [class*='border-red-2'], [data-mode='dark'] [class*='border-rose-2'] { border-color: #7f1d24 !important; }
+[data-mode='dark'] [class*='border-violet-2'], [data-mode='dark'] [class*='border-purple-2'],
+[data-mode='dark'] [class*='border-fuchsia-2'] { border-color: #4c2a86 !important; }
+[data-mode='dark'] [class*='border-indigo-2'], [data-mode='dark'] [class*='border-indigo-3'] { border-color: #312e81 !important; }
+[data-mode='dark'] [class*='border-sky-2'], [data-mode='dark'] [class*='border-cyan-2'] { border-color: #0c4a6e !important; }
+[data-mode='dark'] .shadow-sm, [data-mode='dark'] .shadow,
+[data-mode='dark'] .shadow-md, [data-mode='dark'] .shadow-lg { box-shadow: 0 1px 3px rgba(0, 0, 0, 0.6) !important; }
+
+/* เส้นแบ่ง (divide) ในตาราง/ลิสต์ */
+[data-mode='dark'] .divide-gray-50 > :not([hidden]) ~ :not([hidden]),
+[data-mode='dark'] .divide-gray-100 > :not([hidden]) ~ :not([hidden]),
+[data-mode='dark'] .divide-gray-200 > :not([hidden]) ~ :not([hidden]) { border-color: #334155 !important; }
+
+/* hover พื้นเทาอ่อน (เมนู/ปุ่ม) ให้เห็นการ hover บนพื้นมืด */
+[data-mode='dark'] .hover\:bg-gray-50:hover { background-color: #334155 !important; }
+[data-mode='dark'] .hover\:bg-gray-100:hover,
+[data-mode='dark'] .hover\:bg-gray-200:hover { background-color: #475569 !important; }
+
+/* Focus indicator for accessibility */
+*:focus-visible {
+  outline: 3px solid #2563eb;
+  outline-offset: 2px;
+}
+
+/* Smooth font-size transitions */
+html { transition: font-size 0.15s ease; }
+
+/* ──────────────────────────────────────────────────────────
+   ธีมสี (โทนราชการ) — สลับสีหลักทั้งระบบโดยแทนชุดสี blue
+   data-theme="blue" = ค่าเริ่มต้น (ไม่ต้อง override)
+   ────────────────────────────────────────────────────────── */
+[data-theme='emerald'] {
+  --color-blue-50: #ecfdf5;  --color-blue-100: #d1fae5; --color-blue-200: #a7f3d0;
+  --color-blue-300: #6ee7b7; --color-blue-400: #34d399; --color-blue-500: #10b981;
+  --color-blue-600: #059669; --color-blue-700: #047857; --color-blue-800: #065f46;
+  --color-blue-900: #064e3b; --color-blue-950: #022c22;
+}
+[data-theme='indigo'] {
+  --color-blue-50: #eef2ff;  --color-blue-100: #e0e7ff; --color-blue-200: #c7d2fe;
+  --color-blue-300: #a5b4fc; --color-blue-400: #818cf8; --color-blue-500: #6366f1;
+  --color-blue-600: #4f46e5; --color-blue-700: #4338ca; --color-blue-800: #3730a3;
+  --color-blue-900: #312e81; --color-blue-950: #1e1b4b;
+}
+[data-theme='teal'] {
+  --color-blue-50: #f0fdfa;  --color-blue-100: #ccfbf1; --color-blue-200: #99f6e4;
+  --color-blue-300: #5eead4; --color-blue-400: #2dd4bf; --color-blue-500: #14b8a6;
+  --color-blue-600: #0d9488; --color-blue-700: #0f766e; --color-blue-800: #115e59;
+  --color-blue-900: #134e4a; --color-blue-950: #042f2e;
+}
+[data-theme='violet'] {
+  --color-blue-50: #f5f3ff;  --color-blue-100: #ede9fe; --color-blue-200: #ddd6fe;
+  --color-blue-300: #c4b5fd; --color-blue-400: #a78bfa; --color-blue-500: #8b5cf6;
+  --color-blue-600: #7c3aed; --color-blue-700: #6d28d9; --color-blue-800: #5b21b6;
+  --color-blue-900: #4c1d95; --color-blue-950: #2e1065;
+}
+[data-theme='maroon'] {
+  --color-blue-50: #fdf2f4;  --color-blue-100: #fce7ea; --color-blue-200: #f8cdd5;
+  --color-blue-300: #f0a3b1; --color-blue-400: #e26d83; --color-blue-500: #cf4060;
+  --color-blue-600: #b11e44; --color-blue-700: #951a3a; --color-blue-800: #7d1833;
+  --color-blue-900: #6a172e; --color-blue-950: #3d0b18;
+}
+[data-theme='cyan'] {
+  --color-blue-50: #ecfeff;  --color-blue-100: #cffafe; --color-blue-200: #a5f3fc;
+  --color-blue-300: #67e8f9; --color-blue-400: #22d3ee; --color-blue-500: #06b6d4;
+  --color-blue-600: #0891b2; --color-blue-700: #0e7490; --color-blue-800: #155e75;
+  --color-blue-900: #164e63; --color-blue-950: #083344;
+}
+[data-theme='sky'] {
+  --color-blue-50: #f0f9ff;  --color-blue-100: #e0f2fe; --color-blue-200: #bae6fd;
+  --color-blue-300: #7dd3fc; --color-blue-400: #38bdf8; --color-blue-500: #0ea5e9;
+  --color-blue-600: #0284c7; --color-blue-700: #0369a1; --color-blue-800: #075985;
+  --color-blue-900: #0c4a6e; --color-blue-950: #082f49;
+}
+[data-theme='fuchsia'] {
+  --color-blue-50: #fdf4ff;  --color-blue-100: #fae8ff; --color-blue-200: #f5d0fe;
+  --color-blue-300: #f0abfc; --color-blue-400: #e879f9; --color-blue-500: #d946ef;
+  --color-blue-600: #c026d3; --color-blue-700: #a21caf; --color-blue-800: #86198f;
+  --color-blue-900: #701a75; --color-blue-950: #4a044e;
+}
+[data-theme='rose'] {
+  --color-blue-50: #fff1f2;  --color-blue-100: #ffe4e6; --color-blue-200: #fecdd3;
+  --color-blue-300: #fda4af; --color-blue-400: #fb7185; --color-blue-500: #f43f5e;
+  --color-blue-600: #e11d48; --color-blue-700: #be123c; --color-blue-800: #9f1239;
+  --color-blue-900: #881337; --color-blue-950: #4c0519;
+}
+[data-theme='amber'] {
+  --color-blue-50: #fffbeb;  --color-blue-100: #fef3c7; --color-blue-200: #fde68a;
+  --color-blue-300: #fcd34d; --color-blue-400: #fbbf24; --color-blue-500: #f59e0b;
+  --color-blue-600: #d97706; --color-blue-700: #b45309; --color-blue-800: #92400e;
+  --color-blue-900: #78350f; --color-blue-950: #451a03;
+}
+
+/* ─────────────────────────────────────────────────────────
+   สั่งพิมพ์เอกสารราชการ (หนังสือแจ้งค้างชำระค่าน้ำ)
+   ส่วนที่ไม่ต้องพิมพ์ติด class "no-print" ไว้แล้ว (top-nav / sidebar / header / ฟอร์ม)
+   ที่เหลือคือคลายกรอบ+สกรอลล์ของเลย์เอาต์ ไม่งั้นเอกสารถูกตัดครึ่ง
+   ───────────────────────────────────────────────────────── */
+@media print {
+  @page { size: A4; margin: 0; }
+
+  html, body {
+    background: #fff !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  .no-print { display: none !important; }
+
+  /* เลย์เอาต์หลักตั้ง h-screen + overflow-hidden ไว้ ต้องปลดตอนพิมพ์
+     — ยกเว้นภายในตัวเอกสาร เพราะที่นั่นตั้งความสูงไว้ตั้งใจ (เช่น ช่องเว้นให้เซ็นชื่อ) */
+  body div:not(.print-page):not(.print-page *), main {
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+  }
+
+  /* ตอนพิมพ์ให้เอกสารเป็นขนาดจริง (ตัวแปรนี้คุมการย่อของพรีวิวบนจอ) */
+  :root { --doc-scale: 1; }
+  .print-frame { padding: 0 !important; border: 0 !important; background: #fff !important; }
+
+  .print-page {
+    width: 210mm !important;
+    height: 297mm !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    border: 0 !important;
+    background: #fff !important;
+    page-break-after: auto;
+    break-after: auto;
+    page-break-inside: avoid;
+  }
+
+  /* ช่องที่ยังไม่ได้กรอก: พิมพ์ออกมาเป็นที่ว่างให้เขียนด้วยมือ ไม่ต้องมีเส้นประ */
+  .blank-slot { border-bottom-color: transparent !important; }
+
+  /* รายงานสรุป (dashboard): ซ่อน sidebar/topbar เหลือเฉพาะ .print-area */
+  body:has(.print-area) * { visibility: hidden !important; }
+  body:has(.print-area) .print-area, body:has(.print-area) .print-area * { visibility: visible !important; }
+  body:has(.print-area) .print-area { position: absolute; left: 0; top: 0; width: 100%; padding: 10mm; }
+}
+
+/* พรีวิวเอกสาร A4 บนจอ — ย่อให้พอดีคอลัมน์ แล้ว @media print ตั้ง --doc-scale = 1 ให้เอง
+   (ใช้ตัวแปรแทนการ override คลาส scale-* ของ Tailwind ซึ่งชนกันเรื่อง specificity) */
+.print-scale {
+  scale: var(--doc-scale, 0.85);
+  transform-origin: top left;
+  transform-box: content-box;
+}
+
+/* ฟอนต์ราชการ TH Sarabun New (สพธอ. แจกฟรี) — ใช้เฉพาะพรีวิวหนังสือราชการ
+   ให้เห็นบนจอตรงกับ PDF ที่ server สร้าง ไม่ต้องพึ่งฟอนต์ที่ติดตั้งในเครื่อง */
+@font-face {
+  font-family: 'TH SarabunNew';
+  src: url('/fonts/THSarabunNew.ttf') format('truetype');
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'TH SarabunNew';
+  src: url('/fonts/THSarabunNew-Bold.ttf') format('truetype');
+  font-weight: 700; font-style: normal; font-display: swap;
+}

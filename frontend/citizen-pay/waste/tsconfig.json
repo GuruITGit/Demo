@@ -1,0 +1,14 @@
+{
+  // รวม shared + ไฟล์ของหน้านี้เป็น app.js ไฟล์เดียว (ลำดับใน files = ลำดับที่รัน)
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "none",
+    "outFile": "../../public/citizen-pay/waste/app.js",
+    "lib": ["ES2020", "DOM"],
+    "types": [],
+    "skipLibCheck": true,
+    "strict": false,
+    "noEmitOnError": true
+  },
+  "files": ["../shared/bills.ts", "../shared/payment-config.ts", "../shared/payment.ts", "../shared/qr-scan.ts", "data.ts", "app.ts"]
+}

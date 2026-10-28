@@ -1,0 +1,5 @@
+{
+  // เทสต์คำนวณยอด: build finance.ts แยกไฟล์เดียว (app.js รวม DOM ไว้ รันใน node ไม่ได้)
+  "compilerOptions": { "target": "ES2020", "module": "none", "outDir": "tests/.build", "lib": ["ES2020"], "types": [], "skipLibCheck": true },
+  "files": ["finance.ts"]
+}

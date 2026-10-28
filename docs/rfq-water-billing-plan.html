@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>แผนงาน RFQ ระบบน้ำประปา — SmartGov</title>
+<style>
+  :root{
+    --bg:#f7f7f5; --panel:#ffffff; --text:#1f2328; --muted:#5b6168;
+    --border:#e3e5e8; --accent:#0f6b4c; --accent-soft:#e6f4ee;
+    --done-bg:#e6f4ee; --done-fg:#0f6b4c; --done-bd:#bfe3d2;
+    --decide-bg:#fff6e0; --decide-fg:#8a6100; --decide-bd:#f0dca0;
+    --missing-bg:#fdecec; --missing-fg:#b3261e; --missing-bd:#f3c6c3;
+    --code-bg:#f0f1f3; --code-fg:#3a3f44;
+    --link:#0f6b4c;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#15181a; --panel:#1d2124; --text:#e7e9ea; --muted:#9aa1a8;
+      --border:#2b3034; --accent:#4fd39a; --accent-soft:#173226;
+      --done-bg:#173226; --done-fg:#5fe0ac; --done-bd:#245c43;
+      --decide-bg:#332b12; --decide-fg:#e8c561; --decide-bd:#5c4c1c;
+      --missing-bg:#3a1f1e; --missing-fg:#f0938d; --missing-bd:#63302d;
+      --code-bg:#242a2e; --code-fg:#c7ccd1;
+      --link:#5fe0ac;
+    }
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:"Sarabun","TH Sarabun New","Noto Sans Thai","Segoe UI",sans-serif;
+    line-height:1.65; padding-block:32px;
+  }
+  .wrap{max-width:920px; margin:0 auto; padding-inline:20px;}
+  header.top{margin-bottom:28px;}
+  header.top h1{font-size:1.7rem; margin:0 0 6px;}
+  header.top p{color:var(--muted); margin:0; font-size:.95rem;}
+  .updated{display:inline-block; margin-top:10px; font-size:.8rem; color:var(--muted); background:var(--code-bg); padding:3px 10px; border-radius:6px;}
+
+  .card{
+    background:var(--panel); border:1px solid var(--border); border-radius:10px;
+    padding:22px 24px; margin-bottom:20px;
+  }
+  .card h2{font-size:1.2rem; margin:0 0 14px; display:flex; align-items:center; gap:10px;}
+  .card h2 .num{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:26px; height:26px; border-radius:50%; background:var(--accent-soft); color:var(--accent);
+    font-size:.85rem; font-weight:700; flex:none;
+  }
+  .card h3{font-size:1rem; margin:18px 0 8px;}
+  .card p{margin:0 0 10px;}
+  .muted{color:var(--muted);}
+
+  .badge{
+    display:inline-block; font-size:.78rem; font-weight:600; padding:2px 10px;
+    border-radius:999px; border:1px solid transparent; white-space:nowrap;
+  }
+  .badge.done{background:var(--done-bg); color:var(--done-fg); border-color:var(--done-bd);}
+  .badge.decide{background:var(--decide-bg); color:var(--decide-fg); border-color:var(--decide-bd);}
+  .badge.missing{background:var(--missing-bg); color:var(--missing-fg); border-color:var(--missing-bd);}
+
+  ul.tight, ol.tight{margin:6px 0 10px; padding-left:22px;}
+  ul.tight li, ol.tight li{margin-bottom:6px;}
+
+  code, .code{
+    background:var(--code-bg); color:var(--code-fg); border-radius:5px;
+    padding:1px 6px; font-family:Consolas,"SF Mono",Menlo,monospace; font-size:.88em;
+  }
+  pre{
+    background:var(--code-bg); color:var(--code-fg); border-radius:8px; padding:12px 14px;
+    overflow-x:auto; font-family:Consolas,"SF Mono",Menlo,monospace; font-size:.85em; line-height:1.5;
+  }
+
+  table{width:100%; border-collapse:collapse; margin:10px 0 14px; font-size:.92rem;}
+  table.wide-scroll-wrap{display:block; overflow-x:auto;}
+  th, td{border:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--code-bg); font-weight:700;}
+  tr:nth-child(even) td{background:color-mix(in srgb, var(--panel) 96%, var(--muted) 4%);}
+
+  .files-box{
+    background:var(--code-bg); border-radius:8px; padding:12px 14px; margin:10px 0 14px;
+    font-size:.88rem;
+  }
+  .files-box .f{display:block; margin-bottom:4px;}
+  .files-box .f:last-child{margin-bottom:0;}
+
+  .decision{
+    border-left:4px solid var(--accent); background:var(--accent-soft);
+    padding:10px 14px; border-radius:0 8px 8px 0; margin:10px 0 14px; font-size:.93rem;
+  }
+  .decision b{color:var(--accent);}
+
+  .toc{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:24px;}
+  .toc a{
+    font-size:.82rem; text-decoration:none; color:var(--text); background:var(--panel);
+    border:1px solid var(--border); border-radius:999px; padding:5px 12px;
+  }
+  .toc a:hover{border-color:var(--accent); color:var(--accent);}
+
+  footer{text-align:center; color:var(--muted); font-size:.8rem; margin-top:30px;}
+  a{color:var(--link);}
+  .keep-note{
+    background:var(--missing-bg); color:var(--missing-fg); border:1px solid var(--missing-bd);
+    border-radius:8px; padding:12px 14px; font-size:.9rem; margin-bottom:14px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <h1>แผนงาน: ระบบจ่ายค่าน้ำประชาชน (Citizen Water Billing)</h1>
+    <p>SmartGov / Smart SAO — ปิดช่องโหว่ตาม RFQ ลูกค้า (ค้นหา+นำเข้า Excel / QR+ตรวจสลิป / ใบเสร็จ / ร้องเรียน)</p>
+    <span class="updated">บันทึกไว้ 20 ก.ย. 2569 — เก็บไว้อ่าน/แก้ไขต่อ ยังไม่ได้ลงมือแก้โค้ด</span>
+  </header>
+
+  <nav class="toc">
+    <a href="#context">Context</a>
+    <a href="#existing">ของที่มีอยู่แล้ว</a>
+    <a href="#ws1">WS1 ค้นหา ปชช.</a>
+    <a href="#ws2">WS2 Excel Import</a>
+    <a href="#ws3">WS3 Bank Statement</a>
+    <a href="#ws4">WS4 บั๊ก QR รวม</a>
+    <a href="#ws5">WS5 โลโก้ใบเสร็จ</a>
+    <a href="#ws6">WS6 ร้องเรียน</a>
+    <a href="#ops">Checklist ปฏิบัติ</a>
+    <a href="#gotchas">กับดัก AGENTS.md</a>
+    <a href="#order">ลำดับงาน</a>
+  </nav>
+
+  <section class="card" id="context">
+    <h2><span class="num">i</span>Context</h2>
+    <p>ระบบประปา (<code>/prapa</code>, <code>/citizen/water</code>, <code>/checkbill</code>) ใช้งานจริงอยู่แล้วที่ อบต.ลำนางรอง
+      (จดมิเตอร์ → ออกบิล → จ่าย QR พร้อมเพย์ → แนบสลิป → เจ้าหน้าที่ยืนยัน → ออกใบเสร็จ) ลูกค้าส่ง RFQ มาเพิ่ม/ปิดช่องโหว่ 4 เรื่อง:
+      (1) ค้นหา+นำเข้ายอดหนี้ผ่าน Excel (2) QR จ่ายเงิน+ตรวจสลิปเทียบ bank statement
+      (3) ใบเสร็จอิเล็กทรอนิกส์มีโลโก้ (4) ระบบร้องเรียน</p>
+    <p>จากการสำรวจโค้ดจริง (3 Explore agents + 1 Plan agent + ตรวจซ้ำเอง) พบว่า
+      <b>ส่วนใหญ่ทำไปแล้ว</b> เหลือช่องโหว่จริงไม่กี่จุด — งานนี้คือ <b>"อุดช่องโหว่"</b> ไม่ใช่สร้างระบบใหม่ทั้งหมด
+      ห้ามสร้างซ้ำของที่มีอยู่แล้ว (ดูหัวข้อถัดไป)</p>
+
+    <h3>การตัดสินใจที่ยืนยันกับลูกค้า (ผู้ใช้) แล้ว</h3>
+    <div class="decision">
+      <b>ค้นหาประชาชน:</b> ปรับเป็น 2 โหมด ยืนยันตัวตนด้วย 2 ปัจจัยเสมอ —
+      (ก) <b>เบอร์โทร + เลขบัตรประชาชน</b> (ของใหม่ แทนที่โหมด "เบอร์โทรอย่างเดียว" เดิมที่ปลอดภัยน้อยกว่า)
+      (ข) รหัสผู้ใช้น้ำ + บ้านเลขที่ (ของเดิม ไม่แก้)
+    </div>
+    <div class="decision">
+      <b>Excel import:</b> ลูกค้ายังไม่มี template ที่กำหนดตายตัว → <b>mock ไปก่อน</b>ด้วยคอลัมน์ที่เราออกแบบ
+      ปรับ header ทีหลังได้ง่ายถ้าลูกค้าส่ง template จริงมา
+    </div>
+    <div class="decision">
+      <b>ใบเสร็จ:</b> ใช้ 58mm เดิม <b>แค่เพิ่มโลโก้</b> ไม่ต้องทำ A4
+    </div>
+    <div class="decision">
+      <b>ร้องเรียน:</b> <b>ใช้ระบบทั่วไปที่มีอยู่แล้ว</b> (<code>citizen_reports</code> + form-engine k32) ไม่ต้องทำเพิ่ม
+    </div>
+  </section>
+
+  <section class="card" id="existing">
+    <h2><span class="num">✓</span>ของที่มีอยู่แล้ว — ห้ามแก้/สร้างซ้ำ</h2>
+    <p class="muted">ยืนยันจาก exploration โค้ดจริงแล้วว่าใช้งานได้ครบ</p>
+    <div class="files-box">
+      <span class="f"><span class="badge done">มีแล้ว</span> ค้นหาบิล/QR รวมหลายบิล/แนบสลิป/EasySlip auto-verify/staff confirm →
+        <code>backend/src/modules/water/water-billing.service.ts</code>, <code>water-member.controller.ts</code>,
+        <code>frontend/src/app/citizen/water/page.tsx</code>, <code>frontend/src/app/prapa/slips/page.tsx</code></span>
+      <span class="f"><span class="badge done">มีแล้ว</span> ใบเสร็จ PDF 58mm + thermal printer (RawBT) staff-side →
+        <code>receipt-html.ts</code>, <code>escpos-raster.ts</code>, <code>frontend/src/lib/water-print.ts</code>,
+        <code>frontend/src/app/prapa/printer/page.tsx</code> — โครงสร้าง "ใบเสร็จออนไลน์ + ใบเสร็จเครื่องปริ้น" ที่ลูกค้าขอมีครบแล้ว</span>
+      <span class="f"><span class="badge done">มีแล้ว</span> ระบบร้องเรียน (แนบรูป+ติดตามสถานะไม่ต้องล็อกอิน+แดชบอร์ดเจ้าหน้าที่) →
+        <code>backend/src/modules/citizen-report/**</code>, <code>frontend/src/app/citizen/forms/form-engine.tsx</code> (form k32),
+        <code>frontend/src/app/citizen/track/page.tsx</code>, <code>frontend/src/app/(main)/citizen-reports/page.tsx</code></span>
+      <span class="f"><span class="badge done">มีแล้ว</span> PromptPay QR generator, config <code>/prapa/rate</code> →
+        <code>promptpay-qr.ts</code>, <code>water-rate.entity.ts</code> — งานนี้ไม่แก้โค้ด แค่ต้องกรอกเลขจริงทีหลัง</span>
+    </div>
+  </section>
+
+  <section class="card" id="ws1">
+    <h2><span class="num">1</span>ค้นหาประชาชนด้วยเลขบัตรประชาชน (คู่กับเบอร์โทร)</h2>
+    <p>เปลี่ยนโหมด "เบอร์โทร" เดิม (query param เดียว ปลอดภัยน้อย) ให้เป็น <b>"เบอร์โทร + เลขบัตรประชาชน"</b> (2 ปัจจัย)
+      โหมด "รหัสผู้ใช้น้ำ + บ้านเลขที่" คงเดิมไม่แก้</p>
+    <div class="files-box">
+      <span class="f"><code>backend/src/modules/water/water-billing.service.ts</code> — <code>memberLookup()</code> (~1059):
+        branch <code>cc</code> คงเดิม; branch <code>phone</code> เพิ่มบังคับ <code>nid</code> คู่กัน (400 ถ้าไม่กรอก)
+        query เพิ่ม <code>national_id = normNid(nid)</code> ควบกับ phone match</span>
+      <span class="f"><code>assertOwner()</code> — ใช้ re-verify ทุก endpoint ย่อย (outstanding/qr/payments/usage/slip/invoice/receipt)
+        ต้องแก้ branch phone ให้ตรวจ <code>nid</code> ด้วย</span>
+      <span class="f"><code>backend/src/modules/water/water-member.controller.ts</code> — เพิ่ม <code>@Query('nid')</code> ทุก endpoint ที่รับ phone</span>
+      <span class="f"><code>backend/src/modules/water/dto/water.dto.ts</code> — <code>MemberLookupDto</code> เพิ่ม field <code>nid</code></span>
+      <span class="f"><code>frontend/src/app/citizen/water/page.tsx</code> — แท็บ "เบอร์โทร" เพิ่ม input "เลขบัตรประชาชน" (บังคับ)
+        ปรับ <code>localStorage</code> key <code>checkbill-cred</code> ให้เก็บ nid เพิ่ม</span>
+      <span class="f"><span class="badge done">ไม่ต้องแก้</span> <code>water_customers.nationalId</code> มีอยู่แล้ว ไม่ต้อง migration</span>
+    </div>
+    <h3>Verify</h3>
+    <p>เบอร์ถูก+nid ผิด → 404 (ไม่ partial match) · เบอร์ถูก+nid ถูก → ผ่าน · เบอร์ถูกอย่างเดียว (ไม่กรอก nid) → 400</p>
+  </section>
+
+  <section class="card" id="ws2">
+    <h2><span class="num">2</span>นำเข้า/อัปเดตยอดหนี้ผ่าน Excel (พร้อม dedup)</h2>
+    <p><span class="badge decide">ต้อง mock ก่อน</span> Template ยึด field จาก <code>water-bill.entity.ts</code> ปรับ header ทีหลังได้ถ้าลูกค้าส่ง template จริงมา:</p>
+    <div class="wide-scroll-wrap">
+    <table>
+      <tr><th>คอลัมน์ (Thai header)</th><th>map เป็น</th><th>จำเป็น</th></tr>
+      <tr><td>รหัสผู้ใช้น้ำ</td><td><code>customerCode</code> (lookup → customerId)</td><td>✅</td></tr>
+      <tr><td>ปี (พ.ศ.)</td><td><code>periodYear</code></td><td>✅</td></tr>
+      <tr><td>เดือน</td><td><code>periodMonth</code> (1-12)</td><td>✅</td></tr>
+      <tr><td>เลขมิเตอร์เดิม / เลขมิเตอร์ใหม่</td><td><code>prevReading</code>/<code>currReading</code></td><td>-</td></tr>
+      <tr><td>ค่าน้ำ / ค่าบริการ / ค่าขยะ / ค่าบำบัดน้ำเสีย / ภาษี</td><td>ตามชื่อ column entity</td><td>-</td></tr>
+      <tr><td>ยอดรวม</td><td><code>totalAmount</code> (คำนวณจากยอดย่อยถ้าเว้นว่าง)</td><td>✅ (หรือคำนวณ)</td></tr>
+      <tr><td>สถานะ</td><td><code>status</code> (default <code>unpaid</code>)</td><td>-</td></tr>
+    </table>
+    </div>
+    <p><b>Dedup key:</b> unique index ที่มีอยู่แล้ว <code>['organizationId','customerId','periodYear','periodMonth']</code>
+      บน <code>water_bills_v2</code> — ตรงกับ natural key พอดี <span class="badge done">ไม่ต้อง migration ใหม่ส่วนนี้</span></p>
+
+    <h3>ไฟล์ที่สร้าง/แก้</h3>
+    <div class="files-box">
+      <span class="f"><span class="badge missing">ใหม่</span> <code>backend/src/modules/water/bill-import.ts</code> — parser: header Thai/English
+        แบบ flexible เหมือน <code>customer-import.ts</code>, เพิ่มรองรับ <code>.xlsx</code> (ยืม ExcelJS row-walk จาก
+        <code>parseReconcileFile()</code> ใน <code>water-billing.service.ts:693-735</code>), TIS-620 fallback สำหรับ CSV</span>
+      <span class="f"><code>backend/src/modules/water/dto/water.dto.ts</code> — เพิ่ม <code>BillImportRowDto</code> +
+        <code>BillImportDto { rows: BillImportRowDto[]; dryRun?: boolean }</code> (โครงเหมือน <code>ReconcileRowDto</code>/<code>ReconcileDto</code> บรรทัด 465-490)</span>
+      <span class="f"><code>backend/src/modules/water/water-billing.service.ts</code> — เมธอดใหม่
+        <code>importBills(orgId, userId, buffer, filename, dryRun)</code>: resolve customerCode→customerId,
+        diff created/updated(เฉพาะที่ค่าเปลี่ยนจริง)/unchanged, commit แบบ transaction chunk 500</span>
+      <span class="f"><code>backend/src/modules/water/water-billing.controller.ts</code> —
+        <code>POST /water/billing/import?preview=1|0</code> (FileInterceptor, guard ตาม water cap ที่เหมาะสม)</span>
+      <span class="f"><span class="badge missing">ใหม่</span> <code>frontend/src/app/prapa/bills/import/page.tsx</code> —
+        upload → preview (ตาราง created/updated/unchanged/issues) → ยืนยัน — ก็อป UX shell จาก
+        <code>frontend/src/app/prapa/reconcile/page.tsx</code></span>
+    </div>
+    <h3>Verify</h3>
+    <p>preview ไม่เขียน DB → import จริง → นับ created/updated → import ไฟล์เดิมซ้ำ → ต้องได้ <code>unchanged</code> ทั้งหมด
+      (พิสูจน์ dedup) → แก้ยอดในไฟล์ → import ซ้ำ → ต้องได้ <code>updated</code> เท่านั้น</p>
+  </section>
+
+  <section class="card" id="ws3">
+    <h2><span class="num">3</span>หน้าเทียบสลิปกับ Bank Statement ก่อนยืนยันยอด</h2>
+    <p><span class="badge missing">ไม่มีอยู่จริง</span> ยืนยันจาก exploration — <code>/prapa/reconcile</code> เป็นฟีเจอร์อื่นคนละเรื่อง
+      (bulk KTB bank-file) ไม่ใช่หน้าเทียบสลิปทีละใบ</p>
+
+    <h3>Migration ใหม่</h3>
+    <p>ต้อง timestamp 13 หลัก เรียงหลังตัวล่าสุด — เช็คแล้วตัวล่าสุดคือ <code>1700000061000-WaterSlipReceiverName.ts</code>
+      → ไฟล์ใหม่ต้องเป็น <code>1700000062000-...</code> เป็นต้นไป ใช้ <code>ADD COLUMN IF NOT EXISTS</code> ทุกคอลัมน์ ให้ idempotent</p>
+    <pre>bank_statement_ref      varchar(80)   NULL
+bank_statement_date    date          NULL
+bank_statement_amount  numeric(12,2) NULL
+bank_reconciled_at     timestamptz   NULL
+bank_reconciled_by     uuid          NULL</pre>
+
+    <h3>ไฟล์ที่แก้</h3>
+    <div class="files-box">
+      <span class="f"><code>backend/src/database/entities/water-bill.entity.ts</code> — เพิ่ม column ทั้ง 5 ข้างๆ
+        <code>slipTransRef</code>/<code>slipAmount</code>/<code>slipVerifiedAt</code></span>
+      <span class="f"><code>backend/src/modules/water/dto/water.dto.ts</code> —
+        <code>BankStatementCheckDto { bankRef: string; bankDate: string; bankAmount: number }</code></span>
+      <span class="f"><code>backend/src/modules/water/water-billing.service.ts</code> — เมธอดใหม่
+        <code>saveBankStatementCheck(id, dto, orgId, userId)</code>: guard <code>slipStatus in ['pending','verified']</code>,
+        เซฟ 3 ค่า + <code>bankReconciledAt/By</code>, return <code>{refMatch, amountMatch, dateMatch}</code></span>
+      <span class="f"><code>backend/src/modules/water/water-billing.controller.ts</code> —
+        <code>PUT /water/billing/:id/slip/bank-check</code> (cap เดียวกับ confirm/reject)</span>
+      <span class="f"><code>frontend/src/app/prapa/slips/page.tsx</code> — ต่อ card สลิปที่รอตรวจ เพิ่ม 3 input
+        (เลขอ้างอิง/วันที่/ยอด) + ปุ่ม "เทียบ" แสดง badge ✅/❌ ทั้ง 3 ช่อง</span>
+      <span class="f"><code>pendingSlips()</code> — ให้ query คืนค่า bank-check เดิมมาด้วย (กันข้อมูลหายตอนโหลดหน้าใหม่)</span>
+    </div>
+
+    <div class="decision">
+      <b>ค่าเริ่มต้นที่เลือก (soft-gate):</b> ปุ่มยืนยันยอด (<code>confirmSlip</code>) ยังกดได้แม้ยังไม่กรอก bank-check —
+      เก็บ <code>bankReconciledAt</code> เป็น audit trail อย่างเดียว ไม่บังคับ
+      (เหตุผล: บางวันเจ้าหน้าที่ยังไม่ได้ดาวน์โหลด statement แต่ต้องยืนยันยอดลูกค้าก่อนได้ — ถ้าลูกค้าอยากบังคับ ค่อยเปลี่ยนเป็น hard-gate ทีหลังได้ง่าย)
+    </div>
+
+    <h3>Verify</h3>
+    <p>อัปโหลดสลิป → กรอก ref/ยอดไม่ตรง → เห็น badge แดงแต่กดยืนยันได้ (soft-gate) → กรอกให้ตรง → badge เขียว → ยืนยัน →
+      เช็ค <code>bank_reconciled_at</code> ในฐานข้อมูล</p>
+  </section>
+
+  <section class="card" id="ws4">
+    <h2><span class="num">4</span>แก้บั๊ก QR รวมหลายบิล + แนบสลิปใบเดียว (mismatch)</h2>
+    <p><span class="badge missing">บั๊กจริง ยืนยันแล้ว</span> <code>water_bills_v2</code> มี unique partial index
+      <code>UQ_water_bill_slip_ref</code> บน <code>(organization_id, slip_trans_ref) WHERE NOT NULL</code>
+      (จาก migration <code>1700000059000</code>) — ดังนั้นแก้แค่ "วน loop เขียนทุกบิล" จะชน unique constraint
+      ถ้า trans_ref ซ้ำกันหลายบิล ต้องออกแบบเป็นกลุ่ม (group)</p>
+
+    <div class="files-box">
+      <span class="f"><code>backend/src/modules/water/water-billing.service.ts</code> —
+        <code>memberUploadSlip()</code> (~1170) เปลี่ยนรับ <code>billIds: string[]</code> (จากเดิม billId เดี่ยว)
+        validate ทุกใบเป็นของ customer/org เดียวกันและยัง unpaid, sum totalAmount รวม</span>
+      <span class="f"><code>runSlipVerify()</code> (~1204) → ปรับเป็น <code>runSlipVerifyForBills(bills[], ...)</code>
+        เทียบยอดสลิปกับยอดรวม ไม่ใช่ยอดบิลเดียว (มิเรอร์ <code>verifySlipForBills()</code> บรรทัด 805)</span>
+      <span class="f">เขียน slipStatus/slipNote/slipUploadedAt/slipVerifiedAt/slipAmount(=ยอดรวมกลุ่ม) ลงทุกบิลในกลุ่ม
+        แต่ <code>slipTransRef</code> จริงเขียนแค่บิล "anchor" ใบเดียว (เช่น id ต่ำสุด) บิลอื่นปล่อย NULL
+        (index แบบ partial ไม่ชนกันเพราะ NULL หลายแถวไม่ถือว่า unique ชนกัน)</span>
+      <span class="f"><span class="badge missing">คอลัมน์ใหม่</span> <code>slip_group_bill_ids jsonb</code> (รวมไปกับ migration ของ WS3
+        หรือแยกไฟล์เล็กๆ) เขียนทุกบิลในกลุ่มเพื่อให้ <code>pendingSlips()/confirmSlip()/rejectSlip()</code> หา sibling เจอ</span>
+      <span class="f"><code>confirmSlip()/rejectSlip()</code> — ถ้ามี <code>slip_group_bill_ids</code> มากกว่า 1 ใบ
+        ให้ทำทั้งกลุ่มพร้อมกัน (receiptNo เดียวกันทุกใบ มิเรอร์ <code>payBills()</code> บรรทัด 559-604)
+        ล็อกทีละใบแบบ optimistic ถ้าใบใดถูกแก้ไปแล้วให้ rollback สะอาด</span>
+      <span class="f"><code>frontend/src/app/citizen/water/page.tsx</code> component <code>BillSlip</code> (~311) —
+        ส่ง <code>billIds</code> เป็น array ของบิลที่ติ๊กเลือกไว้ (ตัวแปร <code>sel</code> ที่มีอยู่แล้ว) ไม่ใช่ billId เดี่ยว</span>
+    </div>
+
+    <h3>Verify</h3>
+    <p>เลือก 3 บิล → ขอ QR รวม → แนบสลิปใบเดียว → เช็คว่าทั้ง 3 บิลเห็นสถานะ "รอตรวจ" ไม่ error ยอดไม่ตรง →
+      staff ยืนยัน → ทั้ง 3 บิลเป็น <code>paid</code> receiptNo เดียวกัน</p>
+  </section>
+
+  <section class="card" id="ws5">
+    <h2><span class="num">5</span>เพิ่มโลโก้ อบต. ในใบเสร็จ 58mm</h2>
+    <p><span class="badge missing">บั๊กจริง ยืนยันแล้ว</span> <code>receipt-html.ts</code> ไม่มี <code>&lt;img&gt;</code>
+      render โลโก้เลย (มีแต่ข้อความ orgName) แม้ <code>loadOrgIdentity()</code> จะ resolve logo URL ไว้ให้แล้ว
+      และ <code>PdfService.hardenPage()</code> บล็อกโหลดภาพจาก http(s) ตรงๆ (กัน SSRF) — ต้องแปลงเป็น data URL ก่อนเสมอ
+      (มี helper อยู่แล้ว <code>PdfService.fetchImageAsDataUrl()</code>, ใช้ pattern เดียวกับ <code>resolveOrgEmblem()</code> ของฝั่งสารบรรณ)</p>
+
+    <div class="files-box">
+      <span class="f"><code>backend/src/modules/water/water-billing.service.ts</code> — <code>billDocPdf()</code> (~157):
+        หลังโหลด org เพิ่ม <code>const logoDataUrl = org.logoUrl ? await this.pdf.fetchImageAsDataUrl(org.logoUrl) : '';</code>
+        ส่งเข้า <code>buildBillDocHtml()</code> แทน logoUrl ดิบ</span>
+      <span class="f"><code>backend/src/modules/water/receipt-html.ts</code> — เพิ่ม <code>logoUrl</code> เข้า type
+        <code>ReceiptData['org']</code>, render <code>&lt;img&gt;</code> เล็กๆ ข้างชื่อหน่วยงาน (จำกัดขนาดพอดี 58mm)
+        ผ่าน <code>PdfService.safeDataImage()</code> ก่อน interpolate เข้า <code>src=</code> —
+        ถ้า <code>logoUrl</code> ว่าง ไม่ render <code>&lt;img&gt;</code> เลย (ไม่ fallback เป็นครุฑ เพราะเป็นใบเสร็จ อบต. ไม่ใช่หนังสือราชการ)</span>
+    </div>
+    <h3>Verify</h3>
+    <p>ตั้งโลโก้ผ่าน <code>/prapa/rate</code> แล้วโหลดใบเสร็จ/ใบแจ้งหนี้ PDF ต้องเห็นโลโก้ / ทดสอบกรณีไม่ตั้งโลโก้ต้อง render เหมือนเดิม ไม่พัง</p>
+  </section>
+
+  <section class="card" id="ws6">
+    <h2><span class="num">6</span>ระบบร้องเรียน: ไม่ต้องทำเพิ่ม</h2>
+    <p><span class="badge done">ยืนยันกับผู้ใช้แล้ว</span> ใช้ <code>citizen_reports</code> + form-engine (k32) +
+      <code>/citizen/track</code> + <code>(main)/citizen-reports</code> dashboard ที่มีอยู่แล้วได้เลย —
+      ปิด workstream นี้โดยไม่แตะโค้ด</p>
+    <p class="muted">หมายเหตุที่พบระหว่างสำรวจ ไม่ต้องแก้ในงานนี้: มีไฟล์ <code>frontend/src/app/citizen/report/page.tsx</code>
+      เป็นฟอร์มเก่าที่ไม่มีลิงก์เข้าถึงจากไหนแล้ว (orphaned) — ปล่อยไว้เฉยๆ ไม่กระทบอะไร ไม่ใช่ scope งานนี้</p>
+  </section>
+
+  <section class="card" id="ops">
+    <h2><span class="num">✓</span>Checklist งานปฏิบัติ (ไม่ใช่โค้ด — ผู้ใช้ทำเอง)</h2>
+    <div class="wide-scroll-wrap">
+    <table>
+      <tr><th>งาน</th><th>ต้องเช็คอะไร</th></tr>
+      <tr><td>Puppeteer/Chrome บน Windows dev</td><td>เช็ค <code>PUPPETEER_EXECUTABLE_PATH</code> หรือ Chromium ที่มากับ puppeteer ใช้ได้ → โหลด PDF ใบเสร็จ 1 ใบ ดูฟอนต์ไทยไม่แตก</td></tr>
+      <tr><td>ตั้ง Puppeteer/Chrome บน environment จริง</td><td>ตั้ง env บนเซิร์ฟเวอร์/Docker ให้ตรง ตรวจว่า image มี Chrome ติดตั้งจริง</td></tr>
+      <tr><td>ตั้งค่า PromptPay/Tax ID จริงของ อบต.</td><td>กรอกที่ <code>/prapa/rate</code> แท็บ "พร้อมเพย์" — ต้องเป็นเลขจริง เช็คจากเอกสารธนาคาร/พร้อมเพย์จริง (เช็คจากโค้ดไม่ได้)</td></tr>
+      <tr><td>ทดสอบโอนเงินจริง</td><td>โอนจริงเข้า QR ที่ระบบสร้าง เช็คว่าเข้าบัญชี อบต. จริง + auto-verify (EasySlip) อ่านสลิปถูก</td></tr>
+      <tr><td>ทดสอบพิมพ์เครื่องจริง</td><td>จับคู่ Bluetooth + RawBT บนเครื่อง Android จริง พิมพ์จาก <code>/prapa/cashier</code> เช็คฟอนต์/ตัดกระดาษ</td></tr>
+      <tr><td>เอกสาร UAT ส่งมอบ</td><td>เขียน script ทดสอบไล่ทั้ง flow: import Excel (preview→confirm→import ซ้ำต้องขึ้น unchanged) →
+        ค้นหา 2 โหมด (เบอร์+บัตร / รหัส+บ้านเลขที่) → เลือกหลายบิล → QR รวม → แนบสลิป →
+        <code>/prapa/slips</code> กรอกเทียบ bank statement → ยืนยัน → โหลดใบเสร็จ (มีโลโก้) →
+        ประชาชนเห็นประวัติจ่ายที่ <code>/citizen/water</code></td></tr>
+    </table>
+    </div>
+  </section>
+
+  <section class="card" id="gotchas">
+    <h2><span class="num">!</span>กับดัก AGENTS.md ที่เกี่ยวกับงานนี้</h2>
+    <ul class="tight">
+      <li>Migration ใหม่ทุกตัวต้อง timestamp 13 หลัก เรียงหลัง <code>1700000061000</code> แน่นอน (เช็คซ้ำหน้าเขียนจริงอีกที) และต้อง idempotent (<code>ADD COLUMN IF NOT EXISTS</code>)</li>
+      <li>ห้าม hardcode ชื่อ/โลโก้ อบต. — ทุกจุดต้องผ่าน <code>loadOrgIdentity()</code>/<code>water_rate</code> เท่านั้น (WS5 โดยตรง)</li>
+      <li>ไฟล์ Excel ที่อัปโหลด parse ในหน่วยความจำอย่างเดียว ไม่ต้องเก็บลง storage — ถ้ามีจุดไหนต้อง persist ไฟล์ ต้องผ่าน <code>storage.service.ts</code> เท่านั้น ห้าม fallback เขียน fs ตรงๆ</li>
+      <li>ทดสอบ workflow สารบรรณเดิมไม่กระทบ (<code>node scripts/smoke-saraban-v4.mjs</code>) หลังแก้ shared utility ใดๆ</li>
+      <li><code>npm run build</code> + <code>npm run migration:run</code> ต้องผ่านบน dev DB ก่อนถือว่า WS2-4 เสร็จ (เพราะ <code>synchronize:false</code>)</li>
+      <li>ทดสอบบนเว็บจริง/DB จริงก่อนบอกว่าเสร็จ ไม่ใช่แค่ local</li>
+    </ul>
+  </section>
+
+  <section class="card" id="order">
+    <h2><span class="num">→</span>ลำดับการทำงานที่แนะนำ</h2>
+    <ol class="tight">
+      <li>Workstream 1 (ค้นหา nid) — เล็ก เดี่ยว ไม่พึ่งใคร</li>
+      <li>Workstream 5 (โลโก้ใบเสร็จ) — เล็ก เดี่ยว ไม่พึ่งใคร</li>
+      <li>Workstream 4 (แก้บั๊ก multi-bill slip) — กลาง ควรทำก่อน WS3 เพราะแก้ schema/logic สลิปคาบเกี่ยวกัน</li>
+      <li>Workstream 3 (bank-statement compare) — กลาง ต่อจาก 4 (ใช้ migration ไฟล์เดียวกันได้ถ้าสะดวก)</li>
+      <li>Workstream 2 (Excel import) — ใหญ่สุด แยกอิสระจากที่อื่น ทำเมื่อไหร่ก็ได้</li>
+      <li>รัน checklist ปฏิบัติงาน + ทำเอกสาร UAT ปิดงาน</li>
+    </ol>
+  </section>
+
+  <footer>SmartGov / Smart SAO — เอกสารแผนงานภายใน ไม่ใช่เอกสารส่งลูกค้า</footer>
+</div>
+</body>
+</html>

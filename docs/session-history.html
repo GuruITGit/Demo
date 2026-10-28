@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ประวัติการคุยงาน — SmartGov</title>
+<style>
+  :root{
+    --bg:#f7f7f5; --panel:#ffffff; --text:#1f2328; --muted:#5b6168;
+    --border:#e3e5e8; --accent:#0f6b4c; --accent-soft:#e6f4ee;
+    --done-bg:#e6f4ee; --done-fg:#0f6b4c; --done-bd:#bfe3d2;
+    --decide-bg:#fff6e0; --decide-fg:#8a6100; --decide-bd:#f0dca0;
+    --missing-bg:#fdecec; --missing-fg:#b3261e; --missing-bd:#f3c6c3;
+    --code-bg:#f0f1f3; --code-fg:#3a3f44;
+    --link:#0f6b4c;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#15181a; --panel:#1d2124; --text:#e7e9ea; --muted:#9aa1a8;
+      --border:#2b3034; --accent:#4fd39a; --accent-soft:#173226;
+      --done-bg:#173226; --done-fg:#5fe0ac; --done-bd:#245c43;
+      --decide-bg:#332b12; --decide-fg:#e8c561; --decide-bd:#5c4c1c;
+      --missing-bg:#3a1f1e; --missing-fg:#f0938d; --missing-bd:#63302d;
+      --code-bg:#242a2e; --code-fg:#c7ccd1;
+      --link:#5fe0ac;
+    }
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:"Sarabun","TH Sarabun New","Noto Sans Thai","Segoe UI",sans-serif;
+    line-height:1.7; padding-block:32px;
+  }
+  .wrap{max-width:920px; margin:0 auto; padding-inline:20px;}
+  header.top{margin-bottom:28px;}
+  header.top h1{font-size:1.7rem; margin:0 0 6px;}
+  header.top p{color:var(--muted); margin:0; font-size:.95rem;}
+  .updated{display:inline-block; margin-top:10px; font-size:.8rem; color:var(--muted); background:var(--code-bg); padding:3px 10px; border-radius:6px;}
+
+  .card{
+    background:var(--panel); border:1px solid var(--border); border-radius:10px;
+    padding:22px 24px; margin-bottom:20px;
+  }
+  .card h2{font-size:1.2rem; margin:0 0 14px; display:flex; align-items:center; gap:10px;}
+  .card h2 .num{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:26px; height:26px; border-radius:50%; background:var(--accent-soft); color:var(--accent);
+    font-size:.85rem; font-weight:700; flex:none;
+  }
+  .card h3{font-size:1rem; margin:18px 0 8px;}
+  .card p{margin:0 0 10px;}
+  .muted{color:var(--muted);}
+
+  .badge{
+    display:inline-block; font-size:.78rem; font-weight:600; padding:2px 10px;
+    border-radius:999px; border:1px solid transparent; white-space:nowrap;
+  }
+  .badge.done{background:var(--done-bg); color:var(--done-fg); border-color:var(--done-bd);}
+  .badge.decide{background:var(--decide-bg); color:var(--decide-fg); border-color:var(--decide-bd);}
+  .badge.missing{background:var(--missing-bg); color:var(--missing-fg); border-color:var(--missing-bd);}
+
+  ul.tight, ol.tight{margin:6px 0 10px; padding-left:22px;}
+  ul.tight li, ol.tight li{margin-bottom:6px;}
+
+  code, .code{
+    background:var(--code-bg); color:var(--code-fg); border-radius:5px;
+    padding:1px 6px; font-family:Consolas,"SF Mono",Menlo,monospace; font-size:.88em;
+  }
+  pre{
+    background:var(--code-bg); color:var(--code-fg); border-radius:8px; padding:12px 14px;
+    overflow-x:auto; font-family:Consolas,"SF Mono",Menlo,monospace; font-size:.85em; line-height:1.5;
+  }
+
+  table{width:100%; border-collapse:collapse; margin:10px 0 14px; font-size:.92rem;}
+  .wide-scroll-wrap{display:block; overflow-x:auto;}
+  th, td{border:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--code-bg); font-weight:700;}
+  tr:nth-child(even) td{background:color-mix(in srgb, var(--panel) 96%, var(--muted) 4%);}
+
+  .files-box{
+    background:var(--code-bg); border-radius:8px; padding:12px 14px; margin:10px 0 14px;
+    font-size:.88rem;
+  }
+  .files-box .f{display:block; margin-bottom:4px;}
+  .files-box .f:last-child{margin-bottom:0;}
+
+  .decision{
+    border-left:4px solid var(--accent); background:var(--accent-soft);
+    padding:10px 14px; border-radius:0 8px 8px 0; margin:10px 0 14px; font-size:.93rem;
+  }
+  .decision b{color:var(--accent);}
+
+  .step{
+    border-left:4px solid var(--border); padding:2px 0 2px 16px; margin:0 0 18px;
+  }
+  .step .who{font-size:.78rem; font-weight:700; color:var(--accent); text-transform:uppercase; letter-spacing:.03em; margin-bottom:4px; display:block;}
+
+  .toc{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:24px;}
+  .toc a{
+    font-size:.82rem; text-decoration:none; color:var(--text); background:var(--panel);
+    border:1px solid var(--border); border-radius:999px; padding:5px 12px;
+  }
+  .toc a:hover{border-color:var(--accent); color:var(--accent);}
+
+  footer{text-align:center; color:var(--muted); font-size:.8rem; margin-top:30px;}
+  a{color:var(--link);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <h1>ประวัติการคุยงาน — โปรเจกต์ SmartGov (ระบบน้ำประปา)</h1>
+    <p>สรุปสิ่งที่คุยและตัดสินใจกันไว้ ก่อนย้ายไปทำงานต่อในโฟลเดอร์ที่ clone ใหม่ <code>C:\smartgov-repo</code></p>
+    <span class="updated">บันทึกไว้ 20 ก.ย. 2569</span>
+  </header>
+
+  <nav class="toc">
+    <a href="#bg">1. ภาพรวมโปรเจกต์</a>
+    <a href="#rfq">2. งาน RFQ ที่ต้องทำ</a>
+    <a href="#explore">3. ผลสำรวจโค้ด</a>
+    <a href="#decisions">4. การตัดสินใจที่ยืนยันแล้ว</a>
+    <a href="#plan">5. แผนงานละเอียด</a>
+    <a href="#setup">6. Setup dev environment</a>
+    <a href="#next">7. ขั้นต่อไป</a>
+  </nav>
+
+  <section class="card" id="bg">
+    <h2><span class="num">1</span>ภาพรวมโปรเจกต์ (จากการอ่าน AGENTS.md / HANDOVER.md / README.md)</h2>
+    <p><b>SmartGov / Smart SAO</b> — ระบบบริหารงานราชการอิเล็กทรอนิกส์สำหรับ อบต. (องค์การบริหารส่วนตำบล) ของไทย
+      ใช้งานจริงที่ <b>อบต.ลำนางรอง จ.บุรีรัมย์</b> (39 ผู้ใช้จริง, ทะเบียนน้ำ 2,739 ราย) — ไม่ใช่ระบบทดลอง UI เป็นภาษาไทยเกือบ 100%</p>
+    <p><b>4 เว็บในโค้ดชุดเดียว:</b> <code>/login</code> (เจ้าหน้าที่ อบต., JWT หลัก) · <code>/prapa/*</code> (เจ้าหน้าที่ประปา, JWT แยก)
+      · <code>/citizen</code>, <code>/checkbill</code> (ประชาชน ไม่ล็อกอิน) · <code>/hub</code> (เจ้าของระบบ SUPER_ADMIN จัดการหลาย อบต.)</p>
+    <p><b>Stack:</b> Next.js 16 + React 19 + Tailwind v4 (frontend, port 3000) / NestJS + TypeORM (backend, port 4000, prefix <code>/v1</code>,
+      <code>synchronize:false</code> → ต้องเขียน migration เอง) / PostgreSQL / ไฟล์แนบเก็บบนดิสก์ <code>STORAGE_DRIVER=fs</code> /
+      deploy self-host Docker Compose บน INET</p>
+    <p><b>หัวใจระบบ:</b> สารบรรณ (Correspondence Ticket) — workflow ตายตัว รอดำเนินการ → กำลังดำเนินการ → รอปลัด → รอนายก → เสร็จสิ้น
+      (ห้ามเปลี่ยนลำดับโดยไม่คุยลูกค้าก่อน)</p>
+    <p><b>โมดูลที่งานนี้เกี่ยวข้อง:</b> ระบบประปา (<code>/prapa</code>) — จดมิเตอร์ → ออกบิล → จ่าย QR พร้อมเพย์ → แนบสลิป →
+      เจ้าหน้าที่ยืนยัน → ออกใบเสร็จ ใช้งานจริงอยู่แล้ว สร้างขึ้นมาแทนระบบ vendor เดิม (Mongkol Online) ที่ปฏิเสธเชื่อมต่อ</p>
+  </section>
+
+  <section class="card" id="rfq">
+    <h2><span class="num">2</span>งาน RFQ ที่ผู้ใช้ต้องเข้าไปทำ</h2>
+    <p>ผู้ใช้ได้รับมอบหมายงานเข้าไปทำให้ <b>ระบบจ่ายค่าน้ำของลูกบ้าน + หน้าร้องทุกข์</b> ใช้งานได้จริงตาม RFQ ลูกค้า
+      โดยมีลิสต์ "งานที่ทำเสร็จแล้ว" จากคนทำก่อนหน้ามาให้ (ค้นหาบิล/QR/สลิป/ใบเสร็จ/ร้องเรียน พื้นฐานครบ) และ RFQ จริงจากลูกค้า 5 เรื่องหลัก:</p>
+    <ol class="tight">
+      <li>ค้นหายอดค่าน้ำด้วยเลขบัตร ปชช./รหัสผู้ใช้น้ำ + นำเข้า/อัปเดตยอดลูกหนี้ผ่าน Excel</li>
+      <li>QR พร้อมเพย์ตามยอดบิล (เลือกจ่ายหลายบิลได้) + แนบสลิป + หน้าเจ้าหน้าที่ตรวจสลิปเทียบ bank statement + ยืนยันยอด</li>
+      <li>ใบเสร็จอิเล็กทรอนิกส์ PDF แบบราชการ มีโลโก้/ตราหน่วยงาน ดาวน์โหลด/พิมพ์ได้ทันทีที่ยืนยันยอด</li>
+      <li>ระบบรับเรื่องร้องทุกข์/ร้องเรียน (แนบรูป+ติดตามสถานะฝั่งประชาชน) + แดชบอร์ดจัดการฝั่งเจ้าหน้าที่</li>
+      <li>ทดสอบระบบแบบ Local UAT ไล่ทั้ง flow</li>
+    </ol>
+    <p>ผู้ใช้ยังไม่แน่ใจว่ารายละเอียดย่อยอีกชุด (checklist ที่สองที่ได้มา) ต้องทำทั้งหมดไหม — งานนี้คือสิ่งที่ต้องวิเคราะห์แยกว่า
+      อันไหนเป็นโค้ดที่ต้องเขียนจริง อันไหนเป็นงานปฏิบัติ/ตั้งค่า (เช่น ตั้ง PromptPay จริง, ทดสอบพิมพ์เครื่องจริง, ทำเอกสาร UAT)</p>
+  </section>
+
+  <section class="card" id="explore">
+    <h2><span class="num">3</span>ผลสำรวจโค้ดจริง (3 Explore agents + 1 Plan agent)</h2>
+    <p>สำรวจโค้ดจริงแทนการเดา พบว่า <b>ส่วนใหญ่ของ RFQ ทำไปแล้ว</b> — งานที่เหลือคือ "อุดช่องโหว่" ไม่ใช่สร้างใหม่ทั้งหมด:</p>
+    <div class="wide-scroll-wrap">
+    <table>
+      <tr><th>เรื่อง</th><th>สถานะที่พบจริง</th></tr>
+      <tr><td>ค้นหาบิล/QR รวมหลายบิล/แนบสลิป/EasySlip auto-verify/staff confirm</td><td><span class="badge done">มีแล้ว</span> ใช้งานได้ แต่มีบั๊ก: จ่าย QR รวมหลายบิลแล้วแนบสลิปได้แค่บิลเดียว ระบบเช็คยอดผิด (mismatch)</td></tr>
+      <tr><td>ค้นหาด้วยเลขบัตรประชาชน</td><td><span class="badge missing">ไม่มี</span> ปัจจุบันมีแค่เบอร์โทรอย่างเดียว หรือรหัสผู้ใช้น้ำ+บ้านเลขที่</td></tr>
+      <tr><td>นำเข้ายอดหนี้ผ่าน Excel</td><td><span class="badge missing">ไม่มี</span> มีแต่ import ทะเบียนลูกค้า (CSV/JSON, ไม่มีใครเรียกใช้จาก UI) และ import bank statement (คนละเรื่อง)</td></tr>
+      <tr><td>ใบเสร็จ PDF 58mm + เครื่องพิมพ์ (RawBT)</td><td><span class="badge done">มีแล้ว</span> ครบทั้งออนไลน์(PDF)+เครื่องปริ้น แต่<b>ไม่มีโลโก้</b>ในเทมเพลต (บั๊ก)</td></tr>
+      <tr><td>หน้าเทียบสลิปกับ bank statement</td><td><span class="badge missing">ไม่มี</span> มีแค่ auto-verify (EasySlip) กับ bulk reconcile คนละฟีเจอร์</td></tr>
+      <tr><td>ระบบร้องเรียน (แนบรูป+ติดตามสถานะ+แดชบอร์ด)</td><td><span class="badge done">มีแล้วครบ</span> เป็นระบบทั่วไป แยกจากสารบรรณโดยตั้งใจ</td></tr>
+    </table>
+    </div>
+  </section>
+
+  <section class="card" id="decisions">
+    <h2><span class="num">4</span>การตัดสินใจที่ยืนยันกับผู้ใช้แล้ว</h2>
+    <div class="decision"><b>ค้นหาประชาชน:</b> ปรับเป็น 2 โหมด ยืนยันตัวตนด้วย 2 ปัจจัยเสมอ — (ก) เบอร์โทร + เลขบัตรประชาชน
+      (แทนที่ "เบอร์โทรอย่างเดียว" เดิม) (ข) รหัสผู้ใช้น้ำ + บ้านเลขที่ (เดิม ไม่แก้)</div>
+    <div class="decision"><b>Excel import:</b> ลูกค้ายังไม่มี template ที่กำหนดตายตัว → mock คอลัมน์ไปก่อน ปรับ header ทีหลังได้ง่าย</div>
+    <div class="decision"><b>ใบเสร็จ:</b> ใช้ 58mm เดิม แค่เพิ่มโลโก้ ไม่ต้องทำ A4</div>
+    <div class="decision"><b>ร้องเรียน:</b> ใช้ระบบทั่วไปที่มีอยู่แล้ว ไม่ต้องทำเพิ่ม</div>
+  </section>
+
+  <section class="card" id="plan">
+    <h2><span class="num">5</span>แผนงานละเอียด (6 workstream)</h2>
+    <p>แผนละเอียดระดับไฟล์/ฟังก์ชันที่ต้องแก้ ถูกเขียนไว้แยกเป็นไฟล์อ่านง่ายแล้วที่:</p>
+    <p><a href="./rfq-water-billing-plan.html"><b>📄 rfq-water-billing-plan.html</b></a> (อยู่โฟลเดอร์เดียวกันนี้)</p>
+    <p class="muted">สรุปสั้น: WS1 ค้นหา nid · WS2 Excel import (พร้อม dedup) · WS3 หน้าเทียบ bank statement · WS4 แก้บั๊ก QR รวม+สลิป ·
+      WS5 เพิ่มโลโก้ใบเสร็จ · WS6 ร้องเรียน (ปิด ไม่ต้องทำ) — เรียงลำดับแนะนำ: WS1 → WS5 → WS4 → WS3 → WS2</p>
+    <p class="muted"><b>ยังไม่ได้ลงมือแก้โค้ดจริง</b> ณ จุดที่บันทึกไฟล์นี้ — เป็นแผนที่ตกลงกันไว้เท่านั้น</p>
+  </section>
+
+  <section class="card" id="setup">
+    <h2><span class="num">6</span>Setup dev environment (จาก git clone ใหม่ ให้รันเหมือนของเดิม)</h2>
+    <p>ก่อนย้ายมาทำที่ <code>C:\smartgov-repo</code> ได้ตรวจ config ของโฟลเดอร์เก่า (ที่รันอยู่จริงตอนนั้น) แล้วสรุปขั้นตอน setup ให้ตรงกัน:</p>
+
+    <div class="step"><span class="who">STEP 1 — Infra</span>
+      <pre>cd infrastructure
+docker compose -f docker-compose.dev.yml up -d postgres redis</pre>
+      <p class="muted">สตาร์ทแค่ postgres (พอร์ต 5433) + redis (6379) — ไม่ต้อง minio/mailhog/pgadmin เพราะระบบตั้ง <code>STORAGE_DRIVER=fs</code> เก็บไฟล์บนดิสก์ ไม่ได้ใช้ MinIO</p>
+    </div>
+
+    <div class="step"><span class="who">STEP 2 — Backend</span>
+      <p><code>backend/.env</code> ไม่ติดมากับ git (อยู่ใน <code>.gitignore</code>) ต้องสร้างใหม่ด้วยค่านี้ (ตรงกับที่รันอยู่จริง):</p>
+      <pre>NODE_ENV=development
+PORT=4000
+APP_URL=http://localhost:4000
+FRONTEND_URL=http://localhost:3000
+
+DB_HOST=127.0.0.1
+DB_PORT=5433
+DB_USERNAME=postgres
+DB_PASSWORD=devpassword
+DB_DATABASE=smartgov_dev
+DB_SYNCHRONIZE=false
+DB_LOGGING=false
+
+JWT_SECRET=your-super-secret-jwt-key-change-in-production
+JWT_EXPIRES_IN=15m
+JWT_REFRESH_SECRET=your-super-secret-refresh-key-change-in-production
+JWT_REFRESH_EXPIRES_IN=7d
+
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=
+REDIS_DB=0
+
+THROTTLE_TTL=60000
+THROTTLE_LIMIT=100
+MAX_FILE_SIZE_MB=50
+ALLOWED_FILE_TYPES=pdf,docx,xlsx,jpg,jpeg,png,zip
+
+PUPPETEER_EXECUTABLE_PATH=
+
+INITIAL_ADMIN_USERNAME=admin
+INITIAL_ADMIN_EMAIL=admin@smartgov.local
+INITIAL_ADMIN_PASSWORD=Admin@123456
+
+STORAGE_DRIVER=fs
+STORAGE_FS_ROOT=.storage</pre>
+      <p class="muted">⚠️ <code>PUPPETEER_EXECUTABLE_PATH</code> เดิมชี้ path Linux — บน Windows dev เว้นว่างไว้ (ใช้ Chromium ที่ puppeteer ดาวน์โหลดเอง) หรือชี้ chrome.exe จริง</p>
+      <pre>cd backend
+npm install
+npm run migration:run
+npm run seed:run
+npm run start:dev        # http://localhost:4000/v1</pre>
+    </div>
+
+    <div class="step"><span class="who">STEP 3 — Frontend</span>
+      <p class="muted">ไม่ต้องสร้าง <code>.env.local</code> — โค้ด default ชี้ <code>http://localhost:4000/v1</code> อยู่แล้ว</p>
+      <pre>cd frontend
+npm install
+npm run dev               # http://localhost:3000</pre>
+    </div>
+
+    <div class="step"><span class="who">STEP 4 — ล็อกอินทดสอบ</span>
+      <p><code>admin</code> / <code>Admin@123456</code></p>
+    </div>
+
+    <h3>ข้อควรรู้เพิ่ม</h3>
+    <ul class="tight">
+      <li><code>backend/.env</code>, <code>backend/.storage/</code> (ไฟล์แนบเดิม), <code>node_modules/</code> ไม่ติดมากับ git clone —
+        ถ้าอยากได้ไฟล์แนบเดิม ต้องคัดลอก <code>.storage</code> จากโฟลเดอร์เก่ามาเอง</li>
+      <li>ถ้าอยากได้ข้อมูลฐานข้อมูลเดิมเป๊ะๆ (ไม่ใช่แค่ schema+seed ใหม่) ต้อง <code>pg_dump</code>/<code>pg_restore</code> ไม่ใช่แค่ migration+seed</li>
+      <li>ถ้ารันคู่กับโฟลเดอร์เก่าที่ยังเปิดอยู่ ต้องปิดก่อนหรือเปลี่ยนพอร์ต ไม่งั้นชนพอร์ต 4000/3000/5433/6379</li>
+    </ul>
+  </section>
+
+  <section class="card" id="next">
+    <h2><span class="num">→</span>ขั้นต่อไป</h2>
+    <ol class="tight">
+      <li>Setup dev environment ในโฟลเดอร์ <code>C:\smartgov-repo</code> ให้รันได้ก่อน (ดูขั้นตอนข้างบน)</li>
+      <li>เริ่มลงมือทำตามแผน <a href="./rfq-water-billing-plan.html">rfq-water-billing-plan.html</a> — แนะนำเริ่มจาก Workstream 1 หรือ 5 (เล็กสุด ไม่พึ่งใคร)</li>
+      <li>ทดสอบทุก workstream ตามหัวข้อ "Verify" ในแผน + รัน <code>node scripts/smoke-saraban-v4.mjs</code> เช็คว่าไม่กระทบสารบรรณเดิม</li>
+      <li>ปิดงานด้วย checklist ปฏิบัติ (ตั้งค่าจริง/ทดสอบจริง/เอกสาร UAT) ในแผนเดียวกัน</li>
+    </ol>
+  </section>
+
+  <footer>SmartGov / Smart SAO — บันทึกภายในสำหรับติดตามงาน ไม่ใช่เอกสารส่งลูกค้า</footer>
+</div>
+</body>
+</html>
