@@ -2,7 +2,10 @@
 // ต้องซิงก์เมื่อแก้ข้อมูลในสองหน้านั้น (ตอนนี้เป็นเดโม่ ยังไม่มี backend)
 type StallStatus = 'available' | 'reserved' | 'occupied';
 interface StaffStall { id: string; row: string; status: StallStatus; tenantName?: string }
-interface StaffData { bills: Bill[]; stalls: StaffStall[] }
+interface StaffPlanRow { id: string; count: number; monthlyRate: number }
+interface StaffOutsideTenant { name: string; paid: boolean }
+interface StaffOutsideLocation { id: string; name: string; rentRate: number; rentPeriod: 'daily' | 'monthly'; enabled: boolean; deleted: boolean; tenants: StaffOutsideTenant[] }
+interface StaffData { bills: Bill[]; stalls: StaffStall[]; planRows: StaffPlanRow[]; rates: { stallWaste: number }; outsideLocations: StaffOutsideLocation[] }
 
 const STAFF_TENANTS: Record<string, string> = {
   A01:'นางสาวศิริพร ทองดี', A02:'นายประเสริฐ ศรีสุข', A03:'นางอำไพ บุญรอด', A04:'นายธนพล วงศ์ษา', A05:'นายบุญมี คำไหล',
@@ -15,6 +18,15 @@ const STAFF_RESERVED = new Set(['A04','B05','C08','D07','E04']);
 const STAFF_ROWS = ['A','B','C','D','E'];
 
 const DEMO: StaffData = {
+  planRows: [
+    { id: 'A', count: 10, monthlyRate: 1200 }, { id: 'B', count: 10, monthlyRate: 900 }, { id: 'C', count: 10, monthlyRate: 1500 },
+    { id: 'D', count: 10, monthlyRate: 1200 }, { id: 'E', count: 10, monthlyRate: 1050 },
+  ],
+  rates: { stallWaste: 30 },
+  outsideLocations: [
+    { id: 'LOC-01', name: 'ลานหน้าตลาด', rentRate: 500, rentPeriod: 'monthly', enabled: true, deleted: false, tenants: [{ name: 'นางบัวผัน เจริญสุข', paid: false }, { name: 'นายทองใบ ศรีสว่าง', paid: true }, { name: 'นางสาวลัดดา แก้วกาญจน์', paid: true }] },
+    { id: 'LOC-02', name: 'ลานชุมชน', rentRate: 80, rentPeriod: 'daily', enabled: true, deleted: false, tenants: [{ name: 'นางสาวรัตนา ฟ้าใส', paid: false }, { name: 'นายสุรชัย ทองคำ', paid: true }] },
+  ],
   stalls: STAFF_ROWS.flatMap(row => Array.from({ length: 10 }, (_, i) => {
     const id = `${row}${String(i + 1).padStart(2, '0')}`;
     const status: StaffStall['status'] = STAFF_OCCUPIED.has(id) ? 'occupied' : STAFF_RESERVED.has(id) ? 'reserved' : 'available';

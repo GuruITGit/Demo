@@ -338,6 +338,60 @@ function cancelCashPayment(ref) {
     toast('ยกเลิกเลขอ้างอิงแล้ว · เลือกวิธีจ่ายใหม่ได้');
     render();
 }
+// ราคาที่เจ้าหน้าที่ตั้งไว้ (ค่าเช่าแผงประจำรายแถว + ค่าขยะแผง) เก็บในเครื่องนี้ (localStorage) · หน้าประชาชนอ่านตอนเปิดหน้า
+// ค่าที่ไม่ถูกต้องจะถูกข้าม แล้วใช้ค่าตั้งต้นแทน · ยังไม่มี backend
+const MARKET_RATES_KEY = 'market:rates';
+function applyStoredRates(planRows, rates) {
+    try {
+        const raw = JSON.parse(localStorage.getItem(MARKET_RATES_KEY) || 'null');
+        if (!raw || typeof raw !== 'object')
+            return;
+        for (const row of planRows) {
+            const value = Number(raw.rows?.[row.id]);
+            if (Number.isFinite(value) && value >= 0)
+                row.monthlyRate = value;
+        }
+        const waste = Number(raw.stallWaste);
+        if (Number.isFinite(waste) && waste >= 0)
+            rates.stallWaste = waste;
+    }
+    catch { }
+}
+function saveStoredRates(planRows, rates) {
+    const rows = {};
+    for (const row of planRows)
+        rows[row.id] = Number(row.monthlyRate) || 0;
+    try {
+        localStorage.setItem(MARKET_RATES_KEY, JSON.stringify({ rows, stallWaste: rates.stallWaste }));
+    }
+    catch { }
+}
+// ไอคอนเส้นบางแบบเดียวกับแถบเมนูของหน้าประชาชน (viewBox 24 · stroke currentColor) — ไม่ใช้ emoji
+const STAFF_ICON_PATHS = {
+    overview: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+    stall: '<path d="M3 9h18l-1.5-5h-15z"/><path d="M5 9v11h14V9"/><path d="M9 20v-5h6v5"/>',
+    payment: '<rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6.5 9.5v5M17.5 9.5v5"/>',
+    map: '<path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/>',
+    tag: '<path d="M3 12V3h9l9 9-9 9z"/><circle cx="7.5" cy="7.5" r="1.5"/>',
+    plus: '<path d="M12 5v14M5 12h14"/>',
+    check: '<path d="M5 12.5 10 17 19 7"/>',
+    edit: '<path d="M4 20h4L19 9l-4-4L4 16z"/>',
+    trash: '<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>',
+    pause: '<path d="M9 6v12M15 6v12"/>',
+    play: '<path d="M8 5v14l11-7z"/>',
+    back: '<path d="m15 5-7 7 7 7"/>',
+    download: '<path d="M12 4v11M7 10l5 5 5-5M5 20h14"/>',
+    print: '<path d="M7 9V3h10v6M6 18H4v-7h16v7h-2M7 14h10v7H7z"/>',
+    qr: '<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM20 14v7h-4"/>',
+    queue: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+    search: '<circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/>',
+    house: '<path d="M3 11 12 3l9 8"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/>',
+};
+/** ไอคอนในปุ่มหรือแท็บ (aria-hidden เพราะข้อความอยู่ข้างๆ แล้ว) */
+function staffIcon(name, size = 18) {
+    const path = STAFF_ICON_PATHS[name] || '';
+    return `<span class="staff-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${path}</svg></span>`;
+}
 const STAFF_TENANTS = {
     A01: 'นางสาวศิริพร ทองดี', A02: 'นายประเสริฐ ศรีสุข', A03: 'นางอำไพ บุญรอด', A04: 'นายธนพล วงศ์ษา', A05: 'นายบุญมี คำไหล',
     A06: 'นางสมใจ ใจดี', A08: 'นางสาวกัญญา พิมพ์ดี', B02: 'นายวิทยา แซ่ลี้', B04: 'นางมะลิ แสงทอง', B05: 'นางสาวนภัส ใจงาม',
@@ -348,6 +402,15 @@ const STAFF_OCCUPIED = new Set(['A01', 'A02', 'A03', 'A05', 'A06', 'A08', 'B02',
 const STAFF_RESERVED = new Set(['A04', 'B05', 'C08', 'D07', 'E04']);
 const STAFF_ROWS = ['A', 'B', 'C', 'D', 'E'];
 const DEMO = {
+    planRows: [
+        { id: 'A', count: 10, monthlyRate: 1200 }, { id: 'B', count: 10, monthlyRate: 900 }, { id: 'C', count: 10, monthlyRate: 1500 },
+        { id: 'D', count: 10, monthlyRate: 1200 }, { id: 'E', count: 10, monthlyRate: 1050 },
+    ],
+    rates: { stallWaste: 30 },
+    outsideLocations: [
+        { id: 'LOC-01', name: 'ลานหน้าตลาด', rentRate: 500, rentPeriod: 'monthly', enabled: true, deleted: false, tenants: [{ name: 'นางบัวผัน เจริญสุข', paid: false }, { name: 'นายทองใบ ศรีสว่าง', paid: true }, { name: 'นางสาวลัดดา แก้วกาญจน์', paid: true }] },
+        { id: 'LOC-02', name: 'ลานชุมชน', rentRate: 80, rentPeriod: 'daily', enabled: true, deleted: false, tenants: [{ name: 'นางสาวรัตนา ฟ้าใส', paid: false }, { name: 'นายสุรชัย ทองคำ', paid: true }] },
+    ],
     stalls: STAFF_ROWS.flatMap(row => Array.from({ length: 10 }, (_, i) => {
         const id = `${row}${String(i + 1).padStart(2, '0')}`;
         const status = STAFF_OCCUPIED.has(id) ? 'occupied' : STAFF_RESERVED.has(id) ? 'reserved' : 'available';
@@ -406,9 +469,221 @@ const DEMO = {
         { id: 'INV-HH-2569-10-042', payerType: 'household', merchant: 'นายประยูร ทองดี', ref: 'HH-042', location: 'บ้านเลขที่ 12/3 หมู่ 2', houseNo: '12/3', moo: '2', phone: '0810000042', kind: 'ค่าขยะ', month: 'ตุลาคม 2569', due: '31 ต.ค. 2569', amount: 40, status: 'unpaid' },
     ],
 };
+// หน้าเจ้าหน้าที่ · แท็บ "พื้นที่และราคา" (เฉพาะค่าแผง): ตั้งราคาแผงประจำ/ค่าขยะแผง · จัดการพื้นที่แผงลอย (รายวัน/รายเดือน) และผู้เช่า
+// พื้นที่แผงลอยเก็บใช้คีย์เดียวกับหน้าประชาชน (lamplaimat:outside-locations) จึงแสดงผลทันทีในหน้าประชาชนบนเครื่องเดียวกัน
+const STAFF_LOCATIONS_KEY = 'lamplaimat:outside-locations';
+let staffEditLocId = null;
+function loadStaffLocations() {
+    try {
+        const value = JSON.parse(localStorage.getItem(STAFF_LOCATIONS_KEY) || 'null');
+        if (Array.isArray(value) && value.every(l => l && typeof l.id === 'string' && Array.isArray(l.tenants)))
+            return value;
+    }
+    catch { }
+    return DEMO.outsideLocations;
+}
+function saveStaffLocations() { try {
+    localStorage.setItem(STAFF_LOCATIONS_KEY, JSON.stringify(DEMO.outsideLocations));
+}
+catch { } }
+const locUnit = (p) => p === 'daily' ? 'วัน' : 'เดือน';
+const locPeriodLabel = (p) => p === 'daily' ? 'รายวัน' : 'รายเดือน';
+function nextLocId() {
+    const n = Math.max(0, ...DEMO.outsideLocations.map(l => Number(l.id.replace('LOC-', '')) || 0));
+    return `LOC-${String(n + 1).padStart(2, '0')}`;
+}
+function readLocForm(form) {
+    const fd = new FormData(form);
+    const name = String(fd.get('name') || '').trim().slice(0, 60);
+    const rate = Number(fd.get('rate'));
+    const period = fd.get('period') === 'daily' ? 'daily' : 'monthly';
+    return { name, rate, period, valid: name.length > 0 && Number.isFinite(rate) && rate >= 0 };
+}
+function locationFormFields(l) {
+    return `<label class="staff-field"><span>ชื่อพื้นที่</span><input name="name" maxlength="60" required value="${escapeHTML(l?.name || '')}"></label>
+    <label class="staff-field"><span>ค่าเช่า (บาท)</span><input name="rate" type="number" min="0" step="1" required value="${l ? l.rentRate : ''}"></label>
+    <label class="staff-field"><span>รอบการเช่า</span><select name="period"><option value="monthly" ${!l || l.rentPeriod === 'monthly' ? 'selected' : ''}>รายเดือน</option><option value="daily" ${l?.rentPeriod === 'daily' ? 'selected' : ''}>รายวัน</option></select></label>`;
+}
+// ---------- ราคาแผงประจำ ----------
+function saveStaffRates(e) {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const read = (name) => Number(form.elements.namedItem(name)?.value);
+    const values = [...DEMO.planRows.map(r => ({ row: r, value: read(r.id) })), { row: null, value: read('stallWaste') }];
+    if (values.some(v => !Number.isInteger(v.value) || v.value < 0 || v.value > 100000))
+        return toast('ราคาต้องเป็นจำนวนเต็มตั้งแต่ 0 ถึง 100,000 บาท');
+    for (const v of values) {
+        if (v.row)
+            v.row.monthlyRate = v.value;
+        else
+            DEMO.rates.stallWaste = v.value;
+    }
+    saveStoredRates(DEMO.planRows, DEMO.rates);
+    toast('บันทึกราคาแล้ว · มีผลกับบิลรอบถัดไป');
+    render();
+}
+// ---------- พื้นที่แผงลอย ----------
+function staffAddLocation(e) {
+    e.preventDefault();
+    const v = readLocForm(e.currentTarget);
+    if (!v.valid)
+        return toast('กรอกชื่อพื้นที่และค่าเช่าให้ถูกต้อง');
+    DEMO.outsideLocations.push({ id: nextLocId(), name: v.name, rentRate: v.rate, rentPeriod: v.period, enabled: true, deleted: false, tenants: [] });
+    saveStaffLocations();
+    toast('เพิ่มพื้นที่แผงลอยแล้ว');
+    render();
+}
+function staffEditLocation(e, id) {
+    e.preventDefault();
+    const l = DEMO.outsideLocations.find(x => x.id === id);
+    if (!l)
+        return;
+    const v = readLocForm(e.currentTarget);
+    if (!v.valid)
+        return toast('กรอกชื่อพื้นที่และค่าเช่าให้ถูกต้อง');
+    Object.assign(l, { name: v.name, rentRate: v.rate, rentPeriod: v.period });
+    staffEditLocId = null;
+    saveStaffLocations();
+    toast('บันทึกพื้นที่แล้ว');
+    render();
+}
+function staffToggleEdit(id) { staffEditLocId = staffEditLocId === id ? null : id; render(); }
+function staffToggleLocation(id) {
+    const l = DEMO.outsideLocations.find(x => x.id === id);
+    if (!l)
+        return;
+    l.enabled = !l.enabled;
+    saveStaffLocations();
+    toast(l.enabled ? 'เปิดให้เช่าแล้ว' : 'ปิดชั่วคราวแล้ว · ไม่แสดงให้ประชาชนเลือก');
+    render();
+}
+function staffDeleteLocation(id) {
+    const l = DEMO.outsideLocations.find(x => x.id === id);
+    if (!l)
+        return;
+    if (!window.confirm(`ลบ “${l.name}” ออกจากหน้าประชาชน ?`))
+        return;
+    l.deleted = true;
+    saveStaffLocations();
+    toast('ลบพื้นที่แล้ว');
+    render();
+}
+function staffAddTenant(e, id) {
+    e.preventDefault();
+    const l = DEMO.outsideLocations.find(x => x.id === id);
+    if (!l)
+        return;
+    const name = String(new FormData(e.currentTarget).get('name') || '').trim().slice(0, 100);
+    if (!name)
+        return toast('กรอกชื่อผู้เช่า');
+    l.tenants.push({ name, paid: false });
+    saveStaffLocations();
+    toast('เพิ่มผู้เช่าแล้ว');
+    render();
+}
+function staffToggleTenant(id, i) {
+    const t = DEMO.outsideLocations.find(x => x.id === id)?.tenants[i];
+    if (!t)
+        return;
+    t.paid = !t.paid;
+    saveStaffLocations();
+    render();
+}
+function staffRemoveTenant(id, i) {
+    const l = DEMO.outsideLocations.find(x => x.id === id);
+    const t = l?.tenants[i];
+    if (!l || !t)
+        return;
+    if (!window.confirm(`ลบ “${t.name}” ออกจากพื้นที่นี้ ?`))
+        return;
+    l.tenants.splice(i, 1);
+    saveStaffLocations();
+    render();
+}
+let staffLocSel = null;
+/** พื้นที่ที่เลือกดูอยู่ (ค่าเริ่มต้นคือพื้นที่แรกที่ยังไม่ถูกลบ) */
+function selectedLoc() {
+    const locs = DEMO.outsideLocations.filter(l => !l.deleted);
+    return locs.find(l => l.id === staffLocSel) ?? locs[0];
+}
+function staffSelectLoc(id) { staffLocSel = id; staffEditLocId = null; render(); }
+/** รายละเอียดของพื้นที่เดียว แบ่งเป็น 3 บล็อก: ข้อมูลพื้นที่ (แก้ไข) · ผู้เช่า · การเปิดให้เช่า/ลบ */
+function locationPanel(l) {
+    const unit = locUnit(l.rentPeriod);
+    const editing = staffEditLocId === l.id;
+    const tenants = l.tenants.map((t, i) => `<li><span>${escapeHTML(t.name)}</span><div class="staff-tenant-actions">
+      <button type="button" class="staff-pay ${t.paid ? 'on' : ''}" aria-pressed="${t.paid}" onclick="staffToggleTenant('${l.id}',${i})">${t.paid ? 'จ่ายแล้ว' : 'ค้างจ่าย'}</button>
+      <button type="button" class="staff-mini danger" aria-label="ลบ ${escapeHTML(t.name)}" onclick="staffRemoveTenant('${l.id}',${i})">${staffIcon('trash', 14)}</button></div></li>`).join('');
+    return `<section class="staff-panel staff-loc-panel ${l.enabled ? '' : 'is-off'}">
+    <div class="staff-loc-block">
+      <div class="staff-loc-title"><b>ข้อมูลพื้นที่</b><button type="button" class="staff-mini-btn" onclick="staffToggleEdit('${l.id}')">${staffIcon('edit', 14)}<span>${editing ? 'ปิดการแก้ไข' : 'แก้ไข'}</span></button></div>
+      ${editing
+        ? `<form class="staff-form staff-edit" onsubmit="staffEditLocation(event,'${l.id}')">${locationFormFields(l)}<button type="submit" class="staff-wide">บันทึกการแก้ไข</button></form>`
+        : `<div class="staff-stats">
+          <div><small>ค่าเช่า</small><b>${money(l.rentRate)} บาท</b><span>ต่อ${unit}</span></div>
+          <div><small>รอบการเช่า</small><b>${locPeriodLabel(l.rentPeriod)}</b><span>${l.tenants.length} ราย</span></div>
+          <div><small>สถานะ</small><b>${l.enabled ? 'เปิดให้เช่า' : 'ปิดชั่วคราว'}</b><span>${l.enabled ? 'รับผู้เช่าใหม่ได้' : 'ซ่อนจากประชาชน'}</span></div>
+        </div>`}
+    </div>
+    <div class="staff-loc-block">
+      <div class="staff-loc-title"><b>ผู้เช่า</b><span>${l.tenants.length} ราย</span></div>
+      ${l.tenants.length ? `<ul class="staff-tenants">${tenants}</ul>` : '<p class="staff-hint">ยังไม่มีผู้เช่า</p>'}
+      <form class="staff-inline" onsubmit="staffAddTenant(event,'${l.id}')"><input name="name" maxlength="100" placeholder="ชื่อผู้เช่าใหม่" required><button type="submit">${staffIcon('plus', 16)}<span>เพิ่มผู้เช่า</span></button></form>
+    </div>
+    <div class="staff-loc-block staff-loc-danger">
+      <div class="staff-loc-title"><b>การให้เช่า</b></div>
+      <div class="staff-loc-tools">
+        <button type="button" class="staff-mini-btn" onclick="staffToggleLocation('${l.id}')">${staffIcon(l.enabled ? 'pause' : 'play', 14)}<span>${l.enabled ? 'ปิดชั่วคราว' : 'เปิดให้เช่า'}</span></button>
+        <button type="button" class="staff-mini-btn danger" onclick="staffDeleteLocation('${l.id}')">${staffIcon('trash', 14)}<span>ลบพื้นที่</span></button>
+      </div>
+    </div>
+  </section>`;
+}
+/** เลือกพื้นที่ด้วยแท็บ แล้วดูรายละเอียดเฉพาะพื้นที่นั้น */
+function locationSection() {
+    const locs = DEMO.outsideLocations.filter(l => !l.deleted);
+    const cur = selectedLoc();
+    if (!cur)
+        return '<div class="staff-empty">ยังไม่มีพื้นที่แผงลอย</div>';
+    return `<div class="staff-locs" role="tablist" aria-label="เลือกพื้นที่แผงลอย">${locs.map(l => `<button type="button" role="tab" aria-selected="${l.id === cur.id}" class="${l.id === cur.id ? 'active' : ''}" onclick="staffSelectLoc('${l.id}')">${escapeHTML(l.name)}<small>${l.tenants.length} ราย · ${l.enabled ? 'เปิด' : 'ปิด'}</small></button>`).join('')}</div>${locationPanel(cur)}`;
+}
+let staffRatesView = 'menu';
+function setRatesView(v) { staffRatesView = v; staffEditLocId = null; render(); }
+/** หน้า "พื้นที่และราคา": เริ่มที่เมนูปุ่ม แล้วกดเข้าไปดูข้อมูลหรือกรอกฟอร์มทีละหัวข้อ */
+function ratesHTML() {
+    const stallCount = (row) => DEMO.stalls.filter(st => st.row === row).length;
+    const locs = DEMO.outsideLocations.filter(l => !l.deleted);
+    const tenants = locs.reduce((n, l) => n + l.tenants.length, 0);
+    const titles = {
+        menu: ['พื้นที่และราคา', 'เลือกหัวข้อที่ต้องการจัดการ'],
+        locations: ['พื้นที่แผงลอยนอกผัง', 'เลือกพื้นที่เพื่อดูผู้เช่าและแก้ไข'],
+        rates: ['ราคาแผงประจำ', 'มีผลกับบิลรอบถัดไป ยอดบิลที่ออกแล้วไม่เปลี่ยน'],
+        addLoc: ['เพิ่มพื้นที่แผงลอย', 'ตั้งชื่อ ค่าเช่า และรอบการเช่า'],
+    };
+    const [title, sub] = titles[staffRatesView];
+    const back = staffRatesView === 'menu' ? '' : `<button type="button" class="staff-back" onclick="setRatesView('menu')">${staffIcon('back', 16)}<span>กลับเมนูพื้นที่และราคา</span></button>`;
+    const menuBody = `<div class="staff-menu">
+    <button type="button" class="staff-menu-card" onclick="setRatesView('locations')"><span class="staff-menu-ico">${staffIcon('map', 22)}</span><div><b>พื้นที่แผงลอยนอกผัง</b><small>${locs.length} พื้นที่ · ${tenants} ผู้เช่า</small></div><span class="staff-menu-arrow" aria-hidden="true">›</span></button>
+    <button type="button" class="staff-menu-card" onclick="setRatesView('rates')"><span class="staff-menu-ico">${staffIcon('tag', 22)}</span><div><b>ราคาแผงประจำ</b><small>แถว A–E · ค่าขยะแผง ${DEMO.rates.stallWaste} บาท</small></div><span class="staff-menu-arrow" aria-hidden="true">›</span></button>
+    <button type="button" class="staff-menu-card" onclick="setRatesView('addLoc')"><span class="staff-menu-ico">${staffIcon('plus', 22)}</span><div><b>เพิ่มพื้นที่แผงลอย</b><small>สร้างพื้นที่ใหม่</small></div><span class="staff-menu-arrow" aria-hidden="true">›</span></button>
+  </div>`;
+    const rateBody = `<form class="staff-panel staff-form" onsubmit="saveStaffRates(event)">
+    <div class="staff-rate-grid">${DEMO.planRows.map(r => `<label class="staff-field"><span>แถว ${r.id} · ${stallCount(r.id)} แผง</span><input name="${r.id}" type="number" min="0" max="100000" step="1" required value="${r.monthlyRate}"></label>`).join('')}</div>
+    <label class="staff-field"><span>ค่าขยะแผง (บาท/เดือน)</span><input name="stallWaste" type="number" min="0" max="100000" step="1" required value="${DEMO.rates.stallWaste}"></label>
+    <button type="submit" class="staff-wide">บันทึกราคา</button>
+  </form>`;
+    const addBody = `<form class="staff-panel staff-form" onsubmit="staffAddLocation(event)">
+    ${locationFormFields()}
+    <button type="submit" class="staff-wide">เพิ่มพื้นที่</button>
+  </form>`;
+    const body = { menu: () => menuBody, locations: locationSection, rates: () => rateBody, addLoc: () => addBody };
+    return `${back}<div class="staff-head"><h1>${title}</h1><p>${sub}</p></div>${body[staffRatesView]()}`;
+}
 const STAFF_MODE = document.body.dataset.staff === 'waste' ? 'waste' : 'market';
 const STAFF_TITLE = STAFF_MODE === 'waste' ? 'ค่าเก็บขยะบ้าน' : 'ค่าแผงตลาด';
+const TAB_ICON = { overview: 'overview', manage: STAFF_MODE === 'market' ? 'stall' : 'house', payments: 'payment' };
 let staffTab = 'overview';
+let staffSub = 'plan';
 let staffPlanStall = null;
 const staffApp = document.getElementById('app');
 const inMode = (b) => STAFF_MODE === 'market' ? b.payerType === 'stall' : b.payerType === 'household';
@@ -439,10 +714,24 @@ function staffSetRef(ref, from, to) {
     toast(to === 'confirmed' ? 'บันทึกการรับเงินแล้ว' : 'ตีกลับ/ยกเลิกรายการแล้ว · ผู้จ่ายเห็นเป็นยังไม่ชำระ');
     render();
 }
-function setStaffTab(t) { staffTab = t; render(); window.scrollTo({ top: 0 }); }
+let staffPlanFilter = null;
+function openStallStatus(s) { staffTab = 'manage'; staffSub = 'plan'; staffPlanFilter = s; staffPlanStall = null; render(); window.scrollTo({ top: 0 }); }
+function setStallFilter(s) { staffPlanFilter = s; staffPlanStall = null; render(); }
+function setStaffTab(t) { staffTab = t; staffPlanFilter = null; staffSub = subsOf(t)[0]?.[0] ?? staffSub; render(); window.scrollTo({ top: 0 }); }
+function setStaffSub(s) { staffSub = s; render(); }
+/** เมนูย่อยของแต่ละหมวดหลัก */
+function subsOf(t) {
+    if (t === 'manage')
+        return STAFF_MODE === 'market' ? [['plan', 'ผังแผง'], ['rates', 'พื้นที่/ราคา'], ['qr', 'QR แผง']] : [['qr', 'QR บ้าน']];
+    if (t === 'payments') {
+        const n = staffGroups('pending').length + staffGroups('cash').length;
+        return [['queue', n ? `รอตรวจ (${n})` : 'รอตรวจ'], ['dues', 'ค้างชำระ']];
+    }
+    return [];
+}
 function pickStaffStall(id) { staffPlanStall = staffPlanStall === id ? null : id; render(); }
-function staffMetric(label, value, sub, tone = '') {
-    return `<div class="staff-metric ${tone}"><small>${label}</small><b>${value}</b><span>${sub}</span></div>`;
+function staffMetric(label, value, sub, icon, tone = '') {
+    return `<div class="staff-metric ${tone}"><div class="staff-metric-top"><small>${label}</small><span class="staff-metric-ico">${staffIcon(icon, 16)}</span></div><b>${value}</b><span>${sub}</span></div>`;
 }
 function overviewHTML() {
     const due = DEMO.bills.filter(staffIsOpen);
@@ -455,17 +744,21 @@ function overviewHTML() {
     const countStall = (s) => DEMO.stalls.filter(x => x.status === s).length;
     const stallChips = STAFF_MODE === 'market'
         ? `<div class="staff-panel"><div class="staff-panel-head"><b>สถานะผังแผง</b><span>${DEMO.stalls.length} ช่อง</span></div>
-      <div class="staff-chips"><span class="staff-chip occupied">เช่า ${countStall('occupied')}</span><span class="staff-chip reserved">จอง ${countStall('reserved')}</span><span class="staff-chip available">ว่าง ${countStall('available')}</span></div></div>`
+      <div class="staff-chips"><button type="button" class="staff-chip occupied" onclick="openStallStatus('occupied')">เช่า ${countStall('occupied')} ›</button><button type="button" class="staff-chip reserved" onclick="openStallStatus('reserved')">จอง ${countStall('reserved')} ›</button><button type="button" class="staff-chip available" onclick="openStallStatus('available')">ว่าง ${countStall('available')} ›</button></div></div>`
         : '';
-    return `<div class="staff-head"><h1>ภาพรวม${STAFF_TITLE}</h1><p>ข้อมูลตัวอย่าง</p></div>
+    return `<div class="staff-head"><h1>ภาพรวม · ${STAFF_TITLE}</h1><p>ข้อมูลตัวอย่าง</p></div>
+  <div class="staff-ov">
+  <section class="staff-ov-main">${duesSearchHTML(true)}</section>
+  <aside class="staff-ov-side">
   <div class="staff-metrics">
-    ${staffMetric('ยอดค้างทั้งหมด', `${money(dueTotal)} บาท`, `${dueCount} ราย`)}
-    ${staffMetric('รอตรวจสลิป', `${pend.length} รายการ`, `${money(pend.reduce((n, g) => n + g.total, 0))} บาท`, 'tone-warn')}
-    ${staffMetric('รอรับเงินสด', `${cash.length} รายการ`, `${money(cash.reduce((n, g) => n + g.total, 0))} บาท`, 'tone-info')}
-    ${staffMetric('ชำระแล้ว', `${money(paid)} บาท`, 'ยืนยันแล้ว')}
+    ${staffMetric('ยอดค้างทั้งหมด', `${money(dueTotal)} บาท`, `${dueCount} ราย`, 'tag')}
+    ${staffMetric('รอตรวจสลิป', `${pend.length} รายการ`, `${money(pend.reduce((n, g) => n + g.total, 0))} บาท`, 'queue', 'tone-warn')}
+    ${staffMetric('รอรับเงินสด', `${cash.length} รายการ`, `${money(cash.reduce((n, g) => n + g.total, 0))} บาท`, 'payment', 'tone-info')}
+    ${staffMetric('ชำระแล้ว', `${money(paid)} บาท`, 'ยืนยันแล้ว', 'check')}
   </div>
   ${stallChips}
-  <button type="button" class="staff-link" onclick="setStaffTab('queue')">ไปตรวจรายการรอดำเนินการ ›</button>`;
+  <button type="button" class="staff-go" onclick="setStaffTab('payments')"><span class="staff-go-label">${staffIcon('queue', 18)}<span>ไปตรวจสอบการชำระ</span></span><span aria-hidden="true">›</span></button>
+  </aside></div>`;
 }
 function queueCard(g, kind) {
     const first = g.bills[0];
@@ -474,8 +767,8 @@ function queueCard(g, kind) {
         ? `ส่งเมื่อ ${staffTime(g.rec?.at)} · ${escapeHTML(g.rec?.slipName || 'ไม่มีไฟล์สลิป (ข้อมูลตัวอย่าง)')}`
         : `เลขอ้างอิง ${escapeHTML(g.rec?.ref || '—')} · ${staffTime(g.rec?.at)}`;
     const actions = kind === 'pending'
-        ? `<button type="button" class="secondary" onclick="staffSetRef('${ref}','pending','unpaid')">ตีกลับ</button><button type="button" onclick="staffSetRef('${ref}','pending','confirmed')">ยืนยันรับเงิน</button>`
-        : `<button type="button" class="secondary" onclick="staffSetRef('${ref}','cash','unpaid')">ยกเลิกเลขอ้างอิง</button><button type="button" onclick="staffSetRef('${ref}','cash','confirmed')">รับเงินแล้ว</button>`;
+        ? `<button type="button" class="secondary" onclick="staffSetRef('${ref}','pending','unpaid')">ตีกลับ</button><button type="button" onclick="staffSetRef('${ref}','pending','confirmed')">${staffIcon('check', 16)}<span>ยืนยันรับเงิน</span></button>`
+        : `<button type="button" class="secondary" onclick="staffSetRef('${ref}','cash','unpaid')">ยกเลิกเลขอ้างอิง</button><button type="button" onclick="staffSetRef('${ref}','cash','confirmed')">${staffIcon('check', 16)}<span>รับเงินแล้ว</span></button>`;
     return `<article class="staff-card">
     <div class="staff-card-head"><div><b>${escapeHTML(first.merchant)}</b><small>${escapeHTML(staffPlace(first))} · ${ref}</small></div><b class="staff-amount">${money(g.total)} บาท</b></div>
     <ul class="staff-lines">${g.bills.map(b => `<li><span>${escapeHTML(b.month)} · ${escapeHTML(b.kind)}</span><b>${money(b.amount)}</b></li>`).join('')}</ul>
@@ -492,29 +785,142 @@ function queueHTML() {
   <h2 class="staff-section">เงินสดรอรับ <span>${cash.length}</span></h2>
   ${cash.length ? cash.map(g => queueCard(g, 'cash')).join('') : '<div class="staff-empty">ไม่มีรายการรอรับเงินสด</div>'}`;
 }
-function duesHTML() {
-    const open = DEMO.bills.filter(staffIsOpen);
+let staffDuesQ = '';
+/** ผู้จ่ายที่มียอดเปิดอยู่ แยกตามรายการเดียวกัน (ref) เรียงตามยอดค้างมากสุดก่อน */
+/** ป้ายชื่อรายการ: ค่าขยะของแผงกับค่าขยะบ้านแยกกันชัดเจน */
+const kindLabel = (b) => b.kind.includes('ขยะ') ? (b.payerType === 'household' ? 'ค่าขยะบ้าน' : 'ค่าขยะแผง') : b.kind;
+/** ผู้จ่ายที่มียอดเปิดอยู่ · all = ทุกหมวด (ค่าแผงและค่าขยะบ้าน) ใช้กับการค้นหา */
+function duesRows(all = false) {
+    const open = DEMO.bills.filter(b => (all || inMode(b)) && (PAYABLE.includes(b.status) || b.status === 'pending' || b.status === 'cash'));
     const refs = [...new Set(open.map(b => b.ref))];
-    const rows = refs.map(ref => {
+    return refs.map(ref => {
         const bills = open.filter(b => b.ref === ref);
         const due = bills.filter(b => PAYABLE.includes(b.status)).reduce((n, b) => n + b.amount, 0);
         const months = [...new Set(bills.map(b => b.month))];
         const pending = bills.some(b => b.status === 'pending' || b.status === 'cash');
-        return { ref, first: bills[0], due, months, pending };
+        const haystack = [bills[0].merchant, staffPlace(bills[0]), bills[0].houseNo, bills[0].moo, ref, ...bills.map(b => `${b.month} ${b.kind} ${kindLabel(b)}`)].join(' ').toLowerCase();
+        return { ref, first: bills[0], bills, due, months, pending, haystack };
     }).sort((a, b) => b.due - a.due);
+}
+/** ผลค้นหา: ทุกรายการที่ค้างของผู้จ่ายที่ตรงกับคำค้น · ไม่พิมพ์อะไร = รายชื่อแบบย่อ */
+function duesListHTML(showAll = true) {
+    const q = staffDuesQ.trim().toLowerCase();
+    if (q) {
+        const found = duesRows(true).filter(r => r.haystack.includes(q));
+        if (!found.length)
+            return `<div class="staff-empty">ไม่พบ “${escapeHTML(staffDuesQ.trim())}” ในรายการค้างชำระ</div>`;
+        return found.map(r => `<article class="staff-card">
+      <div class="staff-card-head"><div><b>${escapeHTML(r.first.merchant)}</b><small>${escapeHTML(staffPlace(r.first))} · ${escapeHTML(r.ref)}</small></div><b class="staff-amount">${money(r.due)} บาท</b></div>
+      <ul class="staff-lines">${r.bills.map(b => `<li><span>${escapeHTML(kindLabel(b))} · ${escapeHTML(b.month)}<small class="staff-line-status">${statusText[b.status] || b.status}</small></span><b>${money(b.amount)}</b></li>`).join('')}</ul>
+      <div class="staff-actions one"><button type="button" onclick="staffOpenDetail('${escapeHTML(r.ref)}')">${staffIcon('payment', 16)}<span>รายละเอียดและรับชำระ</span></button></div>
+    </article>`).join('');
+    }
+    if (!showAll)
+        return '<div class="staff-empty staff-empty-home">ผลการค้นหาจะแสดงที่นี่</div>';
+    const rows = duesRows();
+    if (!rows.length)
+        return '<div class="staff-empty">ไม่มียอดค้าง</div>';
+    return `<div class="staff-panel staff-table">${rows.map(r => `<button type="button" class="staff-hit" onclick="staffOpenDetail('${escapeHTML(r.ref)}')">
+      <span class="staff-hit-main"><b>${escapeHTML(r.first.merchant)}</b><small>${escapeHTML(staffPlace(r.first))} · ${escapeHTML(r.ref)}</small><small>${escapeHTML(r.months.join(' · '))}</small></span>
+      <span class="staff-hit-end"><b>${money(r.due)} บาท</b>${r.pending ? '<span class="staff-chip reserved">รอตรวจ/รับเงิน</span>' : ''}</span>
+      <span class="staff-hit-go" aria-hidden="true">›</span>
+    </button>`).join('')}</div>`;
+}
+const METHOD_TEXT = { qr: 'สแกน QR', app: 'แอปธนาคาร', cash: 'เงินสด' };
+/** รายละเอียดของผู้จ่ายหนึ่งราย: ทุกรายการที่ค้าง สถานะ ข้อมูลการชำระล่าสุด และปุ่มรับเงิน/ตีกลับตามสถานะ */
+/** รับเงินที่เทศบาลแทนผู้จ่าย (เงินสด หรือสแกน QR แล้วโอนเข้า): รายการที่ค้างทั้งหมดของผู้จ่ายนี้ → ชำระแล้ว */
+function staffCollectCounter(ref, method) {
+    const all = loadPaymentRecords();
+    const now = new Date().toISOString();
+    const open = DEMO.bills.filter(b => b.ref === ref && PAYABLE.includes(b.status));
+    const total = open.reduce((n, b) => n + b.amount, 0);
+    const prefix = method === 'cash' ? 'CSH' : 'CQR';
+    for (const b of open) {
+        all[b.id] = { status: 'confirmed', method, ref: `${prefix}-${b.id.slice(-6)}`, at: now, amount: b.amount };
+        b.status = 'confirmed';
+    }
+    writePaymentRecords(all);
+    modal.close();
+    toast(`รับเงิน${method === 'cash' ? 'สด' : 'ทางสแกน QR'} ${money(total)} บาท ที่เทศบาลแล้ว`);
+    render();
+}
+function staffDetailHTML(ref, step = 'menu') {
+    const bills = DEMO.bills.filter(b => b.ref === ref);
+    if (!bills.length)
+        return '';
+    const first = bills[0];
+    const due = bills.filter(b => PAYABLE.includes(b.status)).reduce((n, b) => n + b.amount, 0);
+    const pending = bills.some(b => b.status === 'pending');
+    const cash = bills.some(b => b.status === 'cash');
+    const rec = paymentRecordFor(first.id);
+    const r = escapeHTML(ref);
+    const back = `<button type="button" class="secondary" onclick="staffOpenDetail('${r}')">ย้อนกลับ</button>`;
+    const counter = due <= 0 ? '' : step === 'cash'
+        ? `${back}<button type="button" onclick="staffCollectCounter('${r}','cash')">${staffIcon('check', 16)}<span>ยืนยันรับเงินสด</span></button>`
+        : step === 'scan'
+            ? `${back}<button type="button" onclick="staffCollectCounter('${r}','qr')">${staffIcon('check', 16)}<span>ยืนยันโอนแล้ว</span></button>`
+            : `<button type="button" class="secondary" onclick="staffOpenDetail('${r}','cash')">${staffIcon('payment', 16)}<span>รับเงินสด</span></button>${hasPromptpay() ? `<button type="button" onclick="staffOpenDetail('${r}','scan')">${staffIcon('qr', 16)}<span>สแกนจ่าย</span></button>` : ''}`;
+    const scanBlock = step === 'scan' && due > 0
+        ? `<div class="pay-qr staff-counter-qr">${qrSvg(promptpayPayload(PAYMENT.promptpayId, due, PAYMENT.promptpayType), 'QR พร้อมเพย์ ยอด ' + money(due) + ' บาท')}<b>${money(due)} บาท</b><small>ให้ผู้จ่ายสแกนด้วยแอปธนาคาร · โอนเข้า ${escapeHTML(PAYMENT.payeeName)}</small></div>`
+        : '';
+    const actions = [
+        counter,
+        pending ? `<button type="button" class="secondary" onclick="modal.close();staffSetRef('${r}','pending','unpaid')">ตีกลับ</button><button type="button" onclick="modal.close();staffSetRef('${r}','pending','confirmed')">${staffIcon('check', 16)}<span>ยืนยันรับเงิน</span></button>` : '',
+        cash ? `<button type="button" class="secondary" onclick="modal.close();staffSetRef('${r}','cash','unpaid')">ยกเลิกเลขอ้างอิง</button><button type="button" onclick="modal.close();staffSetRef('${r}','cash','confirmed')">${staffIcon('check', 16)}<span>รับเงินแล้ว</span></button>` : '',
+    ].join('');
+    return `<div class="modal-inner"><div class="modal-top pay-top"><button type="button" class="pay-back" onclick="modal.close()">‹ กลับ</button><h2 id="modalTitle">${escapeHTML(first.merchant)}</h2><span></span></div>
+  <div class="modal-body staff-detail">
+    <small class="staff-meta">${escapeHTML(staffPlace(first))} · ${r}</small>
+    <ul class="staff-lines">${bills.map(b => `<li><span>${escapeHTML(kindLabel(b))} · ${escapeHTML(b.month)}<small class="staff-line-status">${statusText[b.status] || b.status}</small></span><b>${money(b.amount)}</b></li>`).join('')}</ul>
+    <div class="staff-detail-total"><span>ยอดค้างรวม</span><b>${money(due)} บาท</b></div>
+    ${scanBlock}
+    ${rec ? `<p class="staff-meta">ช่องทาง ${escapeHTML(METHOD_TEXT[rec.method] || rec.method)} · ${staffTime(rec.at)}${rec.ref ? ` · อ้างอิง ${escapeHTML(rec.ref)}` : ''}${rec.slipName ? ` · ${escapeHTML(rec.slipName)}` : ''}</p>` : ''}
+  </div>${actions ? `<div class="modal-actions staff-actions">${actions}</div>` : ''}</div>`;
+}
+function staffOpenDetail(ref, step = 'menu') {
+    const html = staffDetailHTML(ref, step);
+    if (!html)
+        return;
+    modalContent.innerHTML = html;
+    // มือถือ: เต็มจอ · คอม: กล่องกลางจอที่เห็นข้อมูลครบโดยไม่ต้องเลื่อน
+    const wide = window.matchMedia('(min-width: 900px)').matches;
+    modal.classList.toggle('pay-full', !wide);
+    modal.classList.toggle('staff-dlg', wide);
+    if (!modal.open)
+        modal.showModal();
+}
+/** พิมพ์ค้นหาแล้วอัปเดตเฉพาะรายการ (ไม่ render ทั้งหน้า จึงไม่หลุดโฟกัสช่องค้นหา) */
+function staffDuesSearch(v) {
+    staffDuesQ = v;
+    const list = document.getElementById('dues-list');
+    if (list)
+        list.innerHTML = duesListHTML(list.dataset.home !== '1');
+    const hint = document.getElementById('dues-hint');
+    if (hint)
+        hint.textContent = duesHintText();
+}
+function duesHintText() {
+    return staffDuesQ.trim() ? 'แสดงรายการค้างทั้งหมดของผู้ที่ตรงกับคำค้น' : 'พิมพ์ชื่อ แผง หรือบ้านเลขที่ เพื่อดูว่าค้างค่าอะไรบ้าง';
+}
+/** ช่องค้นหา + ผลลัพธ์ ใช้ทั้งหน้าภาพรวมและหน้ายอดค้างชำระ (home = หน้าภาพรวม ไม่แสดงรายการก่อนพิมพ์) */
+function duesSearchHTML(home = false) {
+    return `<label class="staff-search">${staffIcon('search', 18)}<input type="search" value="${escapeHTML(staffDuesQ)}" placeholder="ค้นหาชื่อ เลขแผง หรือบ้านเลขที่" autocomplete="off" oninput="staffDuesSearch(this.value)" aria-label="ค้นหายอดค้างชำระ"></label>
+  <p class="staff-hint staff-search-hint" id="dues-hint">${duesHintText()}</p>
+  <div id="dues-list" data-home="${home ? 1 : 0}">${duesListHTML(!home)}</div>`;
+}
+function duesHTML() {
+    const rows = duesRows();
     const total = rows.reduce((n, r) => n + r.due, 0);
     return `<div class="staff-head"><h1>ยอดค้างชำระ</h1><p>${rows.length} ราย · รวม ${money(total)} บาท</p></div>
-  <div class="staff-panel staff-table">
-    ${rows.length ? rows.map(r => `<div class="staff-row">
-      <div><b>${escapeHTML(r.first.merchant)}</b><small>${escapeHTML(staffPlace(r.first))}</small><small>${escapeHTML(r.months.join(' · '))}</small></div>
-      <div class="staff-row-end"><b>${money(r.due)} บาท</b>${r.pending ? '<span class="staff-chip reserved">รอตรวจ/รับเงิน</span>' : ''}</div>
-    </div>`).join('') : '<div class="staff-empty">ไม่มียอดค้าง</div>'}
-  </div>`;
+  ${duesSearchHTML()}`;
 }
 function planHTML() {
+    const filters = [[null, 'ทั้งหมด'], ['occupied', 'เช่า'], ['reserved', 'จอง'], ['available', 'ว่าง']];
+    const filterBar = `<div class="staff-filter-row">${filters.map(([v, l]) => `<button type="button" class="${staffPlanFilter === v ? 'active' : ''}" onclick="setStallFilter(${v ? `'${v}'` : 'null'})">${l}</button>`).join('')}</div>`;
     const sel = staffPlanStall ? DEMO.stalls.find(s => s.id === staffPlanStall) : undefined;
     const label = { available: 'ว่าง', reserved: 'จอง', occupied: 'เช่า' };
-    const rows = [...new Set(DEMO.stalls.map(s => s.row))];
+    const shown = staffPlanFilter ? DEMO.stalls.filter(s => s.status === staffPlanFilter) : DEMO.stalls;
+    const rows = [...new Set(shown.map(s => s.row))];
     const detail = (() => {
         if (!sel)
             return '<p class="staff-hint">แตะแผงเพื่อดูผู้เช่าและยอดค้าง</p>';
@@ -523,9 +929,9 @@ function planHTML() {
         return `<div class="staff-card-head"><div><b>แผง ${sel.id}</b><small>${label[sel.status]}${sel.tenantName ? ` · ${escapeHTML(sel.tenantName)}` : ''}</small></div><b class="staff-amount">${money(total)} บาท</b></div>
       ${due.length ? `<ul class="staff-lines">${due.map(b => `<li><span>${escapeHTML(b.month)} · ${escapeHTML(b.kind)} · ${escapeHTML(statusText[b.status])}</span><b>${money(b.amount)}</b></li>`).join('')}</ul>` : '<p class="staff-hint">ไม่มียอดค้าง</p>'}`;
     })();
-    return `<div class="staff-head"><h1>ผังแผง</h1><p>สถานะแผงและยอดค้างรายแผง</p></div>
-  <div class="staff-legend"><span><i class="lg-available"></i>ว่าง</span><span><i class="lg-reserved"></i>จอง</span><span><i class="lg-occupied"></i>เช่า</span></div>
-  <div class="staff-plan">${rows.map(row => `<section class="staff-plan-row"><b>แถว ${row}</b><div class="staff-plan-grid">${DEMO.stalls.filter(s => s.row === row).map(s => `<button type="button" class="staff-stall ${s.status} ${staffPlanStall === s.id ? 'selected' : ''}" aria-label="แผง ${s.id} ${label[s.status]}" onclick="pickStaffStall('${s.id}')">${s.id}</button>`).join('')}</div></section>`).join('')}</div>
+    return `${staffPlanFilter ? `<button type="button" class="staff-back" onclick="setStaffTab('overview')">${staffIcon('back', 16)}<span>กลับภาพรวม</span></button>` : ''}<div class="staff-head"><h1>ผังแผง</h1><p>สถานะแผงและยอดค้างรายแผง</p></div>
+  ${filterBar}<div class="staff-legend"><span><i class="lg-available"></i>ว่าง</span><span><i class="lg-reserved"></i>จอง</span><span><i class="lg-occupied"></i>เช่า</span></div>
+  <div class="staff-plan">${rows.map(row => `<section class="staff-plan-row"><b>แถว ${row}</b><div class="staff-plan-grid">${shown.filter(s => s.row === row).map(s => `<button type="button" class="staff-stall ${s.status} ${staffPlanStall === s.id ? 'selected' : ''}" aria-label="แผง ${s.id} ${label[s.status]}" onclick="pickStaffStall('${s.id}')">${s.id}</button>`).join('')}</div></section>`).join('')}</div>
   <div class="staff-panel staff-detail">${detail}</div>`;
 }
 // ---------- QR ประจำแผง/บ้าน ----------
@@ -543,11 +949,11 @@ function qrHTML() {
     const heading = STAFF_MODE === 'market' ? 'QR ประจำแผง' : 'QR ประจำบ้าน';
     const hint = STAFF_MODE === 'market' ? 'ติดหน้าแผง ประชาชนสแกนเพื่อดูยอดค้างของแผงนั้น' : 'ติดหน้าบ้าน ประชาชนสแกนเพื่อดูค่าขยะของบ้านนั้น';
     return `<div class="staff-head"><h1>${heading}</h1><p>${hint}</p></div>
-  <div class="staff-toolbar"><span>${items.length} ดวง</span><button type="button" onclick="printStaffQr()">พิมพ์ทั้งหมด</button></div>
+  <div class="staff-toolbar"><span>${items.length} ดวง</span><button type="button" onclick="printStaffQr()">${staffIcon('print', 16)}<span>พิมพ์ทั้งหมด</span></button></div>
   <div class="staff-qr-grid">${items.map(i => `<article class="staff-qr-card">
     <div class="staff-qr">${qrSvg(qrText(i.code), i.title)}</div>
     <b>${escapeHTML(i.code)}</b><small>${escapeHTML(i.sub)}</small>
-    <button type="button" class="secondary" onclick="saveStaffQr('${escapeHTML(i.code)}','${escapeHTML(i.title)}','${escapeHTML(i.sub)}')">บันทึกรูป</button>
+    <button type="button" class="secondary" onclick="saveStaffQr('${escapeHTML(i.code)}','${escapeHTML(i.title)}','${escapeHTML(i.sub)}')">${staffIcon('download', 16)}<span>บันทึกรูป</span></button>
   </article>`).join('')}</div>`;
 }
 /** ภาพ PNG ของ QR พร้อมหัวข้อ (ไม่มีชื่อบัญชีรับเงิน เพราะเป็น QR ประจำที่ ไม่ใช่ QR โอนเงิน) */
@@ -609,14 +1015,17 @@ function render() {
     const pending = staffGroups('pending').length + staffGroups('cash').length;
     const tabs = [
         ['overview', 'ภาพรวม', ''],
-        ['queue', 'รอตรวจ', pending ? `<span class="staff-badge">${pending}</span>` : ''],
-        ['dues', 'ค้างชำระ', ''],
-        ...(STAFF_MODE === 'market' ? [['plan', 'ผังแผง', '']] : []),
-        ['qr', STAFF_MODE === 'market' ? 'QR แผง' : 'QR บ้าน', ''],
+        ['manage', STAFF_MODE === 'market' ? 'จัดการแผง' : 'จัดการบ้าน', ''],
+        ['payments', 'ตรวจชำระ', pending ? `<span class="staff-badge">${pending}</span>` : ''],
     ];
-    const view = { overview: overviewHTML, queue: queueHTML, dues: duesHTML, plan: planHTML, qr: qrHTML };
-    const body = view[staffTab]();
-    staffApp.innerHTML = `<nav class="staff-tabs" aria-label="เมนูเจ้าหน้าที่" style="grid-template-columns:repeat(${tabs.length},minmax(0,1fr))">${tabs.map(([t, label, badge]) => `<button type="button" class="${staffTab === t ? 'active' : ''}" aria-current="${staffTab === t}" onclick="setStaffTab('${t}')">${label}${badge}</button>`).join('')}</nav>${body}
+    const subs = subsOf(staffTab);
+    const sub = subs.find(([s]) => s === staffSub)?.[0] ?? subs[0]?.[0];
+    const views = { plan: planHTML, rates: ratesHTML, qr: qrHTML, queue: queueHTML, dues: duesHTML };
+    const body = staffTab === 'overview' ? overviewHTML() : views[sub]();
+    const subNav = subs.length > 1
+        ? `<nav class="staff-subtabs" aria-label="เมนูย่อย">${subs.map(([v, label]) => `<button type="button" class="${sub === v ? 'active' : ''}" aria-current="${sub === v}" onclick="setStaffSub('${v}')">${label}</button>`).join('')}</nav>`
+        : '';
+    staffApp.innerHTML = `<nav class="staff-tabs" aria-label="เมนูเจ้าหน้าที่" style="grid-template-columns:repeat(3,minmax(0,1fr))">${tabs.map(([t, label, badge]) => `<button type="button" class="${staffTab === t ? 'active' : ''}" aria-current="${staffTab === t}" onclick="setStaffTab('${t}')">${staffIcon(TAB_ICON[t])}<span>${label}</span>${badge}</button>`).join('')}</nav>${subNav}${body}
   <p class="help staff-foot">ระบบสาธิต · ข้อมูลและสถานะบันทึกเฉพาะเบราว์เซอร์นี้</p>`;
 }
 applySavedPayments();

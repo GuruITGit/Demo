@@ -10,5 +10,5 @@
     "strict": false,
     "noEmitOnError": true
   },
-  "files": ["../shared/bills.ts", "../shared/payment-config.ts", "../shared/payment.ts", "data.ts", "app.ts"]
+  "files": ["../shared/bills.ts", "../shared/payment-config.ts", "../shared/payment.ts", "../shared/market-rates.ts", "icons.ts", "data.ts", "rates.ts", "app.ts"]
 }

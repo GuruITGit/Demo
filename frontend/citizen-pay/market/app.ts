@@ -6,6 +6,7 @@ function validOutsideLocations(value:unknown):value is OutsideLocation[]{return 
 function loadOutsideLocations(){try{const stored=localStorage.getItem('lamplaimat:outside-locations');if(stored){const value:unknown=JSON.parse(stored);if(validOutsideLocations(value))return value}}catch{}return DEMO.outsideLocations}
 function saveOutsideLocations(){try{localStorage.setItem('lamplaimat:outside-locations',JSON.stringify(DEMO.outsideLocations))}catch{}}
 DEMO.outsideLocations=loadOutsideLocations();
+applyStoredRates(DEMO.planRows,DEMO.rates);
 const savedPageState=(()=>{try{const savedView=sessionStorage.getItem('demo:view');const savedArea=sessionStorage.getItem('demo:stallArea');const savedStall=sessionStorage.getItem('demo:selectedStall');const validViews=['dues','stalls','signup'];return{view:location.hash==='#dues'?'dues':validViews.includes(savedView||'')?savedView!:'dues',stallArea:savedArea==='outside'?'outside':'regular',paymentMap:sessionStorage.getItem('demo:paymentMap')==='1',selectedStall:savedStall&&DEMO.stalls.some(s=>s.id===savedStall)?savedStall:null}}catch{return{view:'dues',stallArea:'regular',paymentMap:false,selectedStall:null}}})();
 let view=savedPageState.view, zone = 'A', stallArea=savedPageState.stallArea, selectedStall = savedPageState.selectedStall, signupStallId = null, selectedOutsideLocationId = 'LOC-01';
 let paymentMapMode=savedPageState.paymentMap;

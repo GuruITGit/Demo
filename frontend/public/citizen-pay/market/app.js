@@ -425,6 +425,34 @@ catch {
         modal.showModal();
 } }
 modal.addEventListener('close', stopQrCamera);
+// ราคาที่เจ้าหน้าที่ตั้งไว้ (ค่าเช่าแผงประจำรายแถว + ค่าขยะแผง) เก็บในเครื่องนี้ (localStorage) · หน้าประชาชนอ่านตอนเปิดหน้า
+// ค่าที่ไม่ถูกต้องจะถูกข้าม แล้วใช้ค่าตั้งต้นแทน · ยังไม่มี backend
+const MARKET_RATES_KEY = 'market:rates';
+function applyStoredRates(planRows, rates) {
+    try {
+        const raw = JSON.parse(localStorage.getItem(MARKET_RATES_KEY) || 'null');
+        if (!raw || typeof raw !== 'object')
+            return;
+        for (const row of planRows) {
+            const value = Number(raw.rows?.[row.id]);
+            if (Number.isFinite(value) && value >= 0)
+                row.monthlyRate = value;
+        }
+        const waste = Number(raw.stallWaste);
+        if (Number.isFinite(waste) && waste >= 0)
+            rates.stallWaste = waste;
+    }
+    catch { }
+}
+function saveStoredRates(planRows, rates) {
+    const rows = {};
+    for (const row of planRows)
+        rows[row.id] = Number(row.monthlyRate) || 0;
+    try {
+        localStorage.setItem(MARKET_RATES_KEY, JSON.stringify({ rows, stallWaste: rates.stallWaste }));
+    }
+    catch { }
+}
 const MARKET_PLAN = ['A', 'B', 'C', 'D', 'E'].map((id, index) => ({ id, count: 10, monthlyRate: [1200, 900, 1500, 1200, 1050][index] }));
 // ข้อมูลจำลอง: ผู้เช่า/ผู้จองของแต่ละล็อก (ชื่อสมมติ ไม่ใช่ข้อมูลจริง)
 const TENANT_BY_STALL = {
@@ -557,6 +585,7 @@ function saveOutsideLocations() { try {
 }
 catch { } }
 DEMO.outsideLocations = loadOutsideLocations();
+applyStoredRates(DEMO.planRows, DEMO.rates);
 const savedPageState = (() => { try {
     const savedView = sessionStorage.getItem('demo:view');
     const savedArea = sessionStorage.getItem('demo:stallArea');

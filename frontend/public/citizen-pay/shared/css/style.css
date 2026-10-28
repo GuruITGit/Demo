@@ -132,7 +132,7 @@
 .location-manager{padding:0;overflow:hidden}.location-manager-toggle{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:64px;padding:14px 16px;cursor:pointer;list-style:none}.location-manager-toggle::-webkit-details-marker{display:none}.location-manager-toggle>span:first-child{min-width:0}.location-manager-toggle b,.location-manager-toggle small{display:block}.location-manager-toggle b{font-size:14px}.location-manager-toggle small{margin-top:3px;color:var(--muted);font-size:11px}.manager-chevron{display:grid;place-items:center;width:30px;height:30px;flex:0 0 30px;border:1px solid #dce8f6;border-radius:50%;color:var(--blue,#2672c9);font-size:19px;transition:transform .2s}.location-manager[open] .manager-chevron{transform:rotate(180deg)}.location-manager-content{padding:0 16px 16px}.location-rate-config{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:end}.location-rate-config label{display:flex;flex-direction:column;min-width:0}.location-rate-config .field-label{min-height:2.3em;display:flex;align-items:flex-end;line-height:1.25}.location-rate-config select,.location-rate-config input{height:42px!important;min-height:42px!important}
 .location-manager-content>p{font-size:10px;color:var(--muted);line-height:1.5;margin:9px 0 0}
 .news-slider{background:#173e64}.news-track{position:absolute;inset:0;display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;overscroll-behavior-x:contain;touch-action:pan-x}.news-track::-webkit-scrollbar{display:none}.news-slide{position:relative;flex:0 0 100%;height:100%;scroll-snap-align:start;background-image:linear-gradient(90deg,rgba(13,43,75,.83),rgba(13,43,75,.48) 58%,rgba(13,43,75,.08)),var(--news-image);background-position:center;background-size:cover}.news-slider .hero-copy{z-index:1;max-width:75%}.news-controls{position:absolute;z-index:2;left:14px;right:14px;bottom:11px;display:flex;align-items:center;justify-content:space-between;pointer-events:none}.news-arrow,.news-dot{pointer-events:auto;border:0;cursor:pointer}.news-arrow{width:29px;height:29px;padding:0;border-radius:50%;background:#ffffff35;color:#fff;font-size:20px;line-height:1}.news-dots{display:flex;align-items:center;justify-content:center;gap:6px}.news-dot{width:7px;height:7px;padding:0;border-radius:99px;background:#ffffff85;transition:width .2s,background .2s}.news-dot.active{width:20px;background:#fff}
-.payment-shortcuts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:-2px 0 12px}.payment-shortcut{display:flex;flex-direction:column;align-items:flex-start;min-width:0;min-height:136px;padding:10px;border:1px solid #DCEBF8;border-radius:16px;background:#fff;color:var(--ink);text-align:left;box-shadow:var(--shadow);cursor:pointer}.payment-shortcut:active{transform:scale(.98)}.payment-shortcut:focus-visible{outline:3px solid #38bdf8;outline-offset:2px}.shortcut-art{display:block;width:100%;height:68px;margin-bottom:5px}.shortcut-art-photo{height:auto;border-radius:10px;margin-bottom:2px}.payment-shortcut b{font-size:12px;color:#0369a1}.payment-shortcut small{margin-top:3px;color:var(--muted);font-size:10px;line-height:1.4}.qr-video{display:block;width:100%;max-height:60dvh;aspect-ratio:4/3;object-fit:cover;border-radius:16px;background:#13263b}
+.payment-shortcuts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:-2px 0 12px}.payment-shortcut{display:flex;flex-direction:column;align-items:flex-start;min-width:0;min-height:136px;padding:10px;border:1px solid #DCEBF8;border-radius:16px;background:#fff;color:var(--ink);text-align:left;box-shadow:var(--shadow);cursor:pointer}.payment-shortcut:active{transform:scale(.98)}.payment-shortcut:focus-visible{outline:3px solid #38bdf8;outline-offset:2px}.shortcut-art{display:block;width:100%;height:68px;margin-bottom:5px}.shortcut-art-photo{height:auto;border-radius:10px;margin-bottom:2px}.payment-shortcut b{font-size:12px;color:#0369a1}.payment-shortcut small{margin-top:3px;min-height:2.8em;color:var(--muted);font-size:10px;line-height:1.4}.qr-video{display:block;width:100%;max-height:60dvh;aspect-ratio:4/3;object-fit:cover;border-radius:16px;background:#13263b}
 .qr-demo{width:100%;min-height:42px;margin-top:10px;border:1px solid #CFE4F6;border-radius:12px;background:#F0F9FF;color:#0369a1;font-size:12px;font-weight:600}
 .pay-method-actions{display:flex;flex:0 0 auto;min-width:0;gap:6px}.pay-summary .pay-method-actions button{display:flex;align-items:center;justify-content:center;gap:4px;min-width:0;min-height:40px;padding:7px 10px;font-size:10px;white-space:nowrap}.pay-method-art{width:18px;height:18px;flex:none}
 .month-card{padding:13px}.month-card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0}.month-card-info{min-width:0}.month-card-info b{display:block;font-size:13px}.month-card-info small{display:block;margin-top:3px;color:var(--muted);font-size:10px;line-height:1.4}.month-select{display:flex;align-items:center;gap:7px;flex:none;padding:8px 10px;border:1px solid #bfd6f1;border-radius:12px;background:#f0f6ff;color:#20549a;font-size:11px;font-weight:600;cursor:pointer}.month-select input{width:20px;height:20px;margin:0;accent-color:#286bb7}.month-card .charge-lines{margin-top:10px;padding:5px 0 0;border-top:1px solid var(--line)}.month-card .charge-line{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;min-width:0;padding:7px 0}.month-card .charge-line>span{min-width:0;line-height:1.4}.month-card .charge-line>b{white-space:nowrap}.month-card .charge-line .status{justify-self:end}.month-card .month-due{margin-top:5px}
@@ -266,7 +266,6 @@
 .page-heading.with-waste-photo{background:linear-gradient(90deg,rgba(255,255,255,.97),rgba(255,255,255,.92) 55%,rgba(255,255,255,.6)),url('/citizen-pay/shared/img/waste-pay-bg.webp') center 40%/cover no-repeat}
 
 /* ปุ่มจ่ายเงินสดในหน้าค่าขยะ (ไม่มีภาพ จึงจัดเนื้อหาให้กลางการ์ด) */
-.payment-shortcut-cash{justify-content:center}
 .cash-card-icon{width:44px;height:44px;margin-bottom:10px;border-radius:14px;background:#EAF4FB;color:#0369a1;display:grid;place-items:center}
 
 /* ---------- หน้าเจ้าหน้าที่ (เดโม่): ค่าแผงและค่าขยะ ---------- */
@@ -359,3 +358,285 @@
 .staff-qr-card small{display:block;margin-top:2px;font-size:12px;color:#64748b;overflow-wrap:anywhere}
 .staff-qr svg{display:block;width:140px;height:140px;max-width:100%}
 .staff-qr-card button{margin-top:10px;width:100%;min-height:38px;border-radius:12px;border:1.5px solid #0369a1;background:#fff;color:#0369a1;font-size:12px;font-weight:600}
+
+/* หน้าเจ้าหน้าที่: หัวหน้าและปุ่มสลับหมวด (ค่าแผง / ค่าเก็บขยะ) */
+.staff-top{padding:0;background:#fff;border-bottom:1px solid #DCEBF8;box-shadow:0 1px 0 #f0f6fb}
+.staff-top-in{max-width:980px;margin:0 auto;padding:14px 16px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;box-sizing:border-box}
+.staff-brand b{display:block;font-size:17px;color:#0c4a6e}
+.staff-brand small{display:block;margin-top:2px;font-size:12px;color:#64748b}
+.staff-switch{display:inline-grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;padding:4px;border-radius:14px;background:#F0F6FB;width:min(100%,340px)}
+.staff-switch a{display:flex;align-items:center;justify-content:center;min-height:40px;padding:0 12px;border-radius:11px;color:#475569;font-size:14px;font-weight:600;text-decoration:none;text-align:center}
+.staff-switch a.active{background:#0369a1;color:#fff;box-shadow:0 1px 3px #0f172a26}
+.staff-switch a:not(.active):hover{background:#fff;color:#0369a1}
+.staff-switch{width:min(100%,520px)}
+.staff-switch a{gap:8px;white-space:nowrap}
+.staff-switch-ico{flex:none}
+.staff-switch-now{font-style:normal;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:rgba(255,255,255,.22);color:#fff;white-space:nowrap}
+@media (max-width:520px){.staff-switch-now{display:none}}
+.staff-app .staff-head h1{font-size:20px}
+.staff-metric{border-left:4px solid #0369a1}
+.staff-metric.tone-warn{border-left-color:#E0A21A}
+.staff-metric.tone-info{border-left-color:#38bdf8}
+.staff-card{box-shadow:0 1px 2px #0f172a0d}
+.staff-card-head b{font-size:15px}
+.staff-amount{background:#EAF4FB;color:#0369a1;padding:4px 10px;border-radius:10px}
+.staff-empty{font-size:13px}
+.staff-table .staff-row:hover{background:#F8FBFE}
+.staff-tabs button{white-space:nowrap}
+
+/* หน้าเจ้าหน้าที่: แท็บพื้นที่/ราคา (ฟอร์ม ตั้งราคา และการ์ดแผงลอย) */
+.staff-tabs{overflow-x:auto;scrollbar-width:none}
+.staff-tabs::-webkit-scrollbar{display:none}
+.staff-form{display:grid;gap:12px}
+.staff-field{display:grid;gap:6px;min-width:0}
+.staff-field span{font-size:12px;color:#475569;font-weight:600}
+.staff-app input,.staff-app select{min-height:42px;width:100%;box-sizing:border-box;padding:0 12px;border:1px solid #cfe0ef;border-radius:12px;background:#fff;color:#1e293b;font:inherit;font-size:14px;min-width:0}
+.staff-app input:focus,.staff-app select:focus{outline:2px solid #38bdf8;outline-offset:1px;border-color:#0369a1}
+.staff-subhead{margin:0;font-size:15px;color:#0c4a6e}
+.staff-rate-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.staff-wide{width:100%;min-height:44px;border:0;border-radius:12px;background:#0369a1;color:#fff;font-size:14px;font-weight:600}
+.staff-form .help{margin:0}
+.staff-edit{margin-top:10px;padding:12px;border-radius:12px;background:#F8FBFE;border:1px dashed #BFD9EE}
+.staff-edit button{min-height:42px;border:0;border-radius:12px;background:#0369a1;color:#fff;font-size:13px;font-weight:600}
+.staff-inline{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;margin-top:12px}
+.staff-inline button{min-height:42px;padding:0 14px;border:0;border-radius:12px;background:#EAF4FB;color:#0369a1;font-size:13px;font-weight:600;white-space:nowrap}
+.staff-mini-row{display:flex;flex-wrap:wrap;justify-content:flex-end;align-items:center;gap:6px}
+.staff-mini{min-height:32px;padding:0 10px;border:1px solid #BFD9EE;border-radius:10px;background:#fff;color:#0369a1;font-size:12px;font-weight:600}
+.staff-mini.danger{border-color:#f5c2c2;color:#b42318}
+.staff-actions-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.staff-actions button.danger{border-color:#f5c2c2;color:#b42318}
+.staff-card.is-off{opacity:.7}
+.staff-card .staff-lines li{align-items:center}
+.staff-card .staff-lines li>span{flex:1}
+@media (max-width:520px){
+  .staff-rate-grid{grid-template-columns:1fr}
+  .staff-actions-3{grid-template-columns:1fr}
+}
+
+/* หน้าเจ้าหน้าที่: เมนูย่อยในแต่ละหมวด */
+.staff-tabs button{white-space:normal;line-height:1.25}
+.staff-subtabs{display:flex;gap:6px;overflow-x:auto;margin:-4px 0 14px;padding-bottom:2px;scrollbar-width:none}
+.staff-subtabs::-webkit-scrollbar{display:none}
+.staff-subtabs button{min-height:36px;padding:0 14px;border-radius:999px;border:1px solid #DCEBF8;background:#fff;color:#475569;font-size:13px;font-weight:600;white-space:nowrap}
+.staff-subtabs button.active{background:#0369a1;border-color:#0369a1;color:#fff}
+
+/* หน้าเจ้าหน้าที่: เลือกพื้นที่แผงลอยทีละพื้นที่ */
+.staff-locs{display:flex;gap:8px;overflow-x:auto;margin:0 0 12px;padding-bottom:2px;scrollbar-width:none}
+.staff-locs::-webkit-scrollbar{display:none}
+.staff-locs button{display:flex;flex-direction:column;align-items:flex-start;min-height:44px;min-width:max-content;padding:6px 14px;border-radius:14px;border:1px solid #DCEBF8;background:#fff;color:#334155;font-size:13px;font-weight:600;white-space:nowrap}
+.staff-locs button small{font-size:11px;font-weight:500;color:#64748b}
+.staff-locs button.active{background:#0369a1;border-color:#0369a1;color:#fff}
+.staff-locs button.active small{color:#d6ecfb}
+.staff-loc-panel{margin-bottom:12px}
+.staff-loc-panel.is-off{opacity:.75}
+.staff-tenants{list-style:none;margin:10px 0 0;padding:0;border-top:1px solid #EAF1F8}
+.staff-tenants li{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid #EAF1F8;font-size:13px;min-width:0}
+.staff-tenants li span{min-width:0;overflow-wrap:anywhere}
+.staff-tenant-actions{display:flex;gap:6px;flex:none}
+.staff-pay{min-height:32px;padding:0 12px;border-radius:999px;border:1px solid #F5C451;background:#FFF4D6;color:#8a5a00;font-size:12px;font-weight:600;white-space:nowrap}
+.staff-pay.on{border-color:#9CC9EE;background:#EAF4FB;color:#0369a1}
+.staff-loc-tools{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid #EAF1F8}
+.staff-loc-tools button{min-height:36px;padding:0 12px;border:1px solid #0369a1;border-radius:10px;background:#fff;color:#0369a1;font-size:12px;font-weight:600}
+.staff-loc-tools button.danger{border-color:#f5c2c2;color:#b42318}
+
+/* หน้าเจ้าหน้าที่: แยกบล็อกข้อมูลพื้นที่ / ผู้เช่า / การให้เช่า */
+.staff-loc-panel{padding:4px 14px}
+.staff-loc-block{padding:12px 0;border-top:1px solid #EAF1F8}
+.staff-loc-block:first-child{border-top:0}
+.staff-loc-title{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}
+.staff-loc-title b{font-size:14px;color:#0c4a6e}
+.staff-loc-title span{font-size:12px;color:#64748b}
+.staff-loc-info{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;font-size:13px;color:#475569}
+.staff-loc-info b{color:#0c4a6e}
+.staff-mini-btn{min-height:34px;padding:0 14px;border:1px solid #0369a1;border-radius:10px;background:#fff;color:#0369a1;font-size:12px;font-weight:600}
+.staff-mini-btn.danger{border-color:#f5c2c2;color:#b42318}
+.staff-loc-danger .staff-loc-tools{margin-top:0;padding-top:0;border-top:0}
+.staff-loc-danger .staff-loc-tools{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+.staff-loc-danger .staff-mini-btn{width:100%}
+
+/* หน้าเจ้าหน้าที่: ปุ่มและตัวเลขสรุปของพื้นที่แผงลอย */
+.staff-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.staff-stats>div{min-width:0;padding:12px;border-radius:14px;background:#F5FAFE;border:1px solid #E1EEF8}
+.staff-stats small{display:block;font-size:11px;color:#64748b}
+.staff-stats b{display:block;margin-top:3px;font-size:15px;color:#0c4a6e;overflow-wrap:anywhere}
+.staff-stats span{display:block;margin-top:2px;font-size:11px;color:#64748b}
+.staff-loc-panel{padding:6px 16px}
+.staff-loc-title b{font-size:15px}
+.staff-mini-btn{min-height:36px;padding:0 16px;border:0;border-radius:999px;background:#EAF4FB;color:#0369a1;font-size:13px;font-weight:600;box-shadow:inset 0 0 0 1px #CFE4F6}
+.staff-mini-btn:hover{background:#dcedfa}
+.staff-mini-btn.danger{background:#FDECEC;color:#b42318;box-shadow:inset 0 0 0 1px #F5C2C2}
+.staff-mini-btn.danger:hover{background:#fbdcdc}
+.staff-loc-danger .staff-loc-tools{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.staff-loc-danger .staff-mini-btn{width:100%;min-height:42px}
+.staff-pay{min-height:34px;padding:0 14px;border:0;border-radius:999px;background:#FFF1C9;color:#7a4f00;font-size:12px;font-weight:700;box-shadow:inset 0 0 0 1px #F5C451}
+.staff-pay.on{background:#DDF1E4;color:#166534;box-shadow:inset 0 0 0 1px #9FD8B3}
+.staff-tenants li{padding:10px 0}
+.staff-tenant-actions{gap:8px}
+.staff-tenant-actions .staff-mini{min-height:34px;border:0;border-radius:999px;background:#FDECEC;color:#b42318;padding:0 12px;font-weight:600;box-shadow:inset 0 0 0 1px #F5C2C2}
+.staff-inline input{border-radius:999px;padding:0 16px}
+.staff-inline button{border-radius:999px;background:#0369a1;color:#fff;box-shadow:0 4px 12px -6px #0369a1}
+.staff-wide{border-radius:999px;min-height:46px;box-shadow:0 6px 16px -8px #0369a1}
+.staff-locs button{border-radius:16px}
+@media (max-width:420px){.staff-stats{grid-template-columns:1fr}}
+@media (max-width:420px){.staff-stats{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.staff-stats>div{padding:10px 8px}.staff-stats b{font-size:13px}.staff-stats span{font-size:10px}}
+
+/* หน้าเจ้าหน้าที่: เมนูปุ่มของหน้าพื้นที่และราคา */
+.staff-menu{display:grid;gap:10px}
+.staff-menu-card{display:flex;align-items:center;gap:12px;width:100%;min-height:72px;padding:16px 18px;border:1px solid #DCEBF8;border-radius:18px;background:#fff;color:#0c4a6e;text-align:left;box-shadow:0 1px 2px #0f172a0d}
+.staff-menu-card:hover{border-color:#9CC9EE;background:#F8FBFE}
+.staff-menu-card b{display:block;font-size:16px}
+.staff-menu-card small{display:block;margin-top:3px;font-size:12px;color:#64748b}
+.staff-menu-card>div{min-width:0;flex:1}
+.staff-menu-arrow{font-size:24px;color:#0369a1;line-height:1}
+.staff-back{min-height:40px;padding:0;border:0;background:transparent;color:#0369a1;font-size:14px;font-weight:600;margin-bottom:6px}
+
+/* หน้าเจ้าหน้าที่: ปรับให้สวยทั้งมือถือและคอม */
+.staff-app{max-width:1040px}
+.staff-app input,.staff-app select{font-size:16px}
+.staff-tenants li span{font-size:14px;color:#1e293b}
+.staff-menu-card{min-height:84px;padding:18px 20px}
+.staff-menu-card b{font-size:17px}
+.staff-loc-panel{padding:6px 18px 18px}
+.staff-locs button{min-width:150px;padding:8px 16px}
+.staff-locs button b{font-size:14px}
+@media (min-width:900px){
+  .staff-menu{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .staff-menu-card{flex-direction:column;align-items:flex-start;justify-content:space-between;min-height:132px}
+  .staff-menu-arrow{align-self:flex-end}
+  .staff-rate-grid{grid-template-columns:repeat(5,minmax(0,1fr))}
+  .staff-loc-panel{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);column-gap:28px;align-items:start}
+  .staff-loc-panel>.staff-loc-block:nth-child(1){grid-column:1;grid-row:1}
+  .staff-loc-panel>.staff-loc-block:nth-child(2){grid-column:2;grid-row:1 / span 2;border-top:0;border-left:1px solid #EAF1F8;padding-left:28px}
+  .staff-loc-panel>.staff-loc-block:nth-child(3){grid-column:1;grid-row:2}
+  .staff-loc-panel .staff-stats{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .staff-tenants li{padding:12px 0}
+}
+
+/* หน้าเจ้าหน้าที่: ป้ายสถานะผังแผงกดได้ และแถบกรองแผง */
+.staff-chips .staff-chip{border:0;cursor:pointer;font:inherit;font-size:12px;font-weight:600;padding:6px 12px}
+.staff-chips .staff-chip:hover{filter:brightness(.97);box-shadow:inset 0 0 0 1px #9CC9EE}
+.staff-filter-row{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}
+.staff-filter-row button{min-height:36px;padding:0 14px;border:1px solid #DCEBF8;border-radius:999px;background:#fff;color:#475569;font-size:13px;font-weight:600}
+.staff-filter-row button.active{background:#0369a1;border-color:#0369a1;color:#fff}
+
+/* หน้าเจ้าหน้าที่: ช่องค้นหายอดค้าง */
+.staff-search{display:flex;align-items:center;gap:10px;min-height:46px;padding:0 16px;margin:0 0 6px;border:1px solid #cfe0ef;border-radius:999px;background:#fff;color:#64748b;box-shadow:0 1px 2px #0f172a0d}
+.staff-search:focus-within{border-color:#0369a1;box-shadow:0 0 0 3px #38bdf833}
+.staff-search input{border:0;padding:0;min-height:44px;background:transparent;box-shadow:none;outline:none!important}
+.staff-search-hint{margin:0 0 12px;padding-left:4px}
+.staff-line-status{display:block;margin-top:2px;font-size:11px;color:#64748b}
+.staff-hit{display:flex;align-items:center;gap:12px;width:100%;min-height:64px;padding:12px 14px;border:0;border-bottom:1px solid #EAF1F8;background:#fff;color:#1e293b;text-align:left}
+.staff-hit:last-child{border-bottom:0}
+.staff-hit:hover{background:#F8FBFE}
+.staff-hit-main{display:flex;flex-direction:column;min-width:0;flex:1}
+.staff-hit-main b{font-size:14px;color:#0c4a6e;overflow-wrap:anywhere}
+.staff-hit-main small{margin-top:2px;font-size:12px;color:#64748b;overflow-wrap:anywhere}
+.staff-hit-end{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex:none}
+.staff-hit-end b{white-space:nowrap;color:#0369a1;font-size:14px}
+.staff-hit-go{font-size:22px;line-height:1;color:#0369a1;flex:none}
+.staff-detail-total{display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding:12px 14px;border-radius:12px;background:#EAF4FB;color:#0c4a6e;font-size:14px}
+.staff-detail-total b{font-size:17px;color:#0369a1}
+.staff-detail .staff-meta{display:block;margin:0 0 8px}
+.staff-detail .staff-lines{margin-top:4px}
+.staff-counter-qr{margin:14px auto 0;max-width:260px}
+.staff-actions.one{grid-template-columns:minmax(0,1fr)}
+
+/* หน้าเจ้าหน้าที่ · คอม: หน้าแบบแดชบอร์ด ซ้ายค้นหา/ผลลัพธ์ ขวาตัวเลขสรุป · ขนาดตัวอักษรและการ์ดเล็กลงให้ไม่รก */
+.staff-ov{display:block}
+.staff-ov-side{display:block}
+.staff-empty-home{min-height:0}
+@media (min-width:900px){
+  /* หน้าประชาชน (body:not(.staff-mode) #app) ยังครอบ #app อยู่ จึงต้องเจาะด้วยตัวเลือกที่แรงกว่า */
+  body #app.staff-app{width:auto;max-width:1200px;margin:0 auto;padding:24px 32px 40px}
+  .staff-top-in{max-width:1200px;padding:12px 32px}
+  .staff-head{margin:0 0 16px}
+  .staff-head h1{font-size:20px}
+  .staff-head p{font-size:12px}
+  .staff-tabs{max-width:560px;margin-bottom:16px}
+  .staff-tabs button{min-height:36px;font-size:13px}
+  .staff-subtabs{margin-bottom:12px}
+  .staff-subtabs button{min-height:32px;font-size:12px;padding:0 12px}
+
+  /* หน้าภาพรวม: ซ้ายผลค้นหา · ขวาตัวเลขและปุ่มลัด */
+  .staff-ov{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:24px;align-items:start}
+  .staff-ov-side{display:grid;gap:12px}
+  .staff-ov-side .staff-metrics{margin:0;gap:10px;grid-template-columns:repeat(2,minmax(0,1fr))}
+  .staff-ov-side .staff-metric{padding:14px 16px;border-radius:12px;box-shadow:none;border-left-width:3px}
+  .staff-ov-side .staff-metric small{font-size:12px}
+  .staff-ov-side .staff-metric b{font-size:17px;margin-top:6px}
+  .staff-ov-side .staff-metric span{font-size:11px}
+  .staff-metric-ico{width:26px;height:26px;border-radius:8px}
+  .staff-ov-side .staff-panel{margin:0;padding:14px 16px;border-radius:12px}
+  .staff-ov-side .staff-panel-head{font-size:13px}
+  .staff-go{min-height:44px;margin:0;border-radius:12px;font-size:13px}
+  .staff-go-label{gap:8px}
+  .staff-search{min-height:40px;padding:0 14px;box-shadow:none}
+  .staff-search input{font-size:14px;min-height:38px}
+  .staff-search-hint{font-size:12px;margin:0 0 10px}
+  .staff-empty-home{min-height:160px;display:grid;place-items:center;font-size:13px}
+
+  /* ผลค้นหาและรายการยอดค้าง: การ์ดเล็ก 2 คอลัมน์ */
+  #dues-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:start}
+  #dues-list>.staff-empty,#dues-list>.staff-table{grid-column:1/-1}
+  #dues-list>.staff-card{margin:0;padding:12px 14px;border-radius:12px;box-shadow:none}
+  #dues-list .staff-card-head b{font-size:13px}
+  #dues-list .staff-card-head small{font-size:11px}
+  #dues-list .staff-amount{font-size:13px;padding:3px 8px;border-radius:8px}
+  #dues-list .staff-lines{margin-top:8px}
+  #dues-list .staff-lines li{padding:6px 0;font-size:12px}
+  #dues-list .staff-lines li small{font-size:10px}
+  #dues-list .staff-actions.one{grid-template-columns:auto;justify-content:end;margin-top:10px}
+  #dues-list .staff-actions.one button{min-height:34px;padding:0 14px;font-size:12px;border-radius:10px}
+  .staff-table{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:0;border:0;background:none;overflow:visible}
+  .staff-table .staff-hit{min-height:0;padding:10px 12px;border:1px solid #DCEBF8;border-radius:12px;background:#fff}
+  .staff-table .staff-hit:last-child{border-bottom:1px solid #DCEBF8}
+  .staff-hit-main b{font-size:13px}
+  .staff-hit-main small{font-size:11px}
+  .staff-hit-end b{font-size:13px}
+  .staff-hit-go{font-size:18px}
+
+  /* ผังแผง */
+  .staff-plan-grid{grid-template-columns:repeat(10,minmax(0,1fr));gap:6px}
+  .staff-stall{aspect-ratio:auto;height:44px;font-size:11px;border-radius:8px}
+
+  /* กล่องรายละเอียด: กลางจอ ซ้ายรายการ ขวา QR */
+  .modal.staff-dlg{width:min(720px,calc(100vw - 48px));max-width:none;max-height:calc(100dvh - 48px)}
+  .modal.staff-dlg .staff-detail{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);column-gap:24px;align-items:start}
+  .modal.staff-dlg .staff-detail>*{grid-column:1}
+  .modal.staff-dlg .staff-detail>.staff-counter-qr{grid-column:2;grid-row:1 / span 4;margin:0;max-width:none}
+  .modal.staff-dlg .staff-detail .staff-meta{grid-column:1}
+  .modal.staff-dlg .staff-detail .staff-lines li{font-size:12px;padding:8px 0}
+  .modal.staff-dlg .staff-detail-total{padding:10px 12px;font-size:13px}
+  .modal.staff-dlg .staff-detail-total b{font-size:15px}
+  .modal.staff-dlg .staff-counter-qr{padding:12px}
+  .modal.staff-dlg .staff-counter-qr .qr-svg,.modal.staff-dlg .staff-counter-qr svg{width:190px;height:190px;margin:0 auto}
+  .modal.staff-dlg .staff-counter-qr b{font-size:17px}
+}
+
+/* หน้าเจ้าหน้าที่: ไอคอนและโลโก้ให้เข้ากับธีมหน้าประชาชน */
+.staff-ico{display:inline-flex;align-items:center;justify-content:center;flex:none;line-height:0}
+.staff-top-in{gap:14px}
+.staff-brand-wrap{display:flex;align-items:center;gap:12px;min-width:0}
+.staff-logo{width:42px;height:42px;border-radius:14px;background:#0369a1;color:#fff;display:grid;place-items:center;flex:none;box-shadow:0 6px 14px -8px #0369a1}
+.staff-tabs button{gap:8px}
+.staff-tabs .staff-ico{color:currentColor}
+.staff-menu-ico{width:46px;height:46px;border-radius:15px;background:#EAF4FB;color:#0369a1;display:grid;place-items:center;flex:none}
+.staff-menu-card{gap:14px}
+.staff-back{display:inline-flex;align-items:center;gap:4px}
+.staff-mini-btn,.staff-loc-tools button,.staff-filter-row button,.staff-subtabs button,.staff-inline button,.staff-qr-card button,.staff-toolbar button,.staff-actions button{display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.staff-tenant-actions .staff-mini{display:inline-flex;align-items:center;justify-content:center;min-width:34px}
+.staff-qr-card button .staff-ico,.staff-toolbar button .staff-ico{color:currentColor}
+.staff-metric-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.staff-metric-top small{margin:0}
+.staff-metric-ico{width:30px;height:30px;border-radius:10px;background:#EAF4FB;color:#0369a1;display:grid;place-items:center;flex:none}
+.staff-metric.tone-warn .staff-metric-ico{background:#FFF4D6;color:#9a5b00}
+.staff-metric.tone-info .staff-metric-ico{background:#E8F6FD;color:#0369a1}
+.staff-go{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:52px;margin-top:4px;padding:0 16px;border:1px solid #DCEBF8;border-radius:14px;background:#fff;color:#0369a1;font-size:14px;font-weight:600;text-align:left}
+.staff-go:hover{border-color:#9CC9EE;background:#F8FBFE}
+.staff-go-label{display:inline-flex;align-items:center;gap:10px}
+.staff-go>span:last-child{font-size:22px;line-height:1}
+@media (max-width:640px){
+  .staff-tabs button{position:relative;flex-direction:column;gap:4px;font-size:12px;padding:8px 4px}
+  .staff-tabs .staff-badge{position:absolute;top:2px;right:calc(50% - 30px);min-width:18px;height:18px;font-size:10px}
+  .staff-logo{width:38px;height:38px;border-radius:12px}
+}
