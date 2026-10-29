@@ -67,6 +67,13 @@ export const PERMISSIONS = [
   { module: 'projects', action: 'manage', subject: 'Project' },
   // น้ำประปา — หนังสือแจ้งค้างชำระ (กิจการประปา กองช่าง)
   { module: 'water', action: 'read', subject: 'WaterNotice' },
+  // ค่าแผงตลาด / ค่าเก็บขยะบ้าน
+  { module: 'market', action: 'read', subject: 'MarketStall' },
+  { module: 'market', action: 'read', subject: 'MarketBill' },
+  { module: 'market', action: 'manage', subject: 'MarketBill' },
+  { module: 'market', action: 'manage', subject: 'MarketStall' },
+  { module: 'waste', action: 'read', subject: 'WasteBill' },
+  { module: 'waste', action: 'manage', subject: 'WasteBill' },
   { module: 'water', action: 'create', subject: 'WaterNotice' },
   { module: 'water', action: 'delete', subject: 'WaterNotice' },
   { module: 'water', action: 'manage', subject: 'WaterCustomer' },
@@ -96,6 +103,8 @@ const BASE_STAFF = ['leave:create:LeaveRequest', 'leave:read:LeaveRequest', 'hr:
 const COMPLAINT_MANAGE = ['complaint:read:Report', 'complaint:manage:Report'];
 // จัดการข่าว/ประกาศประชาสัมพันธ์ (CMS พอร์ทัลประชาชน)
 const NEWS_MANAGE = ['news:read:News', 'news:manage:News'];
+// ค่าแผงตลาด + ค่าเก็บขยะบ้าน — เจ้าหน้าที่รับชำระได้ (ผังแผง/ตั้งค่าอัตราอยู่ที่ admin)
+const MARKET_WASTE = ['market:read:MarketStall', 'market:manage:MarketStall', 'market:read:MarketBill', 'market:manage:MarketBill', 'waste:read:WasteBill', 'waste:manage:WasteBill'];
 export const ROLE_PERMISSIONS: Record<string, string[]> = {
   // ผู้ดูแลระบบ — ทุกสิทธิ์
   ADMIN: [
@@ -111,6 +120,7 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     'meetings:create:Meeting', 'meetings:read:Meeting', 'meetings:update:Meeting', 'meetings:delete:Meeting', 'meetings:manage:Minutes',
     'projects:read:Project', 'projects:manage:Project',
     ...WATER_ALL,
+    ...MARKET_WASTE,
     'complaint:delete:Report',
     ...NEWS_MANAGE,
     'audit:read:AuditLog', 'settings:read:SystemSetting', 'settings:manage:SystemSetting',

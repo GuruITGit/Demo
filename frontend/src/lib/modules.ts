@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, Mail, PenLine, FolderOpen, Users, CalendarDays, Calendar,
-  Package, Settings, ClipboardList, ShieldCheck, Droplets, UserCircle, MessageSquareWarning, Newspaper,
+  Package, Settings, ClipboardList, ShieldCheck, Droplets, UserCircle, MessageSquareWarning, Newspaper, Store, Trash2,
 } from 'lucide-react';
 
 /**
@@ -110,6 +110,34 @@ export const MODULES: ModuleDef[] = [
       { key: 'complaint_view', label: 'ดูเรื่องแจ้ง/ร้องเรียน', grants: ['complaint:read:Report'] },
       { key: 'complaint_manage', label: 'จัดการ / เปลี่ยนสถานะ', grants: ['complaint:read:Report', 'complaint:manage:Report'] },
       { key: 'complaint_delete', label: 'ลบเรื่อง (ผู้ดูแล)', grants: ['complaint:read:Report', 'complaint:delete:Report'] },
+    ],
+  },
+  {
+    key: 'market',
+    label: 'ค่าแผงตลาด',
+    href: '/market',
+    icon: Store,
+    color: 'text-sky-500',
+    navGroup: 'งานสำนักงาน',
+    permission: 'market:read:MarketBill',
+    keywords: ['แผง', 'ตลาด', 'ค่าเช่า', 'ผังตลาด', 'market', 'stall'],
+    permissionItems: [
+      { key: 'market_view', label: 'ดูผังแผงและบิลค่าแผง', grants: ['market:read:MarketStall', 'market:read:MarketBill'] },
+      { key: 'market_manage', label: 'รับชำระค่าแผง', grants: ['market:read:MarketBill', 'market:manage:MarketBill'] },
+    ],
+  },
+  {
+    key: 'waste',
+    label: 'ค่าเก็บขยะบ้าน',
+    href: '/waste',
+    icon: Trash2,
+    color: 'text-emerald-600',
+    navGroup: 'งานสำนักงาน',
+    permission: 'waste:read:WasteBill',
+    keywords: ['ขยะ', 'ค่าขยะ', 'เก็บขยะ', 'waste', 'garbage'],
+    permissionItems: [
+      { key: 'waste_view', label: 'ดูบิลค่าขยะบ้าน', grants: ['waste:read:WasteBill'] },
+      { key: 'waste_manage', label: 'รับชำระค่าขยะบ้าน', grants: ['waste:read:WasteBill', 'waste:manage:WasteBill'] },
     ],
   },
   {

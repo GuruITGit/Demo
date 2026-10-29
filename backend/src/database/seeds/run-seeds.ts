@@ -9,6 +9,7 @@ import { seedRolesAndPermissions } from './seed-roles-permissions';
 import { seedMasterData } from './seed-master-data';
 import { seedInitialOrg } from './seed-initial-org';
 import { seedDemoData } from './seed-demo-data';
+import { seedMarketWaste } from './seed-market-waste';
 import { resetAllData } from './reset-data';
 
 // --reset (หรือ SEED_RESET=true) = ลบข้อมูลเก่าทั้งหมดก่อน seed ใหม่
@@ -48,6 +49,9 @@ async function main(): Promise<void> {
 
     console.log('\n4. Seeding demo data (สารบรรณ + โครงการ)...');
     await seedDemoData(dataSource);
+
+    console.log('\n5. Seeding ค่าแผงตลาด + ค่าเก็บขยะบ้าน (ตัวอย่าง)...');
+    await seedMarketWaste(dataSource);
 
     console.log('\n=== Seeds completed successfully ===');
     console.log('\nบัญชี seed (local): admin = env INITIAL_ADMIN_PASSWORD, ผู้ใช้สมมติ = env SEED_DEMO_PASSWORD');

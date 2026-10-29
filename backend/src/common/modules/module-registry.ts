@@ -30,6 +30,8 @@ export const TOGGLEABLE_MODULES: ModuleDef[] = [
     key: 'prapa', label: 'ระบบประปา (เจ้าหน้าที่)', group: 'บริการประชาชน',
     prefixes: ['water/auth', 'water/billing', 'water/master', 'water/report', 'water/users', 'water'],
   },
+  { key: 'market', label: 'ค่าแผงตลาด', group: 'บริการประชาชน', prefixes: ['market'] },
+  { key: 'waste', label: 'ค่าเก็บขยะบ้าน', group: 'บริการประชาชน', prefixes: ['waste'] },
   {
     key: 'citizen', label: 'เว็บบริการประชาชน', group: 'บริการประชาชน',
     prefixes: ['citizen/report', 'citizen/news', 'water/member'],

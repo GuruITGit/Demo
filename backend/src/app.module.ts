@@ -36,6 +36,8 @@ import { DocEditorModule } from './modules/doc-editor/doc-editor.module';
 import { CitizenNewsModule } from './modules/citizen-news/citizen-news.module';
 import { MaintenanceModule } from './modules/maintenance/maintenance.module';
 import { ProjectsModule } from './modules/projects/projects.module';
+import { MarketModule } from './modules/market/market.module';
+import { WasteModule } from './modules/waste/waste.module';
 import { SequenceModule } from './common/services/sequence.module';
 
 @Module({
@@ -119,6 +121,8 @@ import { SequenceModule } from './common/services/sequence.module';
     CitizenNewsModule,
     MaintenanceModule,
     ProjectsModule,
+    MarketModule,
+    WasteModule,
     SequenceModule,
     ModuleAccessModule,
   ],
