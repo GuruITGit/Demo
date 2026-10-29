@@ -63,6 +63,7 @@ function ReportForm() {
   // ขอใช้บริการ (รถกู้ภัย/ดับเพลิง/ส่งผู้ป่วย/แจกน้ำ) ใช้เอกสารคำร้องแบบเดียวกัน — กรอกข้อมูลผู้ยื่นครบเหมือนกัน
   // ต่างกันแค่ "เรื่อง" ใช้ชื่อบริการให้อัตโนมัติ และยังมี GPS ปักหมุดจุดเกิดเหตุ
   const isService = category.startsWith('ขอใช้บริการ');
+  const serviceSubject = `ขอใช้${category.replace('ขอใช้บริการ', '')}`;
   const needsApplicant = isPetition || isService;
   const [subject, setSubject] = useState('');
   const [titlePrefix, setTitlePrefix] = useState('นาย');
@@ -194,11 +195,16 @@ function ReportForm() {
           </label>
         )}
 
-        {isPetition && (
+        {(isPetition || isService) && (
           <label className="block">
             <span className="mb-1.5 block text-sm font-medium text-slate-600">เรื่อง <span className="text-rose-500">*</span></span>
-            <input value={subject} onChange={(e) => setSubject(e.target.value)}
-              placeholder="เช่น ขอความอนุเคราะห์ซ่อมไฟฟ้าส่องสว่าง" className={field} />
+            {isPetition ? (
+              <input value={subject} onChange={(e) => setSubject(e.target.value)}
+                placeholder="เช่น ขอความอนุเคราะห์ซ่อมไฟฟ้าส่องสว่าง" className={field} />
+            ) : (
+              // ขอใช้รถ: ชื่อเรื่องคือรถที่เลือกจากหน้า /citizen/vehicle ล็อกไว้ ไม่ให้แก้
+              <input value={serviceSubject} readOnly className={`${field} bg-slate-50 text-slate-600`} />
+            )}
           </label>
         )}
 

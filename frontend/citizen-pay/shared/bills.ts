@@ -54,5 +54,5 @@ function billListHTML(o:BillListOptions){
 
 /** หัวหน้า + ช่องค้นหา (ใช้ทั้งสองหน้า) */
 function searchHeaderHTML(h1:string,label:string,placeholder:string,hint:string,headingClass=''){
- return `<div class="page-heading${headingClass}"><button class="back-link" onclick="location.href='/citizen'">‹ กลับหน้าแรก</button><h1>${h1}</h1><p>ค้นหา${label} · ไม่ต้องเข้าสู่ระบบ</p></div><form class="search-card" onsubmit="event.preventDefault();searchBills(this.query.value)"><label for="query">${label}</label><div class="search-row"><input id="query" name="query" value="${escapeHTML(searchTerm)}" placeholder="${placeholder}"><button type="submit">ค้นหา</button></div><p class="help">${hint}</p></form>`;
+ return `<div class="page-heading${headingClass}"><h1>${h1}</h1><p>ค้นหา${label} · ไม่ต้องเข้าสู่ระบบ</p></div><form class="search-card" onsubmit="event.preventDefault();searchBills(this.query.value)"><label for="query">${label}</label><div class="search-row"><input id="query" name="query" value="${escapeHTML(searchTerm)}" placeholder="${placeholder}"><button type="submit">ค้นหา</button></div><p class="help">${hint}</p></form>`;
 }
