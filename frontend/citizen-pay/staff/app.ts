@@ -76,7 +76,7 @@ function overviewHTML() {
     ? `<div class="staff-panel"><div class="staff-panel-head"><b>สถานะผังแผง</b><span>${DEMO.stalls.length} ช่อง</span></div>
       <div class="staff-chips"><button type="button" class="staff-chip occupied" onclick="openStallStatus('occupied')">เช่า ${countStall('occupied')} ›</button><button type="button" class="staff-chip reserved" onclick="openStallStatus('reserved')">จอง ${countStall('reserved')} ›</button><button type="button" class="staff-chip available" onclick="openStallStatus('available')">ว่าง ${countStall('available')} ›</button></div></div>`
     : '';
-  return `<div class="staff-head"><h1>ภาพรวม · ${STAFF_TITLE}</h1><p>ข้อมูลตัวอย่าง</p></div>
+  return `<div class="staff-head"><h1>ภาพรวม · ${STAFF_TITLE}</h1><p>ข้อมูลตัวอย่าง</p></div>${manageLinksHTML()}
   <div class="staff-ov">
   <section class="staff-ov-main">${duesSearchHTML(true)}</section>
   <aside class="staff-ov-side">
@@ -359,6 +359,12 @@ function printStaffQr() {
   const cards = items.map(i => `<article class="card"><div class="qr">${qrSvg(qrText(i.code), i.title)}</div><b>${escapeHTML(i.code)}</b><small>${escapeHTML(i.title)}</small><small>${escapeHTML(i.sub)}</small></article>`).join('');
   w.document.write(`<!doctype html><html lang="th"><head><meta charset="utf-8"><title>QR ${STAFF_TITLE}</title><style>body{font-family:"Noto Sans Thai",sans-serif;margin:12mm;color:#111}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8mm}.card{border:1px solid #999;border-radius:6px;padding:6mm;text-align:center;break-inside:avoid}.qr svg{width:50mm;height:50mm;display:block;margin:0 auto}.card b{display:block;font-size:14pt;margin-top:3mm}.card small{display:block;font-size:10pt;color:#333}</style></head><body><div class="grid">${cards}</div></body></html>`);
   w.document.close(); w.focus(); w.print();
+}
+
+/** ปุ่มไปหน้าจัดการค่าแผง / ค่าขยะ — ใช้ลิงก์เดียวกับเมนูสลับหน้าด้านบน */
+function manageLinksHTML() {
+  const href = (key: string) => Array.from(document.querySelectorAll<HTMLAnchorElement>('.staff-switch a')).find(a => a.getAttribute('href')?.includes(key))?.getAttribute('href') || '#';
+  return `<div class="staff-manage-links"><a class="staff-manage-btn" href="${href('market')}">จัดการค่าแผง</a><a class="staff-manage-btn" href="${href('waste')}">จัดการค่าขยะ</a></div>`;
 }
 
 function render() {

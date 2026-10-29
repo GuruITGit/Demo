@@ -832,7 +832,7 @@ function overviewHTML() {
         ? `<div class="staff-panel"><div class="staff-panel-head"><b>สถานะผังแผง</b><span>${DEMO.stalls.length} ช่อง</span></div>
       <div class="staff-chips"><button type="button" class="staff-chip occupied" onclick="openStallStatus('occupied')">เช่า ${countStall('occupied')} ›</button><button type="button" class="staff-chip reserved" onclick="openStallStatus('reserved')">จอง ${countStall('reserved')} ›</button><button type="button" class="staff-chip available" onclick="openStallStatus('available')">ว่าง ${countStall('available')} ›</button></div></div>`
         : '';
-    return `<div class="staff-head"><h1>ภาพรวม · ${STAFF_TITLE}</h1><p>ข้อมูลตัวอย่าง</p></div>
+    return `<div class="staff-head"><h1>ภาพรวม · ${STAFF_TITLE}</h1><p>ข้อมูลตัวอย่าง</p></div>${manageLinksHTML()}
   <div class="staff-ov">
   <section class="staff-ov-main">${duesSearchHTML(true)}</section>
   <aside class="staff-ov-side">
@@ -1125,6 +1125,11 @@ function printStaffQr() {
     w.document.close();
     w.focus();
     w.print();
+}
+/** ปุ่มไปหน้าจัดการค่าแผง / ค่าขยะ — ใช้ลิงก์เดียวกับเมนูสลับหน้าด้านบน */
+function manageLinksHTML() {
+    const href = (key) => Array.from(document.querySelectorAll('.staff-switch a')).find(a => a.getAttribute('href')?.includes(key))?.getAttribute('href') || '#';
+    return `<div class="staff-manage-links"><a class="staff-manage-btn" href="${href('market')}">จัดการค่าแผง</a><a class="staff-manage-btn" href="${href('waste')}">จัดการค่าขยะ</a></div>`;
 }
 function render() {
     const pending = staffGroups('pending').length + staffGroups('cash').length;

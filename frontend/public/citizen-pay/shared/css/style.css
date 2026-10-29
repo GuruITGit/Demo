@@ -675,3 +675,5 @@
 .app-shell{zoom:var(--text-scale,1)}.sao-header{position:relative}.sao-header-in{padding-right:64px}.text-size-btn{position:absolute;right:14px;top:14px;min-width:48px;height:38px;padding:0 12px;border:1px solid #cfd8e3;border-radius:12px;background:#fff;color:#0f2a44;font:700 15px/1 'Noto Sans Thai',sans-serif;cursor:pointer}
 
 .home-back{display:inline-block;margin:4px 2px 8px;font-size:14px;font-weight:600;color:var(--forest,#1f6b4a);text-decoration:none;min-height:36px;line-height:36px}.home-back:hover{text-decoration:underline}
+
+.staff-manage-links{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 14px}.staff-manage-btn{display:inline-flex;align-items:center;min-height:40px;padding:0 16px;border-radius:12px;background:#0b6b4f;color:#fff;font-weight:600;text-decoration:none}.staff-manage-btn:hover{filter:brightness(1.08)}
