@@ -622,11 +622,11 @@ const savedPageState = (() => { try {
     const savedView = sessionStorage.getItem('demo:view');
     const savedArea = sessionStorage.getItem('demo:stallArea');
     const savedStall = sessionStorage.getItem('demo:selectedStall');
-    const validViews = ['dues', 'stalls', 'signup'];
-    return { view: location.hash === '#dues' ? 'dues' : validViews.includes(savedView || '') ? savedView : 'dues', stallArea: savedArea === 'outside' ? 'outside' : 'regular', paymentMap: sessionStorage.getItem('demo:paymentMap') === '1', selectedStall: savedStall && DEMO.stalls.some(s => s.id === savedStall) ? savedStall : null };
+    const validViews = ['home', 'dues', 'stalls', 'signup'];
+    return { view: location.hash === '#dues' ? 'dues' : validViews.includes(savedView || '') ? savedView : 'home', stallArea: savedArea === 'outside' ? 'outside' : 'regular', paymentMap: sessionStorage.getItem('demo:paymentMap') === '1', selectedStall: savedStall && DEMO.stalls.some(s => s.id === savedStall) ? savedStall : null };
 }
 catch {
-    return { view: 'dues', stallArea: 'regular', paymentMap: false, selectedStall: null };
+    return { view: 'home', stallArea: 'regular', paymentMap: false, selectedStall: null };
 } })();
 let view = savedPageState.view, zone = 'A', stallArea = savedPageState.stallArea, selectedStall = savedPageState.selectedStall, signupStallId = null, selectedOutsideLocationId = 'LOC-01';
 let paymentMapMode = savedPageState.paymentMap;
@@ -749,6 +749,8 @@ function submitRegistration(event) { event.preventDefault(); const form = event.
     return;
 } const amount = stall ? firstChargeAmount(stall) : 0; const period = stall ? rentPeriodFor(stall) : 'monthly'; const days = rentalDays; if (stall)
     stall.status = 'reserved'; form.reset(); clearIdCard(); signupDraft.name = ''; signupDraft.phone = ''; signupStallId = null; signupLocationId = null; selectedStall = null; rentalStartDate = localISODate(); rentalDays = 1; toast(stall ? `ส่งใบสมัครและคำขอจองแล้ว · ${period === 'daily' ? `${days} วัน` : 'เดือนแรก'} ประมาณ ${money(amount)} บาท` : 'ส่งใบสมัครตัวอย่างแล้ว · เจ้าหน้าที่จะตรวจทาน'); setPage('stalls'); }
-function render() { saveOutsideLocations(); app.classList.remove('staff-dashboard'); renderNav(); const page = { home: searchPage, dues: searchPage, stalls: stallPage, signup: signupPage }; app.innerHTML = (page[view] || searchPage)(); }
+/** หน้าแรกค่าแผง — เลือกว่าจะจ่ายค่าแผงหรือจองแผง */
+function choicePage() { return `<div class="page-heading"><h1>ค่าแผงตลาด</h1><p>เลือกว่าจะทำอะไร</p></div><button class="choice-card" onclick="setPage('dues')"><b>จ่ายค่าแผง</b><small>ดูยอดค้างและจ่ายผ่าน QR หรือเงินสด</small></button><button class="choice-card" onclick="setPage('stalls')"><b>จองแผง</b><small>ดูผังตลาด เลือกแผงว่างแล้วส่งคำขอจอง</small></button>`; }
+function render() { saveOutsideLocations(); app.classList.remove('staff-dashboard'); renderNav(); const page = { home: choicePage, dues: searchPage, stalls: stallPage, signup: signupPage }; app.innerHTML = (page[view] || searchPage)(); }
 applySavedPayments();
 render();

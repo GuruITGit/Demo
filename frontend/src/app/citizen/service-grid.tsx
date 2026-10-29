@@ -13,7 +13,7 @@ export const SERVICE_GROUPS: { title: string; items: CitizenService[] }[] = [
     items: [
       { href: '/citizen/water', art: 'water', title: 'ค่าน้ำประปา', short: 'ดูยอดค้าง จ่ายได้ทุกเวลา', card: 'bg-[#E3F2FD]' },
       { href: '/citizen/waste', static: true, art: 'garbage', title: 'ค่าเก็บขยะ', short: 'ค่าธรรมเนียมรายเดือน/รายปี', card: 'bg-[#E3F7EC]' },
-      { href: '/citizen/market#dues', static: true, art: 'market', title: 'ค่าแผงตลาด', short: 'ค่าเช่าแผงพ่อค้าแม่ค้า', card: 'bg-[#FFF3DC]' },
+      { href: '/citizen/market', static: true, art: 'market', title: 'จ่ายค่าแผง/จองแผง', short: 'ค่าเช่าแผงและจองแผงตลาด', card: 'bg-[#FFF3DC]' },
       { art: 'lotus', title: 'เงินฌาปนกิจสงเคราะห์', short: 'ส่งเงินสงเคราะห์ศพสมาชิก', card: 'bg-[#F1EBFF]' },
     ],
   },
@@ -29,7 +29,7 @@ export const SERVICE_GROUPS: { title: string; items: CitizenService[] }[] = [
 export const ALL_SERVICES = SERVICE_GROUPS.flatMap((g) => g.items);
 
 /** การ์ดหน้าแรก — เฉพาะที่ประชาชนใช้บ่อย · ค่าน้ำประปา/เงินฌาปนกิจยังอยู่ในหน้า "ดูทั้งหมด" */
-export const HOME_SERVICES = ['ค่าเก็บขยะ', 'ค่าแผงตลาด', 'แจ้งเหตุ / ร้องเรียน', 'ขอใช้รถ'].flatMap((t) => ALL_SERVICES.filter((s) => s.title === t));
+export const HOME_SERVICES = ['ค่าเก็บขยะ', 'จ่ายค่าแผง/จองแผง', 'แจ้งเหตุ / ร้องเรียน', 'ขอใช้รถ'].flatMap((t) => ALL_SERVICES.filter((s) => s.title === t));
 
 /** การ์ดบริการสไตล์แอปทางรัฐ — พื้นพาสเทล ชื่อมุมซ้ายบน ภาพประกอบมุมขวาล่าง · ยังไม่เปิด = กดไม่ได้ + ป้าย "เร็วๆ นี้" */
 export function ServiceTile({ sv }: { sv: CitizenService }) {
