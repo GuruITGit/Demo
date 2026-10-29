@@ -17,10 +17,6 @@
     {
       "source": "/staff-demo/waste",
       "destination": "/citizen-pay/staff/waste/index.html"
-    },
-    {
-      "source": "/login",
-      "destination": "/citizen-pay/staff/market/index.html"
     }
   ],
   "headers": [
