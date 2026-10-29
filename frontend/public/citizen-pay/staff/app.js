@@ -62,6 +62,9 @@ const PAYMENT = {
     promptpayId: '0000000000',
     promptpayType: 'mobile',
     payeeName: 'บัญชีรับเงิน อบต. (ตัวอย่าง)',
+    // เลขบัญชีตัวอย่าง — ต้องแก้เป็นเลขบัญชีจริงของ อบต. ก่อนใช้งานจริง
+    accountBank: 'ธนาคาร (ตัวอย่าง)',
+    accountNo: '000-0-00000-0',
     cashPlace: 'งานการเงิน ที่ทำการ อบต.',
     cashHours: 'จันทร์–ศุกร์ 08:30–16:30 น. (เว้นวันหยุดราชการ)',
     // URL scheme เปิดแอปธนาคาร — แอปเปิดขึ้นมาเฉยๆ ไม่กรอกยอดให้ (ธนาคารไม่มี deeplink กลาง) · ต้องทดสอบบนมือถือจริงทุกตัว
@@ -135,6 +138,35 @@ function promptpayPayload(id, amount, type) {
     return p + crc16(p);
 }
 const hasPromptpay = () => (PAYMENT.promptpayId || '').replace(/\D/g, '').length >= 10;
+/** เลขบัญชีรับเงิน + ปุ่มคัดลอก (ใช้ใต้ QR และในหน้าจ่ายเงินสด) */
+function accountBlockHTML() {
+    return `<div class="pay-account"><div><small>${escapeHTML(PAYMENT.accountBank)}</small><b>${escapeHTML(PAYMENT.accountNo)}</b><small>${escapeHTML(PAYMENT.payeeName)}</small></div><button type="button" class="secondary small" onclick="copyAccountNo()">คัดลอกเลขบัญชี</button></div>`;
+}
+function copyAccountNo() {
+    const text = PAYMENT.accountNo;
+    const done = () => toast('คัดลอกเลขบัญชีแล้ว');
+    const fallback = () => {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        try {
+            document.execCommand('copy');
+            done();
+        }
+        catch {
+            toast('คัดลอกไม่สำเร็จ · เลขบัญชี ' + text);
+        }
+        ta.remove();
+    };
+    if (navigator.clipboard?.writeText)
+        navigator.clipboard.writeText(text).then(done, fallback);
+    else
+        fallback();
+}
 function qrModules(text) { const q = qrcode(0, 'M'); q.addData(text); q.make(); return q; }
 function qrSvg(text, label) {
     const q = qrModules(text);
@@ -206,7 +238,7 @@ function renderPaymentModal() {
     const demoNote = PAYMENT.demo ? `<p class="privacy-note">ระบบสาธิต · เลขพร้อมเพย์เป็นเลขตัวอย่าง โอนจริงไม่ได้</p>` : '';
     let body = '', actions = '';
     if (payMethod === 'cash') {
-        body = `<div class="cash-info"><b>จ่ายเงินสดที่ ${escapeHTML(PAYMENT.cashPlace)}</b><small>${escapeHTML(PAYMENT.cashHours)}</small><ol><li>กด “ขอเลขอ้างอิง” ด้านล่าง</li><li>แสดงเลขอ้างอิง (หรือ QR) ให้เจ้าหน้าที่</li><li>รับใบเสร็จจากเจ้าหน้าที่</li></ol></div>`;
+        body = `<div class="cash-info"><b>จ่ายเงินสดที่ ${escapeHTML(PAYMENT.cashPlace)}</b><small>${escapeHTML(PAYMENT.cashHours)}</small><ol><li>กด “ขอเลขอ้างอิง” ด้านล่าง</li><li>แสดงเลขอ้างอิง (หรือ QR) ให้เจ้าหน้าที่</li><li>รับใบเสร็จจากเจ้าหน้าที่</li></ol></div>${accountBlockHTML()}`;
         actions = `<button class="secondary" onclick="modal.close()">กลับ</button><button onclick="submitCashPayment()">ขอเลขอ้างอิง</button>`;
     }
     else {
@@ -215,7 +247,7 @@ function renderPaymentModal() {
         const slip = `<div class="slip-box"><label class="upload scan-upload">${slipFile ? 'เปลี่ยนรูปสลิป' : 'แนบรูปสลิป (จำเป็น)'}<input type="file" accept="image/*" onchange="pickSlip(this)"></label>${slipFile ? `<div class="slip-preview"><img src="${slipPreviewUrl}" alt="สลิปที่แนบ"><span>${escapeHTML(slipFile.name)}</span></div>` : ''}</div>`;
         if (payMethod === 'qr') {
             const save = `<button type="button" class="secondary small save-qr" onclick="saveQrImage()">บันทึกรูป QR ลงเครื่อง</button>`;
-            body = qrBlock + save + `<p class="help">เปิดแอปธนาคาร → สแกน → ส่องที่ QR นี้ (ยอดเงินกรอกให้อัตโนมัติ) หรือบันทึกรูปแล้วเลือกจาก “รูปภาพ/อัลบั้ม” ในแอป</p>` + slip;
+            body = qrBlock + accountBlockHTML() + save + `<p class="help">เปิดแอปธนาคาร → สแกน → ส่องที่ QR นี้ (ยอดเงินกรอกให้อัตโนมัติ) หรือบันทึกรูปแล้วเลือกจาก “รูปภาพ/อัลบั้ม” ในแอป</p>` + slip;
         }
         else {
             // แตะโลโก้ = เด้งเข้าแอปทันที · แอปไม่รับยอดจากเว็บ → ในแอปให้สแกน QR จากรูปที่บันทึกไว้
@@ -725,7 +757,7 @@ function subsOf(t) {
         return STAFF_MODE === 'market' ? [['plan', 'ผังแผง'], ['rates', 'พื้นที่/ราคา'], ['qr', 'QR แผง']] : [['qr', 'QR บ้าน']];
     if (t === 'payments') {
         const n = staffGroups('pending').length + staffGroups('cash').length;
-        return [['queue', n ? `รอตรวจ (${n})` : 'รอตรวจ'], ['dues', 'ค้างชำระ']];
+        return [['queue', n ? `รอตรวจ (${n})` : 'รอตรวจ'], ['dues', 'ค้างชำระ'], ['report', 'รายงาน']];
     }
     return [];
 }
@@ -908,6 +940,35 @@ function duesSearchHTML(home = false) {
   <p class="staff-hint staff-search-hint" id="dues-hint">${duesHintText()}</p>
   <div id="dues-list" data-home="${home ? 1 : 0}">${duesListHTML(!home)}</div>`;
 }
+/** ตัวกรองรายงาน: ค้างตั้งแต่กี่เดือนขึ้นไป */
+let staffReportMin = 1;
+const REPORT_MIN_OPTIONS = [[1, 'ค้างตั้งแต่ 1 เดือน'], [2, 'ค้าง 2 เดือนขึ้นไป'], [3, 'ค้าง 3 เดือนขึ้นไป']];
+function setReportMin(n) { staffReportMin = n; render(); }
+/** นับเฉพาะเดือนที่ยังไม่ชำระ (รายการที่รอตรวจหรือรอรับเงินสดไม่นับเป็นค้าง) */
+function reportRows() {
+    return duesRows()
+        .map(r => ({ ...r, unpaidMonths: [...new Set(r.bills.filter(b => PAYABLE.includes(b.status)).map(b => b.month))] }))
+        .filter(r => r.unpaidMonths.length >= staffReportMin && r.due > 0)
+        .sort((a, b) => b.unpaidMonths.length - a.unpaidMonths.length || b.due - a.due);
+}
+function reportHTML() {
+    const rows = reportRows();
+    const total = rows.reduce((n, r) => n + r.due, 0);
+    const label = REPORT_MIN_OPTIONS.find(([n]) => n === staffReportMin)?.[1] ?? '';
+    const today = new Date().toLocaleDateString('th-TH', { day: 'numeric', month: 'long', year: 'numeric' });
+    return `<div class="staff-report-bar no-print">
+    <div class="staff-filter-row">${REPORT_MIN_OPTIONS.map(([n, l]) => `<button type="button" class="${staffReportMin === n ? 'active' : ''}" onclick="setReportMin(${n})">${l}</button>`).join('')}</div>
+    <button type="button" class="staff-report-print" onclick="window.print()">${staffIcon('print', 16)}<span>พิมพ์รายงาน</span></button>
+  </div>
+  <div class="staff-report-sheet">
+    <div class="staff-report-title"><b>รายงานยอดค้างชำระ · ${escapeHTML(STAFF_TITLE)}</b><small>${escapeHTML(label)} · ${rows.length} ราย · รวม ${money(total)} บาท · พิมพ์วันที่ ${today}</small></div>
+    ${rows.length ? `<div class="staff-report-scroll"><table class="staff-report-table">
+      <thead><tr><th>ลำดับ</th><th>ผู้จ่าย</th><th>แผง / บ้านเลขที่</th><th>เดือนที่ค้าง</th><th class="num">จำนวนเดือน</th><th class="num">ยอดค้าง (บาท)</th></tr></thead>
+      <tbody>${rows.map((r, i) => `<tr><td>${i + 1}</td><td>${escapeHTML(r.first.merchant)}</td><td>${escapeHTML(staffPlace(r.first))} · ${escapeHTML(r.ref)}</td><td>${escapeHTML(r.unpaidMonths.join(', '))}</td><td class="num">${r.unpaidMonths.length}</td><td class="num">${money(r.due)}</td></tr>`).join('')}</tbody>
+      <tfoot><tr><td colspan="4">รวม ${rows.length} ราย</td><td class="num"></td><td class="num">${money(total)}</td></tr></tfoot>
+    </table></div>` : '<div class="staff-empty">ไม่มีรายการตามเงื่อนไขนี้</div>'}
+  </div>`;
+}
 function duesHTML() {
     const rows = duesRows();
     const total = rows.reduce((n, r) => n + r.due, 0);
@@ -1020,7 +1081,7 @@ function render() {
     ];
     const subs = subsOf(staffTab);
     const sub = subs.find(([s]) => s === staffSub)?.[0] ?? subs[0]?.[0];
-    const views = { plan: planHTML, rates: ratesHTML, qr: qrHTML, queue: queueHTML, dues: duesHTML };
+    const views = { plan: planHTML, rates: ratesHTML, qr: qrHTML, queue: queueHTML, dues: duesHTML, report: reportHTML };
     const body = staffTab === 'overview' ? overviewHTML() : views[sub]();
     const subNav = subs.length > 1
         ? `<nav class="staff-subtabs" aria-label="เมนูย่อย">${subs.map(([v, label]) => `<button type="button" class="${sub === v ? 'active' : ''}" aria-current="${sub === v}" onclick="setStaffSub('${v}')">${label}</button>`).join('')}</nav>`

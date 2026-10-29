@@ -1,0 +1,16 @@
+{
+  "cleanUrls": false,
+  "trailingSlash": false,
+  "rewrites": [
+    { "source": "/", "destination": "/citizen-pay/market/index.html" },
+    { "source": "/citizen", "destination": "/citizen-pay/market/index.html" },
+    { "source": "/citizen/market", "destination": "/citizen-pay/market/index.html" },
+    { "source": "/citizen/waste", "destination": "/citizen-pay/waste/index.html" },
+    { "source": "/staff-demo/market", "destination": "/citizen-pay/staff/market/index.html" },
+    { "source": "/staff-demo/waste", "destination": "/citizen-pay/staff/waste/index.html" },
+    { "source": "/login", "destination": "/citizen-pay/staff/market/index.html" }
+  ],
+  "headers": [
+    { "source": "/(.*)", "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }] }
+  ]
+}

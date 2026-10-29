@@ -291,7 +291,7 @@
 .staff-chip{display:inline-block;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}
 .staff-chip.available{background:#EAF4FB;color:#0369a1}
 .staff-chip.reserved{background:#FFF4D6;color:#8a5a00}
-.staff-chip.occupied{background:#0369a1;color:#fff}
+.staff-chip.occupied{background:#BFE3F8;color:#075985}
 .staff-link{border:0;background:transparent;color:#0369a1;font-size:14px;font-weight:600;padding:6px 0;min-height:40px}
 .staff-section{display:flex;align-items:center;gap:8px;margin:18px 0 8px;font-size:15px;color:#0c4a6e}
 .staff-section span{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 6px;border-radius:999px;background:#EAF4FB;color:#0369a1;font-size:12px}
@@ -326,14 +326,14 @@
 .staff-legend i{width:14px;height:14px;border-radius:4px;display:inline-block}
 .lg-available{background:#fff;border:1.5px solid #9CC9EE}
 .lg-reserved{background:#FFF4D6;border:1.5px solid #F5C451}
-.lg-occupied{background:#0369a1}
+.lg-occupied{background:#BFE3F8;border:1.5px solid #7CC4EE}
 .staff-plan{background:#fff;border:1px solid #DCEBF8;border-radius:14px;padding:12px;margin-bottom:12px;overflow:hidden}
 .staff-plan-row+.staff-plan-row{margin-top:10px}
 .staff-plan-row>b{display:block;font-size:12px;color:#64748b;margin-bottom:6px}
 .staff-plan-grid{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:4px}
 .staff-stall{aspect-ratio:1/1;min-width:0;padding:0;border-radius:8px;font-size:11px;font-weight:700;border:1.5px solid #9CC9EE;background:#fff;color:#0369a1}
 .staff-stall.reserved{background:#FFF4D6;border-color:#F5C451;color:#8a5a00}
-.staff-stall.occupied{background:#0369a1;border-color:#0369a1;color:#fff}
+.staff-stall.occupied{background:#BFE3F8;border-color:#7CC4EE;color:#075985}
 .staff-stall.selected{outline:3px solid #38bdf8;outline-offset:1px}
 .staff-hint{margin:0;font-size:13px;color:#64748b}
 .staff-detail .staff-lines{margin-top:10px}
@@ -639,4 +639,33 @@
   .staff-tabs button{position:relative;flex-direction:column;gap:4px;font-size:12px;padding:8px 4px}
   .staff-tabs .staff-badge{position:absolute;top:2px;right:calc(50% - 30px);min-width:18px;height:18px;font-size:10px}
   .staff-logo{width:38px;height:38px;border-radius:12px}
+}
+
+/* บัญชีรับเงิน: ใต้ QR และในหน้าจ่ายเงินสด */
+.pay-account{margin-top:12px;padding:12px 14px;border-radius:14px;background:#F5FAFE;border:1px dashed #BFD9EE;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;text-align:left}
+.pay-account small{display:block;font-size:12px;color:#64748b}
+.pay-account b{display:block;margin:3px 0;font-size:18px;letter-spacing:.04em;color:#0c4a6e;font-variant-numeric:tabular-nums}
+.pay-account button{min-height:36px;padding:0 14px;border-radius:999px;white-space:nowrap}
+
+/* หน้าเจ้าหน้าที่: รายงานยอดค้างชำระ (กรอง + พิมพ์) */
+.staff-report-bar{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
+.staff-report-bar .staff-filter-row{margin:0}
+.staff-report-print{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0 16px;border:0;border-radius:12px;background:#0369a1;color:#fff;font-size:13px;font-weight:600}
+.staff-report-sheet{background:#fff;border:1px solid #DCEBF8;border-radius:14px;padding:16px}
+.staff-report-title b{display:block;font-size:16px;color:#0c4a6e}
+.staff-report-title small{display:block;margin-top:4px;font-size:12px;color:#64748b}
+.staff-report-scroll{overflow-x:auto;margin-top:12px}
+.staff-report-table{width:100%;border-collapse:collapse;font-size:13px}
+.staff-report-table th,.staff-report-table td{padding:8px 10px;border-bottom:1px solid #EAF1F8;text-align:left;vertical-align:top}
+.staff-report-table th{background:#F5FAFE;color:#0c4a6e;font-weight:700;white-space:nowrap}
+.staff-report-table .num{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.staff-report-table tfoot td{font-weight:700;border-bottom:0;border-top:2px solid #BFD9EE}
+@media print{
+  @page{size:A4;margin:12mm}
+  body,.staff-shell,.staff-app{background:#fff!important}
+  .staff-top,.staff-tabs,.staff-subtabs,.staff-foot,.no-print,.toast{display:none!important}
+  .staff-app{padding:0!important;max-width:none!important;margin:0!important}
+  .staff-report-sheet{border:0;padding:0;border-radius:0}
+  .staff-report-table th,.staff-report-table td{border:1px solid #999;padding:5px 7px}
+  .staff-report-table tr{break-inside:avoid}
 }

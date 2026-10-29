@@ -62,6 +62,9 @@ const PAYMENT = {
     promptpayId: '0000000000',
     promptpayType: 'mobile',
     payeeName: 'บัญชีรับเงิน อบต. (ตัวอย่าง)',
+    // เลขบัญชีตัวอย่าง — ต้องแก้เป็นเลขบัญชีจริงของ อบต. ก่อนใช้งานจริง
+    accountBank: 'ธนาคาร (ตัวอย่าง)',
+    accountNo: '000-0-00000-0',
     cashPlace: 'งานการเงิน ที่ทำการ อบต.',
     cashHours: 'จันทร์–ศุกร์ 08:30–16:30 น. (เว้นวันหยุดราชการ)',
     // URL scheme เปิดแอปธนาคาร — แอปเปิดขึ้นมาเฉยๆ ไม่กรอกยอดให้ (ธนาคารไม่มี deeplink กลาง) · ต้องทดสอบบนมือถือจริงทุกตัว
@@ -135,6 +138,35 @@ function promptpayPayload(id, amount, type) {
     return p + crc16(p);
 }
 const hasPromptpay = () => (PAYMENT.promptpayId || '').replace(/\D/g, '').length >= 10;
+/** เลขบัญชีรับเงิน + ปุ่มคัดลอก (ใช้ใต้ QR และในหน้าจ่ายเงินสด) */
+function accountBlockHTML() {
+    return `<div class="pay-account"><div><small>${escapeHTML(PAYMENT.accountBank)}</small><b>${escapeHTML(PAYMENT.accountNo)}</b><small>${escapeHTML(PAYMENT.payeeName)}</small></div><button type="button" class="secondary small" onclick="copyAccountNo()">คัดลอกเลขบัญชี</button></div>`;
+}
+function copyAccountNo() {
+    const text = PAYMENT.accountNo;
+    const done = () => toast('คัดลอกเลขบัญชีแล้ว');
+    const fallback = () => {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        try {
+            document.execCommand('copy');
+            done();
+        }
+        catch {
+            toast('คัดลอกไม่สำเร็จ · เลขบัญชี ' + text);
+        }
+        ta.remove();
+    };
+    if (navigator.clipboard?.writeText)
+        navigator.clipboard.writeText(text).then(done, fallback);
+    else
+        fallback();
+}
 function qrModules(text) { const q = qrcode(0, 'M'); q.addData(text); q.make(); return q; }
 function qrSvg(text, label) {
     const q = qrModules(text);
@@ -206,7 +238,7 @@ function renderPaymentModal() {
     const demoNote = PAYMENT.demo ? `<p class="privacy-note">ระบบสาธิต · เลขพร้อมเพย์เป็นเลขตัวอย่าง โอนจริงไม่ได้</p>` : '';
     let body = '', actions = '';
     if (payMethod === 'cash') {
-        body = `<div class="cash-info"><b>จ่ายเงินสดที่ ${escapeHTML(PAYMENT.cashPlace)}</b><small>${escapeHTML(PAYMENT.cashHours)}</small><ol><li>กด “ขอเลขอ้างอิง” ด้านล่าง</li><li>แสดงเลขอ้างอิง (หรือ QR) ให้เจ้าหน้าที่</li><li>รับใบเสร็จจากเจ้าหน้าที่</li></ol></div>`;
+        body = `<div class="cash-info"><b>จ่ายเงินสดที่ ${escapeHTML(PAYMENT.cashPlace)}</b><small>${escapeHTML(PAYMENT.cashHours)}</small><ol><li>กด “ขอเลขอ้างอิง” ด้านล่าง</li><li>แสดงเลขอ้างอิง (หรือ QR) ให้เจ้าหน้าที่</li><li>รับใบเสร็จจากเจ้าหน้าที่</li></ol></div>${accountBlockHTML()}`;
         actions = `<button class="secondary" onclick="modal.close()">กลับ</button><button onclick="submitCashPayment()">ขอเลขอ้างอิง</button>`;
     }
     else {
@@ -215,7 +247,7 @@ function renderPaymentModal() {
         const slip = `<div class="slip-box"><label class="upload scan-upload">${slipFile ? 'เปลี่ยนรูปสลิป' : 'แนบรูปสลิป (จำเป็น)'}<input type="file" accept="image/*" onchange="pickSlip(this)"></label>${slipFile ? `<div class="slip-preview"><img src="${slipPreviewUrl}" alt="สลิปที่แนบ"><span>${escapeHTML(slipFile.name)}</span></div>` : ''}</div>`;
         if (payMethod === 'qr') {
             const save = `<button type="button" class="secondary small save-qr" onclick="saveQrImage()">บันทึกรูป QR ลงเครื่อง</button>`;
-            body = qrBlock + save + `<p class="help">เปิดแอปธนาคาร → สแกน → ส่องที่ QR นี้ (ยอดเงินกรอกให้อัตโนมัติ) หรือบันทึกรูปแล้วเลือกจาก “รูปภาพ/อัลบั้ม” ในแอป</p>` + slip;
+            body = qrBlock + accountBlockHTML() + save + `<p class="help">เปิดแอปธนาคาร → สแกน → ส่องที่ QR นี้ (ยอดเงินกรอกให้อัตโนมัติ) หรือบันทึกรูปแล้วเลือกจาก “รูปภาพ/อัลบั้ม” ในแอป</p>` + slip;
         }
         else {
             // แตะโลโก้ = เด้งเข้าแอปทันที · แอปไม่รับยอดจากเว็บ → ในแอปให้สแกน QR จากรูปที่บันทึกไว้

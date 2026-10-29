@@ -178,3 +178,5 @@ smartgov/
 
 > โครงสร้างฐานข้อมูล: ยึด **TypeORM entities** (`backend/src/database/entities/`) + **migrations** เป็นความจริง — ไม่มีเอกสาร schema แยก (เคยมีแต่ล้าสมัยจนลบทิ้ง)
 ```
+#   D e m o  
+ 

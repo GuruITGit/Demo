@@ -3,7 +3,7 @@
 // ใช้สถานะชุดเดียวกับหน้าประชาชน (localStorage 'market:payments') จึงเห็นรายการที่ประชาชนส่งมาบนเครื่องเดียวกัน
 type StaffMode = 'market' | 'waste';
 type StaffTab = 'overview' | 'manage' | 'payments';
-type StaffSub = 'plan' | 'rates' | 'qr' | 'queue' | 'dues';
+type StaffSub = 'plan' | 'rates' | 'qr' | 'queue' | 'dues' | 'report';
 const STAFF_MODE: StaffMode = document.body.dataset.staff === 'waste' ? 'waste' : 'market';
 const STAFF_TITLE = STAFF_MODE === 'waste' ? 'ค่าเก็บขยะบ้าน' : 'ค่าแผงตลาด';
 const TAB_ICON: Record<StaffTab, string> = { overview: 'overview', manage: STAFF_MODE === 'market' ? 'stall' : 'house', payments: 'payment' };
@@ -53,7 +53,7 @@ function subsOf(t: StaffTab): [StaffSub, string][] {
   if (t === 'manage') return STAFF_MODE === 'market' ? [['plan', 'ผังแผง'], ['rates', 'พื้นที่/ราคา'], ['qr', 'QR แผง']] : [['qr', 'QR บ้าน']];
   if (t === 'payments') {
     const n = staffGroups('pending').length + staffGroups('cash').length;
-    return [['queue', n ? `รอตรวจ (${n})` : 'รอตรวจ'], ['dues', 'ค้างชำระ']];
+    return [['queue', n ? `รอตรวจ (${n})` : 'รอตรวจ'], ['dues', 'ค้างชำระ'], ['report', 'รายงาน']];
   }
   return [];
 }
@@ -246,6 +246,38 @@ function duesSearchHTML(home = false) {
   <div id="dues-list" data-home="${home ? 1 : 0}">${duesListHTML(!home)}</div>`;
 }
 
+/** ตัวกรองรายงาน: ค้างตั้งแต่กี่เดือนขึ้นไป */
+let staffReportMin = 1;
+const REPORT_MIN_OPTIONS: [number, string][] = [[1, 'ค้างตั้งแต่ 1 เดือน'], [2, 'ค้าง 2 เดือนขึ้นไป'], [3, 'ค้าง 3 เดือนขึ้นไป']];
+function setReportMin(n: number) { staffReportMin = n; render(); }
+
+/** นับเฉพาะเดือนที่ยังไม่ชำระ (รายการที่รอตรวจหรือรอรับเงินสดไม่นับเป็นค้าง) */
+function reportRows() {
+  return duesRows()
+    .map(r => ({ ...r, unpaidMonths: [...new Set(r.bills.filter(b => PAYABLE.includes(b.status)).map(b => b.month))] }))
+    .filter(r => r.unpaidMonths.length >= staffReportMin && r.due > 0)
+    .sort((a, b) => b.unpaidMonths.length - a.unpaidMonths.length || b.due - a.due);
+}
+
+function reportHTML() {
+  const rows = reportRows();
+  const total = rows.reduce((n, r) => n + r.due, 0);
+  const label = REPORT_MIN_OPTIONS.find(([n]) => n === staffReportMin)?.[1] ?? '';
+  const today = new Date().toLocaleDateString('th-TH', { day: 'numeric', month: 'long', year: 'numeric' });
+  return `<div class="staff-report-bar no-print">
+    <div class="staff-filter-row">${REPORT_MIN_OPTIONS.map(([n, l]) => `<button type="button" class="${staffReportMin === n ? 'active' : ''}" onclick="setReportMin(${n})">${l}</button>`).join('')}</div>
+    <button type="button" class="staff-report-print" onclick="window.print()">${staffIcon('print', 16)}<span>พิมพ์รายงาน</span></button>
+  </div>
+  <div class="staff-report-sheet">
+    <div class="staff-report-title"><b>รายงานยอดค้างชำระ · ${escapeHTML(STAFF_TITLE)}</b><small>${escapeHTML(label)} · ${rows.length} ราย · รวม ${money(total)} บาท · พิมพ์วันที่ ${today}</small></div>
+    ${rows.length ? `<div class="staff-report-scroll"><table class="staff-report-table">
+      <thead><tr><th>ลำดับ</th><th>ผู้จ่าย</th><th>แผง / บ้านเลขที่</th><th>เดือนที่ค้าง</th><th class="num">จำนวนเดือน</th><th class="num">ยอดค้าง (บาท)</th></tr></thead>
+      <tbody>${rows.map((r, i) => `<tr><td>${i + 1}</td><td>${escapeHTML(r.first.merchant)}</td><td>${escapeHTML(staffPlace(r.first))} · ${escapeHTML(r.ref)}</td><td>${escapeHTML(r.unpaidMonths.join(', '))}</td><td class="num">${r.unpaidMonths.length}</td><td class="num">${money(r.due)}</td></tr>`).join('')}</tbody>
+      <tfoot><tr><td colspan="4">รวม ${rows.length} ราย</td><td class="num"></td><td class="num">${money(total)}</td></tr></tfoot>
+    </table></div>` : '<div class="staff-empty">ไม่มีรายการตามเงื่อนไขนี้</div>'}
+  </div>`;
+}
+
 function duesHTML() {
   const rows = duesRows();
   const total = rows.reduce((n, r) => n + r.due, 0);
@@ -338,7 +370,7 @@ function render() {
   ];
   const subs = subsOf(staffTab);
   const sub = subs.find(([s]) => s === staffSub)?.[0] ?? subs[0]?.[0];
-  const views: Record<StaffSub, () => string> = { plan: planHTML, rates: ratesHTML, qr: qrHTML, queue: queueHTML, dues: duesHTML };
+  const views: Record<StaffSub, () => string> = { plan: planHTML, rates: ratesHTML, qr: qrHTML, queue: queueHTML, dues: duesHTML, report: reportHTML };
   const body = staffTab === 'overview' ? overviewHTML() : views[sub]();
   const subNav = subs.length > 1
     ? `<nav class="staff-subtabs" aria-label="เมนูย่อย">${subs.map(([v, label]) => `<button type="button" class="${sub === v ? 'active' : ''}" aria-current="${sub === v}" onclick="setStaffSub('${v}')">${label}</button>`).join('')}</nav>`
