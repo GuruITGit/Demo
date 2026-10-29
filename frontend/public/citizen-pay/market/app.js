@@ -755,7 +755,7 @@ function renderNav() { nav.innerHTML = navItems().map(([id, ic, label]) => `<but
 function searchPage() {
     const tokens = searchTokens(searchTerm);
     const matches = tokens.length ? DEMO.bills.filter(b => matchesAllTokens(`${b.merchant} ${b.ref} ${b.stall || ''} ${b.location || ''} ${b.id}`, tokens)).sort((a, b) => b.id.localeCompare(a.id)) : [];
-    const shortcuts = searchTerm ? '' : `<div class="payment-shortcuts"><button class="payment-shortcut" type="button" onclick="openQrScanner()">${SHORTCUT_QR_ART}<b>สแกน QR ที่แผง</b><small>เปิดกล้องส่องรหัสบนแผง</small></button><button class="payment-shortcut" type="button" onclick="openPaymentMap()">${SHORTCUT_MAP_ART}<b>เลือกแผงจากผัง</b><small>แตะล็อกเพื่อดูยอดค้าง</small></button></div>`;
+    const shortcuts = searchTerm ? '' : `<div class="payment-shortcuts" style="grid-template-columns:1fr"><button class="payment-shortcut" type="button" onclick="openQrScanner()">${SHORTCUT_QR_ART}<b>สแกน QR ที่แผง</b><small>เปิดกล้องส่องรหัสบนแผง</small></button></div>`;
     return searchHeaderHTML('จ่ายค่าแผงตลาด', 'ชื่อ หรือเลขล็อก', 'เช่น สมใจ หรือ A06', 'ลองค้นหา “สมใจ” หรือ “A06”', ' with-photo') + shortcuts + billListHTML({ title: 'ค่าแผงตลาด', matches, promptText: 'พิมพ์ชื่อหรือเลขล็อก', payerLabel: b => 'ล็อก ' + (b.stall || b.ref), chargeLabel: b => b.kind === 'ค่าขยะ' ? 'ค่าขยะแผง' : 'ค่าเช่าแผง' });
 }
 const SHORTCUT_QR_ART = '<img class="shortcut-art shortcut-art-photo" src="/citizen-pay/shared/img/scan-qr-market.webp" width="600" height="386" alt="" aria-hidden="true">';
