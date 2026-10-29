@@ -28,6 +28,9 @@ export const SERVICE_GROUPS: { title: string; items: CitizenService[] }[] = [
 
 export const ALL_SERVICES = SERVICE_GROUPS.flatMap((g) => g.items);
 
+/** การ์ดหน้าแรก — เฉพาะที่ประชาชนใช้บ่อย · ค่าน้ำประปา/เงินฌาปนกิจยังอยู่ในหน้า "ดูทั้งหมด" */
+export const HOME_SERVICES = ['ค่าเก็บขยะ', 'ค่าแผงตลาด', 'แจ้งเหตุ / ร้องเรียน', 'ขอใช้รถ'].flatMap((t) => ALL_SERVICES.filter((s) => s.title === t));
+
 /** การ์ดบริการสไตล์แอปทางรัฐ — พื้นพาสเทล ชื่อมุมซ้ายบน ภาพประกอบมุมขวาล่าง · ยังไม่เปิด = กดไม่ได้ + ป้าย "เร็วๆ นี้" */
 export function ServiceTile({ sv }: { sv: CitizenService }) {
   // ปรับตามความกว้างการ์ดเอง (container query) — การ์ดแคบ (มือถือ / 4 คอลัมน์) ใช้แบบย่อ: ซ่อนคำอธิบาย ภาพเล็กลง

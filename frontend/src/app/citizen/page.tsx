@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { NewsItem, NEWS_TONE, normUrl, thaiDate } from './news/news-shared';
-import { SERVICE_GROUPS, ServiceTiles } from './service-grid';
+import { HOME_SERVICES, ServiceTiles } from './service-grid';
 import { BOX, SectionHead } from './cz-ui';
 import { LineIcon, FacebookIcon, MapPinIcon } from './brand-icons';
 
@@ -142,43 +142,11 @@ export default function CitizenHome() {
 
 /** บริการออนไลน์ — การ์ด 2×2 + ลิงก์ "ดูทั้งหมด" ไปหน้ารวมบริการ */
 function Services() {
-  // ปัดทีละหน้า — 1 หน้า = 1 หมวด (การ์ด 2×2) เห็นทีละ 4 ก้อน · จุดด้านล่างบอกหน้า/กดข้ามหน้าได้ · จอใหญ่มีปุ่มลูกศรด้วย
-  const scroller = useRef<HTMLDivElement>(null);
-  const [page, setPage] = useState(0);
-  const last = SERVICE_GROUPS.length - 1;
-  const onScroll = () => {
-    const el = scroller.current;
-    if (el) setPage(Math.round(el.scrollLeft / el.clientWidth));
-  };
-  const goTo = (i: number) => {
-    const el = scroller.current;
-    if (el) el.scrollTo({ left: Math.max(0, Math.min(last, i)) * el.clientWidth, behavior: 'smooth' });
-  };
-  const arrow = 'flex h-10 w-10 items-center justify-center rounded-full border border-[#DCEBF8] bg-white text-sky-700 transition hover:border-sky-400 disabled:opacity-35 max-[720px]:hidden';
-
   return (
     <section id="services" className={`scroll-mt-4 ${BOX}`}>
       <SectionHead title="บริการออนไลน์"
         aside={<Link href="/citizen/all" className="flex min-h-11 items-center gap-1 whitespace-nowrap font-semibold text-sky-600 hover:underline max-[720px]:text-[14px]">ดูทั้งหมด <ArrowRight className="h-4 w-4" /></Link>} />
-      <div ref={scroller} onScroll={onScroll}
-        className="flex snap-x snap-mandatory overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {SERVICE_GROUPS.map((g) => (
-          <div key={g.title} className="w-full shrink-0 snap-start">
-            <h3 className="mb-3 text-[17px] font-semibold text-[#334155] max-[720px]:mb-2 max-[720px]:text-[14px]">{g.title}</h3>
-            <ServiceTiles items={g.items} />
-          </div>
-        ))}
-      </div>
-      <div className="mt-4 flex items-center justify-center gap-3 max-[720px]:mt-3">
-        <button type="button" onClick={() => goTo(page - 1)} disabled={page === 0} aria-label="หน้าก่อน" className={arrow}><ChevronLeft className="h-5 w-5" /></button>
-        <div className="flex gap-1.5">
-          {SERVICE_GROUPS.map((g, i) => (
-            <button key={g.title} type="button" onClick={() => goTo(i)} aria-label={g.title}
-              className={`h-2 rounded-full transition-all ${i === page ? 'w-6 bg-sky-600' : 'w-2 bg-[#CFE4F6]'}`} />
-          ))}
-        </div>
-        <button type="button" onClick={() => goTo(page + 1)} disabled={page === last} aria-label="หน้าถัดไป" className={arrow}><ChevronRight className="h-5 w-5" /></button>
-      </div>
+      <ServiceTiles items={HOME_SERVICES} />
     </section>
   );
 }
