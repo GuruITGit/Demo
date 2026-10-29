@@ -160,7 +160,7 @@ export function TopNav({ onMenuClick }: { onMenuClick?: () => void }) {
 
   return (
     <div className="no-print shrink-0 z-30 bg-blue-700">
-      <div className="flex items-center gap-3 px-4 h-16">
+      <div className="flex items-center gap-2 sm:gap-3 px-3 sm:px-4 h-16">
         {/* ปุ่มเมนู (เฉพาะมือถือ/แท็บเล็ต) */}
         <button onClick={onMenuClick} aria-label="เปิดเมนู"
           className="lg:hidden p-2 -ml-1 rounded-full text-white/90 hover:bg-white/15 transition-colors shrink-0">
@@ -185,7 +185,7 @@ export function TopNav({ onMenuClick }: { onMenuClick?: () => void }) {
         </Link>
 
         {/* ชื่อหน่วยงาน + กระดิ่งแจ้งเตือน — กลาง top bar */}
-        <div className="flex-1 flex justify-center items-center gap-4 sm:gap-6 px-2 min-w-0">
+        <div className="flex-1 flex justify-center items-center gap-2 sm:gap-6 px-0 sm:px-2 min-w-0">
           {org?.nameTh && (
             <span className="truncate text-lg sm:text-2xl font-bold text-white tracking-tight">{org.nameTh}</span>
           )}
@@ -301,7 +301,7 @@ export function TopNav({ onMenuClick }: { onMenuClick?: () => void }) {
 
           {/* ค้นหาด่วน Ctrl+K */}
           <button onClick={openPalette} title="ค้นหาด่วน (Ctrl+K)" aria-label="ค้นหาด่วน"
-            className="p-2 rounded-full text-white/90 hover:bg-white/15 transition-colors">
+            className="hidden sm:block p-2 rounded-full text-white/90 hover:bg-white/15 transition-colors">
             <Search className="h-4 w-4" aria-hidden />
           </button>
 
@@ -359,14 +359,14 @@ export function TopNav({ onMenuClick }: { onMenuClick?: () => void }) {
           {/* สลับสว่าง/มืด */}
           <button onClick={() => setMode(mode === 'dark' ? 'light' : 'dark')} aria-label="สลับโหมดสว่าง/มืด"
             title={mode === 'dark' ? 'สลับเป็นโหมดสว่าง' : 'สลับเป็นโหมดมืด'}
-            className="p-2 rounded-full text-white/90 hover:bg-white/15 transition-colors">
+            className="hidden sm:block p-2 rounded-full text-white/90 hover:bg-white/15 transition-colors">
             {mode === 'dark' ? <Sun className="h-4 w-4" aria-hidden /> : <Moon className="h-4 w-4" aria-hidden />}
           </button>
 
           {/* เสียงแจ้งเตือน */}
           <button onClick={toggleSound} aria-pressed={soundOn} aria-label={soundOn ? 'ปิดเสียงแจ้งเตือน' : 'เปิดเสียงแจ้งเตือน'}
             title={soundOn ? 'ปิดเสียงแจ้งเตือน' : 'เปิดเสียงแจ้งเตือน'}
-            className="p-2 rounded-full text-white/90 hover:bg-white/15 transition-colors">
+            className="hidden sm:block p-2 rounded-full text-white/90 hover:bg-white/15 transition-colors">
             {soundOn ? <Volume2 className="h-4 w-4" aria-hidden /> : <VolumeX className="h-4 w-4" aria-hidden />}
           </button>
 

@@ -38,6 +38,7 @@ import { MaintenanceModule } from './modules/maintenance/maintenance.module';
 import { ProjectsModule } from './modules/projects/projects.module';
 import { MarketModule } from './modules/market/market.module';
 import { WasteModule } from './modules/waste/waste.module';
+import { CitizenPayModule } from './modules/citizen-pay/citizen-pay.module';
 import { SequenceModule } from './common/services/sequence.module';
 
 @Module({
@@ -123,6 +124,7 @@ import { SequenceModule } from './common/services/sequence.module';
     ProjectsModule,
     MarketModule,
     WasteModule,
+    CitizenPayModule,
     SequenceModule,
     ModuleAccessModule,
   ],

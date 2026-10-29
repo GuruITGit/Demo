@@ -1,15 +1,25 @@
-/** ค่าแผงตลาด + ค่าเก็บขยะบ้าน (ข้อมูลสมมติ ตรงกับ seed-market-waste ของ backend) */
-import { get, post, patch, registerSeed, uid, nowIso, byId, badRequest, type Ctx, type Row } from '../core';
+/**
+ * ค่าแผงตลาด + ค่าเก็บขยะบ้าน + ทะเบียนครัวเรือน + แผงลอย (ข้อมูลสมมติ)
+ * ตอบ endpoint เดียวกับ backend (market/*, waste/*) ทุกตัว — ตรรกะและข้อความผิดพลาดตรงกับ service จริง
+ */
+import { get, post, patch, put, del, registerSeed, uid, nowIso, badRequest, notFound, type Ctx, type Row } from '../core';
 import { ORG_ID } from '../seed-base';
 import { needPerm } from './base';
 
+const pad2 = (n: number) => String(n).padStart(2, '0');
+const ymd = (d: Date) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+/** งวด พ.ศ.-เดือน ของเดือนที่ offset จากเดือนนี้ เช่น 2569-10 */
 const period = (offset = 0) => {
-  const d = new Date(); d.setMonth(d.getMonth() + offset);
-  return `${d.getFullYear() + 543}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() + offset);
+  return `${d.getFullYear() + 543}-${pad2(d.getMonth() + 1)}`;
 };
+/** วันสุดท้ายของเดือนในงวด (ค.ศ.) — ใช้เป็นวันครบกำหนด */
+const periodEnd = (per: string) => { const [by, m] = per.split('-').map(Number); return ymd(new Date(by - 543, m, 0)); };
+const isPeriod = (s: unknown) => typeof s === 'string' && /^\d{4}-(0[1-9]|1[0-2])$/.test(s);
+const OPEN = ['unpaid', 'pending', 'mismatch'];
+const METHODS = ['cash', 'qr', 'transfer'];
 
 const ROWS = [{ zone: 'A', rate: 1200 }, { zone: 'B', rate: 900 }, { zone: 'C', rate: 1500 }, { zone: 'D', rate: 1200 }, { zone: 'E', rate: 1050 }];
-const WASTE_STALL_FEE = 30;
 const TENANT: Record<string, string> = {
   A01: 'นางสาวศิริพร ทองดี', A02: 'นายประเสริฐ ศรีสุข', A03: 'นางอำไพ บุญรอด', A05: 'นายบุญมี คำไหล', A06: 'นางสมใจ ใจดี',
   A08: 'นางสาวกัญญา พิมพ์ดี', B02: 'นายวิทยา แซ่ลี้', B04: 'นางมะลิ แสงทอง', B07: 'นายสมชาย ไทยเจริญ', C03: 'นายวิชัย ผักสด',
@@ -19,7 +29,7 @@ const TENANT: Record<string, string> = {
 const OCCUPIED = ['A01', 'A02', 'A03', 'A05', 'A06', 'A08', 'B02', 'B04', 'B07', 'C03', 'C06', 'D01', 'E09'];
 const RESERVED = ['A04', 'B05', 'C08', 'D07', 'E04'];
 const PAID = new Set(['A01', 'D01', 'B02']);
-const PENDING_RENT = new Set(['B04', 'B05']);
+const PENDING_RENT = new Set(['B04']);
 const MISMATCH_RENT = new Set(['C03']);
 const ARREARS: [string, number][] = [['A06', -2], ['A06', -1], ['B07', -2], ['B07', -1]];
 const HOUSEHOLDS = [
@@ -28,90 +38,486 @@ const HOUSEHOLDS = [
   { ref: 'HH-030', name: 'มะลิ แสงทอง', houseNo: '18', moo: '5', phone: '0810000030' },
   { ref: 'HH-042', name: 'ประยูร ทองดี', houseNo: '12/3', moo: '2', phone: '0810000042' },
 ];
+const CONFIG = {
+  promptpayId: '', promptpayType: 'mobile', payeeName: '', accountBank: '', accountNo: '',
+  cashPlace: 'งานการเงิน ที่ทำการ อบต.', cashHours: 'จันทร์–ศุกร์ 08:30–16:30 น. (เว้นวันหยุดราชการ)',
+  wasteStallFee: 30, householdFee: 40,
+};
 
 registerSeed((db) => {
   const P = period();
   db.marketStalls = ROWS.flatMap((row) => Array.from({ length: 10 }, (_, i) => {
-    const code = `${row.zone}${String(i + 1).padStart(2, '0')}`;
+    const code = `${row.zone}${pad2(i + 1)}`;
     const status = OCCUPIED.includes(code) ? 'occupied' : RESERVED.includes(code) ? 'reserved' : 'available';
-    return { id: `stall-${code}`, organizationId: ORG_ID, stallCode: code, zone: row.zone, status, active: true, tenantName: status === 'available' ? null : TENANT[code] ?? null, monthlyRate: String(row.rate) };
+    return {
+      id: `stall-${code}`, organizationId: ORG_ID, stallCode: code, zone: row.zone, status, active: true,
+      tenantName: status === 'available' ? null : TENANT[code] ?? null, contactPhone: null, reservedAt: null, monthlyRate: String(row.rate),
+    };
   }));
   const rate = (code: string) => db.marketStalls.find((s) => s.stallCode === code)!.monthlyRate;
-  const bill = (code: string, kind: string, per: string, amount: string, status: string) => ({
+  const bill = (code: string, kind: string, per: string, amount: string, status: string, extra: Row = {}) => ({
     id: uid(), organizationId: ORG_ID, stallId: `stall-${code}`, stallCode: code, payerName: TENANT[code], kind, period: per, amount, status,
-    paidMethod: status === 'paid' ? 'cash' : null, paidAt: status === 'paid' ? nowIso() : null, receiptNo: status === 'paid' ? `MK-${per}-SEED${code}${kind === 'waste' ? 'W' : ''}` : null,
+    dueDate: periodEnd(per), paidMethod: status === 'paid' ? 'cash' : null, paidAt: status === 'paid' ? nowIso() : null,
+    receiptNo: status === 'paid' ? `MK-${per.slice(-2)}-SEED${code}${kind === 'waste' ? 'W' : ''}` : null,
+    submittedMethod: null, submittedAt: null, slipUrl: null, reviewNote: null, ...extra,
   });
   db.marketBills = [
     ...[...OCCUPIED, ...RESERVED].flatMap((code) => [
-      bill(code, 'rent', P, rate(code), PAID.has(code) ? 'paid' : PENDING_RENT.has(code) ? 'pending' : MISMATCH_RENT.has(code) ? 'mismatch' : 'unpaid'),
-      bill(code, 'waste', P, String(WASTE_STALL_FEE), PAID.has(code) ? 'paid' : 'unpaid'),
+      bill(code, 'rent', P, rate(code), PAID.has(code) ? 'paid' : PENDING_RENT.has(code) ? 'pending' : MISMATCH_RENT.has(code) ? 'mismatch' : 'unpaid',
+        PENDING_RENT.has(code) ? { submittedMethod: 'transfer', submittedAt: nowIso() } : MISMATCH_RENT.has(code) ? { reviewNote: 'ยอดในสลิปไม่ตรงกับบิล' } : {}),
+      bill(code, 'waste', P, String(CONFIG.wasteStallFee), PAID.has(code) ? 'paid' : 'unpaid'),
     ]),
     ...ARREARS.map(([code, off]) => bill(code, 'rent', period(off), rate(code), 'unpaid')),
   ];
+  db.marketOutsideLocations = [
+    { id: 'outside-1', organizationId: ORG_ID, name: 'หน้าตลาดสด (ลานหน้าอาคาร)', rentRate: '40', rentPeriod: 'daily', enabled: true, active: true, createdAt: nowIso() },
+    { id: 'outside-2', organizationId: ORG_ID, name: 'ลานจอดรถ (รายเดือน)', rentRate: '1500', rentPeriod: 'monthly', enabled: false, active: true, createdAt: nowIso() },
+  ];
+  db.marketOutsideCollections = [];
+  db.wasteHouseholds = HOUSEHOLDS.map((h) => ({
+    id: `hh-${h.ref}`, organizationId: ORG_ID, householdRef: h.ref, holderName: h.name, houseNo: h.houseNo, moo: h.moo, phone: h.phone,
+    monthlyFee: null, active: true, createdAt: nowIso(),
+  }));
   db.wasteBills = HOUSEHOLDS.flatMap((h) => [period(-1), P].map((per) => ({
-    id: uid(), organizationId: ORG_ID, householdRef: h.ref, holderName: h.name, houseNo: h.houseNo, moo: h.moo, phone: h.phone, period: per, amount: '40', status: 'unpaid',
-    paidMethod: null, paidAt: null, receiptNo: null,
+    id: uid(), organizationId: ORG_ID, householdRef: h.ref, holderName: h.name, houseNo: h.houseNo, moo: h.moo, phone: h.phone, period: per,
+    amount: '40', status: h.ref === 'HH-021' && per === P ? 'pending' : 'unpaid', dueDate: periodEnd(per), paidMethod: null, paidAt: null, receiptNo: null,
+    submittedMethod: h.ref === 'HH-021' && per === P ? 'transfer' : null, submittedAt: h.ref === 'HH-021' && per === P ? nowIso() : null, slipUrl: null, reviewNote: null,
   })));
+  db.payConfig = [{ id: 'pay-config', ...CONFIG }];
+  db.receiptSeq = [];
 });
 
-const receiptNo = (prefix: string, per: string) => `${prefix}-${per}-${Date.now().toString(36).toUpperCase()}`;
-const METHODS = ['cash', 'qr', 'transfer'];
+// ───────────────────────────── ตัวช่วย
+const cfg = (c: Ctx) => c.db.payConfig[0] as Row;
+const one = (list: Row[], pred: (r: Row) => boolean, msg: string): Row => { const r = list.find(pred); if (!r) throw notFound(msg); return r; };
+const byIdOrThrow = (list: Row[], id: string, msg: string) => one(list, (r) => r.id === id && r.organizationId === ORG_ID, msg);
 
-// ───── ค่าแผงตลาด ─────
-get('/market/stalls', (c) => { needPerm(c, 'market:read:MarketStall'); return c.db.marketStalls.filter((s) => s.active).sort((a, b) => a.stallCode.localeCompare(b.stallCode)); });
+/** เลขใบเสร็จ MK-yy-000001 รันต่อประเภท ต่อปี พ.ศ. */
+function nextReceipt(c: Ctx, prefix: string): string {
+  const yy = String(new Date().getFullYear() + 543).slice(-2);
+  let row = c.db.receiptSeq.find((r) => r.prefix === prefix && r.yy === yy);
+  if (!row) { row = { prefix, yy, last: 0 }; c.db.receiptSeq.push(row); }
+  row.last += 1;
+  return `${prefix}-${yy}-${String(row.last).padStart(6, '0')}`;
+}
+
+function payBill(c: Ctx, list: Row[], prefix: string, notFoundMsg: string) {
+  const bill = list.find((b) => b.id === c.params.id && b.organizationId === ORG_ID);
+  if (!bill) throw notFound(notFoundMsg);
+  if (bill.status === 'paid') throw badRequest('บิลนี้ชำระแล้ว');
+  const method = METHODS.includes(c.body?.method) ? c.body.method : 'cash';
+  Object.assign(bill, { status: 'paid', paidMethod: method, paidAt: nowIso(), reviewNote: null, receiptNo: nextReceipt(c, prefix) });
+  return bill;
+}
+
+function rejectBill(c: Ctx, list: Row[], notFoundMsg: string, status: string) {
+  const bill = list.find((b) => b.id === c.params.id && b.organizationId === ORG_ID);
+  if (!bill) throw notFound(notFoundMsg);
+  if (bill.status === 'paid') throw badRequest('บิลนี้ชำระแล้ว ไม่สามารถปฏิเสธได้');
+  bill.status = status;
+  bill.reviewNote = String(c.body?.note ?? '').trim().slice(0, 300) || 'เจ้าหน้าที่ตรวจแล้วไม่ตรง กรุณาแจ้งชำระใหม่';
+  return bill;
+}
+
+const sortBills = (a: Row, b: Row) => b.period.localeCompare(a.period) || a.stallCode?.localeCompare(b.stallCode ?? '') || String(a.kind ?? '').localeCompare(String(b.kind ?? ''));
+
+// ───────────────────────────── ค่าแผงตลาด: ผังแผง
+get('/market/stalls', (c) => {
+  needPerm(c, 'market:read:MarketStall');
+  return c.db.marketStalls.filter((s) => s.active && s.organizationId === ORG_ID).sort((a, b) => a.stallCode.localeCompare(b.stallCode));
+});
+
+post('/market/stalls', (c) => {
+  needPerm(c, 'market:manage:MarketStall');
+  const code = String(c.body?.stallCode ?? '').trim().toUpperCase();
+  if (!/^[A-Z0-9ก-๙]{1,10}$/i.test(code)) throw badRequest('รหัสแผงใช้ตัวอักษร/ตัวเลข ไม่เกิน 10 ตัว');
+  const zone = String(c.body?.zone ?? '').trim().toUpperCase().slice(0, 10) || code.replace(/[0-9]+$/, '').slice(0, 10) || code.slice(0, 1);
+  const rate = String(Number(c.body?.monthlyRate) || 0);
+  const ex = c.db.marketStalls.find((s) => s.stallCode === code);
+  if (ex?.active) throw badRequest(`มีแผง ${code} อยู่แล้ว`);
+  if (ex) return Object.assign(ex, { active: true, zone, status: 'available', tenantName: null, contactPhone: null, reservedAt: null, monthlyRate: rate });
+  const row = { id: uid(), organizationId: ORG_ID, stallCode: code, zone, status: 'available', tenantName: null, contactPhone: null, reservedAt: null, monthlyRate: rate, active: true };
+  c.db.marketStalls.push(row);
+  return row;
+});
+
+post('/market/stalls/bulk', (c) => {
+  needPerm(c, 'market:manage:MarketStall');
+  const zone = String(c.body?.zone ?? '').trim().toUpperCase();
+  const from = Number(c.body?.from), to = Number(c.body?.to);
+  if (!zone) throw badRequest('กรุณาระบุโซน');
+  if (!(from >= 1 && to >= 1) || to < from) throw badRequest('เลขล็อกสุดท้ายต้องไม่น้อยกว่าล็อกแรก');
+  if (to - from + 1 > 200) throw badRequest('เพิ่มได้ครั้งละไม่เกิน 200 ล็อก');
+  const rate = String(Number(c.body?.monthlyRate) || 0);
+  let created = 0, reopened = 0, skipped = 0;
+  for (let i = from; i <= to; i++) {
+    const code = `${zone}${pad2(i)}`;
+    const ex = c.db.marketStalls.find((s) => s.stallCode === code);
+    if (ex?.active) { skipped++; continue; }
+    if (ex) { Object.assign(ex, { active: true, zone, status: 'available', tenantName: null, contactPhone: null, reservedAt: null, monthlyRate: rate }); reopened++; continue; }
+    c.db.marketStalls.push({ id: uid(), organizationId: ORG_ID, stallCode: code, zone, status: 'available', tenantName: null, contactPhone: null, reservedAt: null, monthlyRate: rate, active: true });
+    created++;
+  }
+  return { created, reopened, skipped };
+});
+
+post('/market/zones/rate', (c) => {
+  needPerm(c, 'market:manage:MarketStall');
+  const zone = String(c.body?.zone ?? '').trim().toUpperCase();
+  const rows = c.db.marketStalls.filter((s) => s.active && s.zone === zone);
+  if (!rows.length) throw notFound('ไม่พบโซนนี้');
+  rows.forEach((s) => { s.monthlyRate = String(Number(c.body?.monthlyRate) || 0); });
+  return { zone, updated: rows.length };
+});
+
 patch('/market/stalls/:id', (c) => {
   needPerm(c, 'market:manage:MarketStall');
-  const s = byId(c.db.marketStalls, c.params.id);
+  const s = byIdOrThrow(c.db.marketStalls, c.params.id, 'ไม่พบแผงนี้');
   const b = c.body ?? {};
   if (b.status !== undefined) s.status = b.status;
   if (b.tenantName !== undefined) s.tenantName = b.tenantName || null;
-  if (b.monthlyRate !== undefined) s.monthlyRate = String(b.monthlyRate);
-  if (s.status === 'available') s.tenantName = null;
+  if (b.monthlyRate !== undefined) s.monthlyRate = String(Number(b.monthlyRate) || 0);
+  if (s.status === 'available') { s.tenantName = null; s.contactPhone = null; s.reservedAt = null; }
   return s;
 });
+
+del('/market/stalls/:id', (c) => {
+  needPerm(c, 'market:manage:MarketStall');
+  const s = byIdOrThrow(c.db.marketStalls, c.params.id, 'ไม่พบแผงนี้');
+  const open = c.db.marketBills.filter((b) => b.stallCode === s.stallCode && b.organizationId === ORG_ID && OPEN.includes(b.status)).length;
+  if (open) throw badRequest(`แผง ${s.stallCode} ยังมีบิลค้าง ${open} รายการ — เก็บเงินหรือยกเลิกบิลก่อนลบแผง`);
+  Object.assign(s, { active: false, status: 'available', tenantName: null, contactPhone: null, reservedAt: null });
+  return { ok: true };
+});
+
+// ───────────────────────────── ค่าแผงตลาด: บิล
 get('/market/bills', (c) => {
   needPerm(c, 'market:read:MarketBill');
   const { status, period: per, stallCode } = c.query;
   return c.db.marketBills
-    .filter((b) => (!status || b.status === status) && (!per || b.period === per) && (!stallCode || b.stallCode === stallCode))
-    .sort((a, b) => b.period.localeCompare(a.period) || a.stallCode.localeCompare(b.stallCode) || a.kind.localeCompare(b.kind)).slice(0, 500);
+    .filter((b) => b.organizationId === ORG_ID && (!status || b.status === status) && (!per || b.period === per) && (!stallCode || b.stallCode === String(stallCode).toUpperCase()))
+    .sort(sortBills).slice(0, 500);
 });
-post('/market/bills/:id/pay', (c) => payBill(c, c.db.marketBills, 'MK', 'ไม่พบบิลค่าแผงนี้', 'market:manage:MarketBill'));
 
-// ───── ค่าเก็บขยะบ้าน ─────
+post('/market/bills', (c) => {
+  needPerm(c, 'market:manage:MarketBill');
+  const code = String(c.body?.stallCode ?? '').trim().toUpperCase();
+  const kind = c.body?.kind === 'waste' ? 'waste' : 'rent';
+  const per = String(c.body?.period ?? '');
+  const amount = Number(c.body?.amount);
+  if (!isPeriod(per)) throw badRequest('งวดต้องเป็นรูปแบบ พ.ศ.-เดือน เช่น 2569-10');
+  if (!(amount > 0)) throw badRequest('ยอดต้องมากกว่า 0');
+  const stall = c.db.marketStalls.find((s) => s.stallCode === code && s.active);
+  if (!stall) throw notFound(`ไม่พบแผง ${code}`);
+  if (c.db.marketBills.some((b) => b.stallCode === code && b.kind === kind && b.period === per)) throw badRequest('มีบิลชนิดและงวดนี้ของแผงนี้อยู่แล้ว');
+  const row = { id: uid(), organizationId: ORG_ID, stallId: stall.id, stallCode: code, payerName: stall.tenantName || code, kind, period: per, amount: String(amount), dueDate: periodEnd(per), status: 'unpaid', paidMethod: null, paidAt: null, receiptNo: null, submittedMethod: null, submittedAt: null, slipUrl: null, reviewNote: null };
+  c.db.marketBills.push(row);
+  return row;
+});
+
+del('/market/bills/:id', (c) => {
+  needPerm(c, 'market:manage:MarketBill');
+  const b = byIdOrThrow(c.db.marketBills, c.params.id, 'ไม่พบบิลค่าแผงนี้');
+  if (b.status === 'paid') throw badRequest('บิลนี้ชำระแล้ว ลบไม่ได้');
+  c.db.marketBills = c.db.marketBills.filter((x) => x !== b);
+  return { ok: true };
+});
+
+post('/market/bills/generate', (c) => {
+  needPerm(c, 'market:manage:MarketBill');
+  const per = String(c.body?.period || period());
+  if (!isPeriod(per)) throw badRequest('งวดต้องเป็นรูปแบบ พ.ศ.-เดือน เช่น 2569-10');
+  const config = cfg(c);
+  const occupied = c.db.marketStalls.filter((s) => s.active && s.status === 'occupied');
+  const have = new Set(c.db.marketBills.filter((b) => b.period === per).map((b) => `${b.stallCode}|${b.kind}`));
+  let created = 0;
+  for (const s of occupied) {
+    const add = (kind: 'rent' | 'waste', amount: number) => {
+      if (amount <= 0 || have.has(`${s.stallCode}|${kind}`)) return;
+      c.db.marketBills.push({ id: uid(), organizationId: ORG_ID, stallId: s.id, stallCode: s.stallCode, payerName: s.tenantName || s.stallCode, kind, period: per, amount: String(amount), dueDate: periodEnd(per), status: 'unpaid', paidMethod: null, paidAt: null, receiptNo: null, submittedMethod: null, submittedAt: null, slipUrl: null, reviewNote: null });
+      created++;
+    };
+    add('rent', Number(s.monthlyRate));
+    add('waste', Number(config.wasteStallFee));
+  }
+  return { period: per, created, skipped: occupied.length * 2 - created };
+});
+
+post('/market/bills/:id/pay', (c) => { needPerm(c, 'market:manage:MarketBill'); return payBill(c, c.db.marketBills, 'MK', 'ไม่พบบิลค่าแผงนี้'); });
+post('/market/bills/:id/reject', (c) => { needPerm(c, 'market:manage:MarketBill'); return rejectBill(c, c.db.marketBills, 'ไม่พบบิลค่าแผงนี้', 'mismatch'); });
+get('/market/bills/:id/receipt', (c) => {
+  needPerm(c, 'market:read:MarketBill');
+  const b = byIdOrThrow(c.db.marketBills, c.params.id, 'ไม่พบบิลค่าแผงนี้');
+  if (b.status !== 'paid') throw badRequest('บิลนี้ยังไม่ชำระ');
+  return b;
+});
+
+get('/market/summary', (c) => {
+  needPerm(c, 'market:read:MarketBill');
+  const per = c.query.period || null;
+  const bills = c.db.marketBills.filter((b) => !per || b.period === per);
+  const byStatus = [...new Set(bills.map((b) => b.status))].map((status) => {
+    const rows = bills.filter((b) => b.status === status);
+    return { status, count: rows.length, total: rows.reduce((s, b) => s + Number(b.amount), 0) };
+  });
+  const open = bills.filter((b) => b.status !== 'paid');
+  const codes = [...new Set(open.map((b) => b.stallCode))];
+  const arrears = codes.map((code) => {
+    const rows = open.filter((b) => b.stallCode === code);
+    return { stallCode: code, payerName: rows[0].payerName, months: rows.length, total: rows.reduce((s, b) => s + Number(b.amount), 0) };
+  }).sort((a, b) => b.total - a.total || a.stallCode.localeCompare(b.stallCode)).slice(0, 200);
+  const stallCounts = ['available', 'reserved', 'occupied'].map((status) => ({ status, count: c.db.marketStalls.filter((s) => s.active && s.status === status).length }));
+  return { period: per, byStatus, arrears, stallCounts };
+});
+
+// ───────────────────────────── ตั้งค่ารับเงิน/ราคา (ค่าแผงและค่าขยะใช้ชุดเดียวกัน)
+get('/market/config', (c) => { needPerm(c, 'market:read:MarketBill'); return { ...cfg(c), id: undefined }; });
+put('/market/config', (c) => { needPerm(c, 'market:manage:MarketStall'); return saveConfig(c); });
+get('/waste/config', (c) => { needPerm(c, 'waste:read:WasteBill'); return { ...cfg(c), id: undefined }; });
+put('/waste/config', (c) => { needPerm(c, 'waste:manage:WasteBill'); return saveConfig(c); });
+function saveConfig(c: Ctx) {
+  const row = cfg(c), b = c.body ?? {};
+  const text = (v: unknown, max: number, fb: string) => (typeof v === 'string' ? v.trim().slice(0, max) : fb);
+  const fee = (v: unknown, fb: number) => (Number.isFinite(Number(v)) && Number(v) >= 0 ? Math.round(Number(v) * 100) / 100 : fb);
+  Object.assign(row, {
+    promptpayId: text(b.promptpayId, 20, row.promptpayId).replace(/\D/g, ''),
+    promptpayType: ['mobile', 'natid', 'ewallet'].includes(b.promptpayType) ? b.promptpayType : row.promptpayType,
+    payeeName: text(b.payeeName, 120, row.payeeName), accountBank: text(b.accountBank, 60, row.accountBank), accountNo: text(b.accountNo, 30, row.accountNo),
+    cashPlace: text(b.cashPlace, 120, row.cashPlace), cashHours: text(b.cashHours, 120, row.cashHours),
+    wasteStallFee: fee(b.wasteStallFee, row.wasteStallFee), householdFee: fee(b.householdFee, row.householdFee),
+  });
+  return { ...row, id: undefined };
+}
+
+// ───────────────────────────── แผงลอย
+get('/market/outside/locations', (c) => { needPerm(c, 'market:read:MarketStall'); return c.db.marketOutsideLocations.filter((l) => l.active && l.organizationId === ORG_ID); });
+post('/market/outside/locations', (c) => {
+  needPerm(c, 'market:manage:MarketStall');
+  const name = String(c.body?.name ?? '').trim();
+  if (!name) throw badRequest('กรุณาระบุชื่อจุดแผงลอย');
+  const row = { id: uid(), organizationId: ORG_ID, name, rentRate: String(Number(c.body?.rentRate) || 0), rentPeriod: c.body?.rentPeriod === 'monthly' ? 'monthly' : 'daily', enabled: c.body?.enabled ?? true, active: true, createdAt: nowIso() };
+  c.db.marketOutsideLocations.push(row);
+  return row;
+});
+patch('/market/outside/locations/:id', (c) => {
+  needPerm(c, 'market:manage:MarketStall');
+  const l = one(c.db.marketOutsideLocations, (x) => x.id === c.params.id && x.active && x.organizationId === ORG_ID, 'ไม่พบจุดแผงลอยนี้');
+  const b = c.body ?? {};
+  if (b.name !== undefined) { const n = String(b.name).trim(); if (!n) throw badRequest('ชื่อต้องไม่ว่าง'); l.name = n; }
+  if (b.rentRate !== undefined) l.rentRate = String(Number(b.rentRate) || 0);
+  if (b.rentPeriod !== undefined) l.rentPeriod = b.rentPeriod === 'monthly' ? 'monthly' : 'daily';
+  if (b.enabled !== undefined) l.enabled = !!b.enabled;
+  return l;
+});
+del('/market/outside/locations/:id', (c) => {
+  needPerm(c, 'market:manage:MarketStall');
+  const l = one(c.db.marketOutsideLocations, (x) => x.id === c.params.id && x.active && x.organizationId === ORG_ID, 'ไม่พบจุดแผงลอยนี้');
+  Object.assign(l, { active: false, enabled: false });
+  return { ok: true };
+});
+get('/market/outside/collections', (c) => {
+  needPerm(c, 'market:read:MarketBill');
+  const to = String(c.query.to || ymd(new Date()));
+  const from = String(c.query.from || ymd(new Date(Date.now() - 30 * 86400000)));
+  const loc = c.query.locationId;
+  const rows = c.db.marketOutsideCollections
+    .filter((r) => r.organizationId === ORG_ID && (!loc || r.locationId === loc) && r.collectedOn >= from && r.collectedOn <= to)
+    .sort((a, b) => b.collectedOn.localeCompare(a.collectedOn) || b.createdAt.localeCompare(a.createdAt)).slice(0, 500);
+  return { from, to, total: rows.reduce((s, r) => s + Number(r.amount), 0), rows };
+});
+post('/market/outside/collections', (c) => {
+  needPerm(c, 'market:manage:MarketBill');
+  const loc = one(c.db.marketOutsideLocations, (x) => x.id === c.body?.locationId && x.active && x.organizationId === ORG_ID, 'ไม่พบจุดแผงลอยนี้');
+  if (!loc.enabled) throw badRequest('จุดนี้ปิดอยู่ — เปิดจุดก่อนจึงจะเก็บเงินได้');
+  const vendor = String(c.body?.vendorName ?? '').trim();
+  if (!vendor) throw badRequest('กรุณาระบุชื่อผู้ค้า');
+  const row = { id: uid(), organizationId: ORG_ID, locationId: loc.id, vendorName: vendor, collectedOn: /^\d{4}-\d{2}-\d{2}$/.test(c.body?.collectedOn) ? c.body.collectedOn : ymd(new Date()), amount: String(Number(c.body?.amount) || Number(loc.rentRate)), receiptNo: nextReceipt(c, 'MK'), createdAt: nowIso() };
+  c.db.marketOutsideCollections.push(row);
+  return row;
+});
+del('/market/outside/collections/:id', (c) => {
+  needPerm(c, 'market:manage:MarketBill');
+  const r = c.db.marketOutsideCollections.find((x) => x.id === c.params.id && x.organizationId === ORG_ID);
+  if (!r) throw notFound('ไม่พบรายการนี้');
+  c.db.marketOutsideCollections = c.db.marketOutsideCollections.filter((x) => x !== r);
+  return { ok: true };
+});
+
+// ───────────────────────────── ค่าเก็บขยะบ้าน: ค้นหา/บิล
 const normalize = (s: string) => s.replace(/[๐-๙]/g, (d) => String('๐๑๒๓๔๕๖๗๘๙'.indexOf(d))).replace(/\s+/g, ' ').trim();
-function wasteMatches(b: Row, raw: string): boolean {
+function parseHouse(raw: string) {
   const text = normalize(raw);
-  if (!text) return true;
   const digits = text.replace(/[\s-]/g, '');
-  if (/^0\d{8,9}$/.test(digits)) return b.phone === digits;
   const moo = text.match(/(?:หมู่(?:ที่)?|ม\.)\s*(\d+)/);
   const rest = (moo ? text.replace(moo[0], ' ') : text).trim();
   const house = rest.match(/^(?:บ้านเลขที่|เลขที่)?\s*(\d+(?:\/\d+)?)$/);
-  if (house || moo) return !!house && b.houseNo === house[1] && (!moo || b.moo === String(Number(moo[1])));
-  const t = text.toLowerCase();
+  return { text, digits, moo: moo ? String(Number(moo[1])) : null, house: house?.[1] ?? null };
+}
+function wasteMatches(b: Row, raw: string): boolean {
+  const p = parseHouse(raw ?? '');
+  if (!p.text) return true;
+  if (/^0\d{8,9}$/.test(p.digits)) return b.phone === p.digits;
+  if (p.house || p.moo) return !!p.house && b.houseNo === p.house && (!p.moo || b.moo === p.moo);
+  const t = p.text.toLowerCase();
   return b.holderName.toLowerCase().includes(t) || b.householdRef.toLowerCase().includes(t);
 }
 get('/waste/bills', (c) => {
   needPerm(c, 'waste:read:WasteBill');
   const { q, status, period: per } = c.query;
   return c.db.wasteBills
-    .filter((b) => (!status || b.status === status) && (!per || b.period === per) && wasteMatches(b, q ?? ''))
+    .filter((b) => b.organizationId === ORG_ID && (!status || b.status === status) && (!per || b.period === per) && wasteMatches(b, q ?? ''))
     .sort((a, b) => b.period.localeCompare(a.period) || a.houseNo.localeCompare(b.houseNo)).slice(0, 200);
 });
+post('/waste/bills', (c) => {
+  needPerm(c, 'waste:manage:WasteBill');
+  const ref = String(c.body?.householdRef ?? '').trim().toUpperCase();
+  const per = String(c.body?.period ?? '');
+  const amount = Number(c.body?.amount);
+  if (!isPeriod(per)) throw badRequest('งวดต้องเป็นรูปแบบ พ.ศ.-เดือน เช่น 2569-10');
+  if (!(amount > 0)) throw badRequest('ยอดต้องมากกว่า 0');
+  const hh = c.db.wasteHouseholds.find((h) => h.householdRef === ref && h.active);
+  if (!hh) throw notFound('ไม่พบครัวเรือนนี้ในทะเบียน');
+  if (c.db.wasteBills.some((b) => b.householdRef === ref && b.period === per)) throw badRequest('ครัวเรือนนี้มีบิลงวดนี้อยู่แล้ว');
+  const row = wasteBillOf(hh, per, String(amount));
+  c.db.wasteBills.push(row);
+  return row;
+});
+del('/waste/bills/:id', (c) => {
+  needPerm(c, 'waste:manage:WasteBill');
+  const b = byIdOrThrow(c.db.wasteBills, c.params.id, 'ไม่พบบิลค่าขยะนี้');
+  if (b.status === 'paid') throw badRequest('บิลนี้ชำระแล้ว ลบไม่ได้');
+  c.db.wasteBills = c.db.wasteBills.filter((x) => x !== b);
+  return { ok: true };
+});
+post('/waste/bills/generate', (c) => {
+  needPerm(c, 'waste:manage:WasteBill');
+  const per = String(c.body?.period || period());
+  if (!isPeriod(per)) throw badRequest('งวดต้องเป็นรูปแบบ พ.ศ.-เดือน เช่น 2569-10');
+  const hhs = c.db.wasteHouseholds.filter((h) => h.active);
+  if (!hhs.length) throw badRequest('ยังไม่มีครัวเรือนในทะเบียน — เพิ่มหรือนำเข้าครัวเรือนก่อน');
+  const have = new Set(c.db.wasteBills.filter((b) => b.period === per).map((b) => b.householdRef));
+  let created = 0, noFee = 0;
+  for (const h of hhs) {
+    if (have.has(h.householdRef)) continue;
+    const fee = h.monthlyFee != null ? Number(h.monthlyFee) : Number(cfg(c).householdFee);
+    if (fee <= 0) { noFee++; continue; }
+    c.db.wasteBills.push(wasteBillOf(h, per, String(fee)));
+    created++;
+  }
+  if (!created && noFee === hhs.length) throw badRequest('ยังไม่ได้ตั้งค่าเก็บขยะบ้านต่อเดือน (ที่แท็บตั้งค่า)');
+  return { period: per, created, skipped: hhs.length - created - noFee, noFee };
+});
+function wasteBillOf(h: Row, per: string, amount: string): Row {
+  return { id: uid(), organizationId: ORG_ID, householdRef: h.householdRef, holderName: h.holderName, houseNo: h.houseNo, moo: h.moo, phone: h.phone, period: per, amount, status: 'unpaid', dueDate: periodEnd(per), paidMethod: null, paidAt: null, receiptNo: null, submittedMethod: null, submittedAt: null, slipUrl: null, reviewNote: null };
+}
+post('/waste/bills/:id/pay', (c) => { needPerm(c, 'waste:manage:WasteBill'); return payBill(c, c.db.wasteBills, 'WS', 'ไม่พบบิลค่าขยะนี้'); });
+post('/waste/bills/:id/reject', (c) => { needPerm(c, 'waste:manage:WasteBill'); return rejectBill(c, c.db.wasteBills, 'ไม่พบบิลค่าขยะนี้', 'mismatch'); });
 get('/waste/summary', (c) => {
   needPerm(c, 'waste:read:WasteBill');
-  const unpaid = c.db.wasteBills.filter((b) => b.status === 'unpaid');
-  return { unpaidCount: unpaid.length, unpaidTotal: unpaid.reduce((s, b) => s + Number(b.amount), 0) };
+  const per = c.query.period || null;
+  const bills = c.db.wasteBills.filter((b) => b.organizationId === ORG_ID && (!per || b.period === per));
+  const byStatus = [...new Set(bills.map((b) => b.status))].map((status) => {
+    const rows = bills.filter((b) => b.status === status);
+    return { status, count: rows.length, total: rows.reduce((s, b) => s + Number(b.amount), 0) };
+  });
+  const unpaid = bills.filter((b) => b.status !== 'paid');
+  return {
+    period: per, householdCount: c.db.wasteHouseholds.filter((h) => h.active).length, byStatus,
+    unpaidCount: unpaid.length, unpaidTotal: unpaid.reduce((s, b) => s + Number(b.amount), 0),
+  };
 });
-post('/waste/bills/:id/pay', (c) => payBill(c, c.db.wasteBills, 'WS', 'ไม่พบบิลค่าขยะนี้', 'waste:manage:WasteBill'));
+get('/waste/arrears', (c) => {
+  needPerm(c, 'waste:read:WasteBill');
+  const per = c.query.period || null;
+  const open = c.db.wasteBills.filter((b) => b.organizationId === ORG_ID && b.status !== 'paid' && (!per || b.period === per));
+  const refs = [...new Set(open.map((b) => b.householdRef))];
+  return refs.map((ref) => {
+    const rows = open.filter((b) => b.householdRef === ref);
+    const first = rows[0];
+    return { householdRef: ref, holderName: first.holderName, houseNo: first.houseNo, moo: first.moo, phone: first.phone, months: rows.length, total: rows.reduce((s, b) => s + Number(b.amount), 0) };
+  }).sort((a, b) => b.total - a.total || a.householdRef.localeCompare(b.householdRef)).slice(0, 500);
+});
 
-function payBill(c: Ctx, list: Row[], prefix: string, notFoundMsg: string, perm: string) {
-  needPerm(c, perm);
-  const bill = list.find((b) => b.id === c.params.id);
-  if (!bill) throw badRequest(notFoundMsg);
-  if (bill.status === 'paid') throw badRequest('บิลนี้ชำระแล้ว');
-  const method = METHODS.includes(c.body?.method) ? c.body.method : 'cash';
-  Object.assign(bill, { status: 'paid', paidMethod: method, paidAt: nowIso(), receiptNo: receiptNo(prefix, bill.period) });
-  return bill;
+// ───────────────────────────── ทะเบียนครัวเรือน
+function householdsOf(c: Ctx, qRaw?: string) {
+  const p = parseHouse(qRaw ?? '');
+  const base = (h: Row) => h.organizationId === ORG_ID && h.active;
+  let rows: Row[];
+  if (!p.text) rows = c.db.wasteHouseholds.filter(base);
+  else if (/^0\d{8,9}$/.test(p.digits)) rows = c.db.wasteHouseholds.filter((h) => base(h) && h.phone === p.digits);
+  else if (p.moo && !p.house) rows = c.db.wasteHouseholds.filter((h) => base(h) && h.moo === p.moo);
+  else if (p.house) rows = c.db.wasteHouseholds.filter((h) => base(h) && h.houseNo === p.house && (!p.moo || h.moo === p.moo));
+  else { const t = p.text.toLowerCase(); rows = c.db.wasteHouseholds.filter((h) => base(h) && (h.holderName.toLowerCase().includes(t) || h.householdRef.toLowerCase().includes(t))); }
+  return rows.sort((a, b) => Number(a.moo) - Number(b.moo) || a.houseNo.localeCompare(b.houseNo)).slice(0, 500).map((h) => {
+    const owed = c.db.wasteBills.filter((b) => b.householdRef === h.householdRef && b.status !== 'paid');
+    return { ...h, owedMonths: owed.length, owedTotal: owed.reduce((s, b) => s + Number(b.amount), 0) };
+  });
 }
+get('/waste/households', (c) => { needPerm(c, 'waste:read:WasteBill'); return householdsOf(c, c.query.q); });
+
+function nextHouseRef(c: Ctx): string {
+  const n = c.db.wasteHouseholds.reduce((m, h) => { const x = /^HH-(\d+)$/.exec(h.householdRef); return x ? Math.max(m, Number(x[1])) : m; }, 0);
+  return `HH-${String(n + 1).padStart(3, '0')}`;
+}
+function assertHouseFree(c: Ctx, houseNo: string, moo: string, exceptId?: string) {
+  const dup = c.db.wasteHouseholds.find((h) => h.active && h.houseNo === houseNo && h.moo === moo && h.id !== exceptId);
+  if (dup) throw badRequest(`บ้านเลขที่ ${houseNo} หมู่ ${moo} มีในทะเบียนแล้ว (${dup.householdRef})`);
+}
+function householdFields(b: Row, base?: Row) {
+  const name = b.holderName !== undefined ? String(b.holderName ?? '').trim() : base?.holderName;
+  const houseNo = b.houseNo !== undefined ? String(b.houseNo ?? '').trim() : base?.houseNo;
+  const moo = b.moo !== undefined ? String(Number(b.moo)) : base?.moo;
+  const phone = b.phone !== undefined ? (String(b.phone ?? '').replace(/[\s-]/g, '') || null) : (base?.phone ?? null);
+  const fee = b.monthlyFee !== undefined ? (b.monthlyFee == null || b.monthlyFee === '' ? null : String(Number(b.monthlyFee))) : (base?.monthlyFee ?? null);
+  return { name, houseNo, moo, phone, fee };
+}
+post('/waste/households', (c) => {
+  needPerm(c, 'waste:manage:WasteBill');
+  const f = householdFields(c.body ?? {});
+  if (!f.name || !f.houseNo || !f.moo || f.moo === 'NaN') throw badRequest('กรุณากรอกชื่อ บ้านเลขที่ และหมู่');
+  if (!/^\d{1,5}(\/\d{1,4})?$/.test(f.houseNo)) throw badRequest('บ้านเลขที่ใช้ตัวเลข เช่น 18 หรือ 12/3');
+  if (f.phone && !/^0\d{8,9}$/.test(f.phone)) throw badRequest('เบอร์โทรไม่ถูกต้อง');
+  assertHouseFree(c, f.houseNo, f.moo);
+  const row = { id: uid(), organizationId: ORG_ID, householdRef: nextHouseRef(c), holderName: f.name, houseNo: f.houseNo, moo: f.moo, phone: f.phone, monthlyFee: f.fee, active: true, createdAt: nowIso() };
+  c.db.wasteHouseholds.push(row);
+  return row;
+});
+post('/waste/households/import', (c) => {
+  needPerm(c, 'waste:manage:WasteBill');
+  const rows: Row[] = Array.isArray(c.body?.rows) ? c.body.rows : [];
+  if (rows.length > 2000) throw badRequest('นำเข้าได้ครั้งละไม่เกิน 2,000 แถว');
+  let created = 0, updated = 0;
+  const errors: { row: number; message: string }[] = [];
+  rows.forEach((r, i) => {
+    const f = householdFields(r);
+    if (!f.name || !f.houseNo || !f.moo || f.moo === 'NaN') { errors.push({ row: i + 1, message: 'ต้องมีชื่อ บ้านเลขที่ และหมู่' }); return; }
+    const ex = c.db.wasteHouseholds.find((h) => h.active && h.houseNo === f.houseNo && h.moo === f.moo);
+    if (ex) {
+      ex.holderName = f.name;
+      if (f.phone) ex.phone = f.phone;
+      if (r.monthlyFee != null) ex.monthlyFee = f.fee;
+      updated++;
+    } else {
+      c.db.wasteHouseholds.push({ id: uid(), organizationId: ORG_ID, householdRef: nextHouseRef(c), holderName: f.name, houseNo: f.houseNo, moo: f.moo, phone: f.phone, monthlyFee: f.fee, active: true, createdAt: nowIso() });
+      created++;
+    }
+  });
+  return { created, updated, errors };
+});
+patch('/waste/households/:id', (c) => {
+  needPerm(c, 'waste:manage:WasteBill');
+  const h = one(c.db.wasteHouseholds, (x) => x.id === c.params.id && x.active && x.organizationId === ORG_ID, 'ไม่พบครัวเรือนนี้');
+  const f = householdFields(c.body ?? {}, h);
+  if (!f.name) throw badRequest('ชื่อต้องไม่ว่าง');
+  if (f.houseNo !== h.houseNo || f.moo !== h.moo) assertHouseFree(c, f.houseNo, f.moo, h.id);
+  Object.assign(h, { holderName: f.name, houseNo: f.houseNo, moo: f.moo, phone: f.phone, monthlyFee: f.fee });
+  return h;
+});
+del('/waste/households/:id', (c) => {
+  needPerm(c, 'waste:manage:WasteBill');
+  const h = one(c.db.wasteHouseholds, (x) => x.id === c.params.id && x.active && x.organizationId === ORG_ID, 'ไม่พบครัวเรือนนี้');
+  const open = c.db.wasteBills.filter((b) => b.householdRef === h.householdRef && OPEN.includes(b.status)).length;
+  if (open) throw badRequest(`ครัวเรือน ${h.householdRef} ยังมีบิลค้าง ${open} รายการ — เก็บเงินหรือยกเลิกบิลก่อนลบ`);
+  h.active = false;
+  return { ok: true };
+});

@@ -1,0 +1,97 @@
+import { Controller, Get, Post, Param, Query, Body, Req, UseInterceptors, UploadedFile, BadRequestException, HttpException, HttpStatus, ParseUUIDPipe } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
+import type { Request } from 'express';
+import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { IsOptional, IsString, MaxLength } from 'class-validator';
+import { CitizenPayService } from './citizen-pay.service';
+
+class ReserveDto {
+  @IsString() @MaxLength(200) name: string;
+  @IsString() @MaxLength(20) phone: string;
+  @IsOptional() @IsString() org?: string;
+}
+class SubmitDto {
+  @IsString() method: string;
+  /** ชื่อผู้เช่า/ผู้รับบิล — ต้องตรงกับบิล */
+  @IsString() @MaxLength(200) name: string;
+  @IsOptional() @IsString() org?: string;
+}
+
+// rate-limit ในหน่วยความจำต่อ IP — ค้นบิลของคนอื่นต้องไม่ถูกไล่เดาถี่ ๆ (เหมือนหน้า checkbill/แจ้งเรื่อง)
+const HITS = new Map<string, number[]>();
+const WINDOW_MS = 60_000;
+const MAX_HITS = 40;
+function rateLimit(ip: string, max = MAX_HITS, bucket = '') {
+  const now = Date.now();
+  const key = bucket + ip;
+  const arr = (HITS.get(key) || []).filter((t) => now - t < WINDOW_MS);
+  arr.push(now);
+  HITS.set(key, arr);
+  if (arr.length > max) throw new HttpException('ทำรายการถี่เกินไป กรุณารอสักครู่', HttpStatus.TOO_MANY_REQUESTS);
+}
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, arr] of HITS) {
+    const keep = arr.filter((t) => now - t < WINDOW_MS);
+    if (keep.length) HITS.set(ip, keep); else HITS.delete(ip);
+  }
+}, WINDOW_MS).unref?.();
+
+/** ประชาชนจ่ายค่าแผง/ค่าขยะ (สาธารณะ ไม่มี JWT) — ดูบิลที่ค้าง · แจ้งชำระ+แนบสลิป · จองแผง · เจ้าหน้าที่เป็นผู้ยืนยันรับเงิน */
+@ApiTags('citizen-pay')
+@Controller('citizen/pay')
+export class CitizenPayController {
+  constructor(private readonly service: CitizenPayService) {}
+
+  /** strict = ขั้นตอนยืนยันตัวตนด้วยชื่อ (กันไล่เดา) จำกัด 10 ครั้ง/นาที/IP */
+  private async org(req: Request, code?: string, strict = false) {
+    const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip || 'unknown';
+    rateLimit(ip);
+    if (strict) rateLimit(ip, 10, 'verify:');
+    return this.service.resolveOrg((req.headers['x-forwarded-host'] as string) || req.headers.host, code);
+  }
+
+  @Get('config')
+  @ApiOperation({ summary: 'ช่องทางรับเงิน + ราคา ของ อบต. (ตามโดเมน)' })
+  async config(@Req() req: Request, @Query('org') org?: string) {
+    return this.service.publicConfig(await this.org(req, org));
+  }
+
+  @Get('waste/bills')
+  @ApiOperation({ summary: 'ค้นบิลค่าขยะบ้านที่ยังไม่จ่าย — ต้องกรอกชื่อคู่กับ (บ้านเลขที่+หมู่ หรือ เบอร์) ให้ตรงกัน' })
+  async wasteBills(@Req() req: Request, @Query('q') q: string, @Query('name') name: string, @Query('org') org?: string) {
+    return this.service.wasteBillsFor(await this.org(req, org, true), q, name);
+  }
+
+  @Get('market/stalls')
+  @ApiOperation({ summary: 'ผังแผงตลาด (ไม่มีชื่อผู้เช่า)' })
+  async stalls(@Req() req: Request, @Query('org') org?: string) {
+    return this.service.marketStalls(await this.org(req, org));
+  }
+
+  @Get('market/bills')
+  @ApiOperation({ summary: 'บิลค่าแผงที่ยังไม่จ่าย — ต้องกรอกเลขล็อก + ชื่อผู้เช่าให้ตรงกัน' })
+  async marketBills(@Req() req: Request, @Query('stall') stall: string, @Query('name') name: string, @Query('org') org?: string) {
+    return this.service.marketBillsFor(await this.org(req, org, true), stall, name);
+  }
+
+  @Post('market/stalls/:code/reserve')
+  @ApiOperation({ summary: 'จองแผงว่าง (รอเจ้าหน้าที่ยืนยัน)' })
+  async reserve(@Req() req: Request, @Param('code') code: string, @Body() dto: ReserveDto) {
+    return this.service.reserve(await this.org(req, dto.org), code, dto.name, dto.phone);
+  }
+
+  @Post(':type/bills/:id/submit')
+  @ApiOperation({ summary: 'แจ้งชำระ: แนบสลิปโอน หรือแจ้งว่าจะจ่ายเงินสด — รอเจ้าหน้าที่ยืนยัน' })
+  @UseInterceptors(FileInterceptor('slip', {
+    storage: memoryStorage(),
+    limits: { fileSize: 5 * 1024 * 1024, files: 1 },
+    fileFilter: (_req, file, cb) => /^image\//.test(file.mimetype) ? cb(null, true) : cb(new BadRequestException('แนบได้เฉพาะรูปภาพ') as any, false),
+  }))
+  async submit(@Req() req: Request, @Param('type') type: string, @Param('id', ParseUUIDPipe) id: string,
+    @UploadedFile() file: Express.Multer.File | undefined, @Body() dto: SubmitDto) {
+    if (type !== 'market' && type !== 'waste') throw new BadRequestException('ประเภทบิลไม่ถูกต้อง');
+    return this.service.submit(await this.org(req, dto.org, true), type, id, dto.method, dto.name, file);
+  }
+}

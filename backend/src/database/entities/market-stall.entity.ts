@@ -39,6 +39,13 @@ export class MarketStall {
   @Column({ name: 'monthly_rate', type: 'numeric', precision: 10, scale: 2, default: 0 })
   monthlyRate: string;
 
+  /** เบอร์ผู้จอง (กรอกจากหน้าประชาชนตอนจองแผง) */
+  @Column({ name: 'contact_phone', type: 'varchar', length: 20, nullable: true })
+  contactPhone: string | null;
+
+  @Column({ name: 'reserved_at', type: 'timestamptz', nullable: true })
+  reservedAt: Date | null;
+
   @Column({ type: 'boolean', default: true })
   active: boolean;
 

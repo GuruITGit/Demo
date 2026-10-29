@@ -124,6 +124,7 @@ export const MODULES: ModuleDef[] = [
     permissionItems: [
       { key: 'market_view', label: 'ดูผังแผงและบิลค่าแผง', grants: ['market:read:MarketStall', 'market:read:MarketBill'] },
       { key: 'market_manage', label: 'รับชำระค่าแผง', grants: ['market:read:MarketBill', 'market:manage:MarketBill'] },
+      { key: 'market_plan_manage', label: 'จัดการผังแผง ราคา และแผงลอย', grants: ['market:read:MarketStall', 'market:manage:MarketStall', 'market:read:MarketBill', 'market:manage:MarketBill'] },
     ],
   },
   {
@@ -138,6 +139,7 @@ export const MODULES: ModuleDef[] = [
     permissionItems: [
       { key: 'waste_view', label: 'ดูบิลค่าขยะบ้าน', grants: ['waste:read:WasteBill'] },
       { key: 'waste_manage', label: 'รับชำระค่าขยะบ้าน', grants: ['waste:read:WasteBill', 'waste:manage:WasteBill'] },
+      { key: 'waste_households', label: 'จัดการทะเบียนครัวเรือน ราคา และออกบิล', grants: ['waste:read:WasteBill', 'waste:manage:WasteBill'] },
     ],
   },
   {

@@ -127,7 +127,8 @@ export async function hubLoginAction(username: string, password: string) {
 
 export async function logoutAction() {
   try {
-    await api.post('/auth/logout');
+    // timeout สั้น: เซิร์ฟเวอร์ช้า/ล่ม ต้องไม่ทำให้ปุ่มออกจากระบบค้าง (ล้างเซสชันในเครื่องต่อเสมอ)
+    await api.post('/auth/logout', undefined, { timeout: 5000 });
   } catch {}
   useAuthStore.getState().clearAuth();
 }

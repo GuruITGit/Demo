@@ -8,7 +8,7 @@ export const periodLabel = (period: string) => {
 };
 
 export const BILL_STATUS: Record<string, string> = {
-  unpaid: 'ค้างชำระ', pending: 'รอตรวจสลิป', paid: 'ชำระแล้ว', mismatch: 'ยอดไม่ตรง',
+  unpaid: 'ค้างชำระ', pending: 'รอตรวจ', paid: 'ชำระแล้ว', mismatch: 'ตีกลับ (รอแจ้งใหม่)',
 };
 
 export const PAY_METHOD: Record<string, string> = { cash: 'เงินสด', qr: 'สแกนจ่าย', transfer: 'โอน' };
