@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>ระบบชำระค่าแผงและค่าขยะ (เดโม่)</title>
+  <style>
+    :root { --ink:#1e293b; --muted:#64748b; --brand:#0369a1; --line:#DCEBF8; --soft:#EAF4FB; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family:"Noto Sans Thai", system-ui, sans-serif; color:var(--ink); background:#f4f8fc; }
+    header { background:#fff; border-bottom:1px solid var(--line); padding:20px 16px; }
+    header h1 { margin:0; font-size:20px; color:#0c4a6e; }
+    header p { margin:4px 0 0; font-size:13px; color:var(--muted); }
+    main { max-width:960px; margin:0 auto; padding:24px 16px 40px; }
+    h2 { font-size:15px; color:#0c4a6e; margin:0 0 12px; }
+    section + section { margin-top:28px; }
+    .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:12px; }
+    a.card { display:block; padding:16px; border:1px solid var(--line); border-radius:14px; background:#fff; color:inherit; text-decoration:none; }
+    a.card:hover { border-color:#9CC9EE; background:#F8FBFE; }
+    a.card b { display:block; font-size:15px; color:var(--brand); }
+    a.card small { display:block; margin-top:6px; font-size:12px; color:var(--muted); line-height:1.5; }
+    footer { text-align:center; font-size:12px; color:var(--muted); padding:0 16px 24px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>ระบบชำระค่าแผงตลาดและค่าเก็บขยะ</h1>
+    <p>หน้าเดโม่ · ข้อมูลตัวอย่าง ยังไม่เชื่อมระบบจริง</p>
+  </header>
+  <main>
+    <section>
+      <h2>สำหรับประชาชน</h2>
+      <div class="grid">
+        <a class="card" href="/citizen/market"><b>ค่าแผงตลาด</b><small>ค้นหาชื่อหรือเลขล็อก สแกน QR ที่แผง หรือเลือกจากผังแผง</small></a>
+        <a class="card" href="/citizen/waste"><b>ค่าเก็บขยะบ้าน</b><small>ค้นหาบ้านเลขที่และหมู่ สแกน QR หน้าบ้าน หรือจ่ายเงินสด</small></a>
+      </div>
+    </section>
+    <section>
+      <h2>สำหรับเจ้าหน้าที่</h2>
+      <div class="grid">
+        <a class="card" href="/staff-demo/market"><b>เจ้าหน้าที่ · ค่าแผงตลาด</b><small>ภาพรวม ค้นหายอดค้าง ผังแผง พื้นที่และราคา รายงานค้างชำระ</small></a>
+        <a class="card" href="/staff-demo/waste"><b>เจ้าหน้าที่ · ค่าเก็บขยะ</b><small>ภาพรวม ค้นหายอดค้าง QR ประจำบ้าน รายงานค้างชำระ</small></a>
+      </div>
+    </section>
+  </main>
+  <footer>ระบบสาธิต · ข้อมูลและสถานะบันทึกเฉพาะเบราว์เซอร์นี้</footer>
+</body>
+</html>
