@@ -3,6 +3,7 @@ import { Suspense, useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { loginAction, useAuthStore } from '@/stores/auth.store';
+import { DEMO_LOGINS, DEMO_PASSWORD } from '@/lib/demo/accounts';
 import { api, getErrorMessage } from '@/lib/api';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -122,6 +123,20 @@ function GovLogin({ onBack, onDone }: { onBack: () => void; onDone: () => void }
               {loading ? 'กำลังเข้าระบบ...' : 'เข้าสู่ระบบ'}
             </button>
           </form>
+          {process.env.NEXT_PUBLIC_DEMO_MODE === '1' && (
+            <div className="mt-5 rounded-lg border border-amber-200 bg-amber-50 p-3">
+              <p className="text-xs font-medium text-amber-900">เดโม่ — เลือกบัญชีทดลอง (รหัสผ่านทุกบัญชี: {DEMO_PASSWORD})</p>
+              <div className="mt-2 grid grid-cols-2 gap-1.5">
+                {DEMO_LOGINS.map((a) => (
+                  <button key={a.username} type="button" onClick={() => { setUsername(a.username); setPassword(DEMO_PASSWORD); setError(''); }}
+                    className={`rounded-md border px-2 py-1.5 text-left text-xs transition ${username === a.username ? 'border-amber-500 bg-white' : 'border-amber-200 bg-white/60 hover:bg-white'}`}>
+                    <span className="block font-medium text-slate-800">{a.label}</span>
+                    <span className="block truncate text-[11px] text-slate-500">{a.hint}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

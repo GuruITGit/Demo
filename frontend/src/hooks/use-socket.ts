@@ -12,6 +12,8 @@ export function useSocket() {
   const socketRef = useRef<Socket | null>(null);
 
   useEffect(() => {
+    // เดโม่ไม่มีเซิร์ฟเวอร์เรียลไทม์ — แจ้งเตือนใช้การดึงข้อมูลเป็นระยะแทน
+    if (process.env.NEXT_PUBLIC_DEMO_MODE === '1') return;
     if (!isAuthenticated || !accessToken) {
       socketRef.current?.disconnect();
       socketRef.current = null;

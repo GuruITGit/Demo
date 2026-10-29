@@ -11,6 +11,12 @@ export const api = axios.create({
   timeout: 60000,
 });
 
+// เดโม่ (Vercel): ตอบจากข้อมูลจำลองในเบราว์เซอร์แทน backend — ตัวแปรนี้ถูกแทนค่าตอน build
+// จึงไม่ติดไปกับ build จริงของ อบต. (ดู lib/demo/)
+if (process.env.NEXT_PUBLIC_DEMO_MODE === '1') {
+  api.defaults.adapter = (config) => import('./demo/adapter').then((m) => m.demoAdapter(config));
+}
+
 // กัน refresh ชนกัน: เมื่อ 401 หลายคำขอพร้อมกัน ให้ยิง /auth/refresh แค่ครั้งเดียว
 // แล้วทุกคำขอรอ promise เดียวกัน (backend หมุน+เพิกถอน refresh token ทุกครั้ง ถ้ายิงซ้ำจะถูก revoke → หลุด login)
 let refreshPromise: Promise<string> | null = null;

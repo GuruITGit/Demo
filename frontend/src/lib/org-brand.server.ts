@@ -20,6 +20,8 @@ function apiBase(): string {
 }
 
 export async function getOrgBrand(): Promise<OrgBrand | null> {
+  // เดโม่บน Vercel ไม่มี backend ให้ถาม — ใช้แบรนด์สำรอง Smart SAO
+  if (process.env.NEXT_PUBLIC_DEMO_MODE === '1') return null;
   try {
     const h = await headers();
     const host = h.get('x-forwarded-host') || h.get('host');

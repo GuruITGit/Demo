@@ -15,6 +15,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
 import { ExecutiveOverview } from './executive-overview';
+import { MarketWastePanel } from '@/components/dashboard/market-waste-panel';
 
 // ── ป้ายสถานะ (v4 step) ──
 const STEP_LABEL: Record<string, string> = {
@@ -203,6 +204,9 @@ export default function DashboardPage() {
           </div>
           <p className="hidden sm:block text-blue-100 text-sm shrink-0">{formatThaiDateTime(new Date())}</p>
         </div>
+
+        {/* ── ค่าแผงตลาด / ค่าเก็บขยะบ้าน (เฉพาะคนมีสิทธิ์) ── */}
+        <MarketWastePanel />
 
         {canSummary ? (
           <>

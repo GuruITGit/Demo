@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { ToastProvider, ToastViewport, Toast, ToastTitle, ToastDescription } from '@/components/ui/toast';
 import { useToastState, registerToast } from '@/hooks/use-toast';
 import { AccessibilityProvider } from '@/contexts/accessibility.context';
+import { DemoBanner } from '@/components/demo/demo-banner';
 
 function ToastContainer() {
   const { toasts, addToast, dismissToast } = useToastState();
@@ -37,6 +38,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <QueryClientProvider client={queryClient}>
         {children}
         <ToastContainer />
+        {process.env.NEXT_PUBLIC_DEMO_MODE === '1' && <DemoBanner />}
       </QueryClientProvider>
     </AccessibilityProvider>
   );

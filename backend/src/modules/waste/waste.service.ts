@@ -42,6 +42,15 @@ export class WasteService {
     return this.bills.find({ where, order: { period: 'DESC', houseNo: 'ASC' }, take: 200 });
   }
 
+  /** สรุปยอดค้างค่าขยะบ้านของ อบต. (แสดงบนหน้าหลัก) */
+  async summary(orgId: string) {
+    const unpaid = await this.bills.find({ where: { organizationId: orgId, status: 'unpaid' }, select: { amount: true } });
+    return {
+      unpaidCount: unpaid.length,
+      unpaidTotal: unpaid.reduce((sum, b) => sum + Number(b.amount), 0),
+    };
+  }
+
   async pay(orgId: string, id: string, method: string) {
     const bill = await this.bills.findOne({ where: { id, organizationId: orgId } });
     if (!bill) throw new NotFoundException('ไม่พบบิลค่าขยะนี้');

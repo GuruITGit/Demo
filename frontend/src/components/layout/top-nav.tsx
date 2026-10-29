@@ -111,7 +111,7 @@ export function TopNav({ onMenuClick }: { onMenuClick?: () => void }) {
 
   // ── แจ้งเตือน real-time ผ่าน WebSocket ──
   useEffect(() => {
-    if (!user || !accessToken) return;
+    if (!user || !accessToken || process.env.NEXT_PUBLIC_DEMO_MODE === '1') return;
     // เหมือน use-socket.ts — ห้าม fallback เป็น localhost เด็ดขาด ไม่งั้นโดน CSP บล็อกบน prod จริง
     const wsUrlEnv = process.env.NEXT_PUBLIC_API_URL || '/v1';
     const base = wsUrlEnv.startsWith('http')

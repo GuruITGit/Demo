@@ -22,6 +22,13 @@ export class WasteController {
     return this.service.search(orgId, q);
   }
 
+  @Get('summary')
+  @ApiOperation({ summary: 'สรุปยอดค้างค่าขยะบ้าน (หน้าหลัก)' })
+  @RequirePermissions({ module: 'waste', action: 'read', subject: 'WasteBill' })
+  summary(@CurrentUser('organizationId') orgId: string) {
+    return this.service.summary(orgId);
+  }
+
   @Post('bills/:id/pay')
   @ApiOperation({ summary: 'รับชำระบิลค่าขยะบ้าน' })
   @RequirePermissions({ module: 'waste', action: 'manage', subject: 'WasteBill' })
