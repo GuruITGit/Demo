@@ -25,7 +25,7 @@ function openCashInfo(){modalContent.innerHTML=`<div class="modal-inner"><div cl
 function render(){
  const matches=searchTerm?DEMO.bills.filter(b=>PAYABLE.includes(b.status)&&householdMatches(b,searchTerm)).sort((a,b)=>b.id.localeCompare(a.id)):[];
  const shortcut=searchTerm?'':`<div class="payment-shortcuts"><button class="payment-shortcut" type="button" onclick="scanHouseQr()">${SCAN_HOUSE_ART}<b>สแกน QR หน้าบ้าน</b><small>ส่องรหัสหน้าบ้านหรือเลือกรูป QR เพื่อดูค่าขยะ</small></button><button class="payment-shortcut payment-shortcut-cash" type="button" onclick="openCashInfo()">${CASH_HOUSE_ART}<b>จ่ายเงินสด</b><small>ไปจ่ายที่ ${escapeHTML(PAYMENT.cashPlace)}</small></button></div>`;
- app.innerHTML=searchHeaderHTML('จ่ายค่าขยะ','บ้านเลขที่และหมู่ ชื่อ หรือเบอร์โทร','เช่น 18 หมู่ 2 · สมชาย · 081-000-0014','ลองค้นหา “18 หมู่ 2”, “สมชาย” หรือ “081-000-0014”',' with-photo with-waste-photo')
+ app.innerHTML=homeBackHTML()+searchHeaderHTML('จ่ายค่าขยะ','บ้านเลขที่และหมู่ ชื่อ หรือเบอร์โทร','เช่น 18 หมู่ 2 · สมชาย · 081-000-0014','ลองค้นหา “18 หมู่ 2”, “สมชาย” หรือ “081-000-0014”',' with-photo with-waste-photo')
   +shortcut+billListHTML({title:'ค่าขยะ',matches,promptText:'พิมพ์บ้านเลขที่และหมู่ ชื่อ หรือเบอร์โทร',payerLabel:b=>b.location||b.ref,chargeLabel:()=>'ค่าขยะครัวเรือน'});
 }
 

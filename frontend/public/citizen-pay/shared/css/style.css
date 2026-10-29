@@ -671,3 +671,7 @@
 }
 
 .choice-card{display:flex;flex-direction:column;gap:6px;width:100%;text-align:left;border:1px solid var(--line);background:white;border-radius:21px;padding:18px;box-shadow:var(--shadow);margin-bottom:12px;font:inherit;color:var(--ink);cursor:pointer}.choice-card b{font-size:17px}.choice-card small{font-size:12px;color:var(--muted)}
+
+.app-shell{zoom:var(--text-scale,1)}.sao-header{position:relative}.sao-header-in{padding-right:64px}.text-size-btn{position:absolute;right:14px;top:14px;min-width:48px;height:38px;padding:0 12px;border:1px solid #cfd8e3;border-radius:12px;background:#fff;color:#0f2a44;font:700 15px/1 'Noto Sans Thai',sans-serif;cursor:pointer}
+
+.home-back{display:inline-block;margin:4px 2px 8px;font-size:14px;font-weight:600;color:var(--forest,#1f6b4a);text-decoration:none;min-height:36px;line-height:36px}.home-back:hover{text-decoration:underline}

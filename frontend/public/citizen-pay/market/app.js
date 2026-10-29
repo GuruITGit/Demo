@@ -1,3 +1,52 @@
+/** ปุ่มขนาดตัวหนังสือบนหัวเว็บ (มือถือตัวเล็กเกินไป) — กดวนได้ 3 ขนาด · จำค่าไว้ใน localStorage · เก็บไม่ได้ก็ใช้ขนาดปกติ */
+const TEXT_SIZE_STEPS = [1, 1.15, 1.3];
+const TEXT_SIZE_LABELS = ['Aa', 'Aa+', 'Aa++'];
+const TEXT_SIZE_KEY = 'citizen:textSize';
+function readTextSizeStep() {
+    try {
+        const v = Number(localStorage.getItem(TEXT_SIZE_KEY));
+        return Number.isInteger(v) && v >= 0 && v < TEXT_SIZE_STEPS.length ? v : 0;
+    }
+    catch {
+        return 0;
+    }
+}
+function applyTextSizeStep(step) {
+    // zoom ทั้งหน้า (ใช้ var --text-scale) — ตัวอักษร ปุ่ม และช่องกรอกขยายพร้อมกัน
+    document.documentElement.style.setProperty('--text-scale', String(TEXT_SIZE_STEPS[step]));
+    const btn = document.getElementById('textSizeBtn');
+    if (btn) {
+        const next = (step + 1) % TEXT_SIZE_STEPS.length;
+        btn.textContent = TEXT_SIZE_LABELS[step];
+        btn.setAttribute('aria-label', `ขนาดตัวหนังสือ ${TEXT_SIZE_LABELS[step]} กดเพื่อเปลี่ยนเป็น ${TEXT_SIZE_LABELS[next]}`);
+    }
+}
+function initTextSizeControl() {
+    const header = document.querySelector('.sao-header-in');
+    if (!header || document.getElementById('textSizeBtn'))
+        return;
+    let step = readTextSizeStep();
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.id = 'textSizeBtn';
+    btn.className = 'text-size-btn';
+    btn.addEventListener('click', () => {
+        step = (step + 1) % TEXT_SIZE_STEPS.length;
+        try {
+            localStorage.setItem(TEXT_SIZE_KEY, String(step));
+        }
+        catch { /* ไม่ต้องจำก็ได้ */ }
+        applyTextSizeStep(step);
+    });
+    header.appendChild(btn);
+    applyTextSizeStep(step);
+}
+initTextSizeControl();
+/** ลิงก์กลับหน้าหลักบนทุกหน้าค่าแผง/ขยะ/เจ้าหน้าที่ — เดโม่ Vercel กลับไป "/" · ระบบจริงกลับไป /citizen */
+function homeBackHTML() {
+    const demo = location.pathname.includes('/citizen-pay/') || location.hostname.endsWith('vercel.app');
+    return `<a class="home-back" href="${demo ? '/' : '/citizen'}">‹ กลับหน้าหลัก</a>`;
+}
 const modal = document.getElementById('modal');
 const modalContent = document.getElementById('modalContent');
 const money = n => Number(n).toLocaleString('th-TH', { maximumFractionDigits: 2 });
@@ -642,11 +691,24 @@ function savePageState() { try {
 catch { } }
 function openPaymentMap() { paymentMapMode = true; stallArea = 'regular'; selectedStall = null; setPage('stalls'); }
 function cancelPaymentMap() { paymentMapMode = false; setPage('dues'); }
-function selectStall(id) { selectedStall = id; savePageState(); render(); if (paymentMapMode) {
+function selectStall(id) { const stall = findStall(id); if (paymentMapMode) {
+    selectedStall = id;
+    savePageState();
+    render();
     modalContent.innerHTML = paymentStallModal(id);
     modal.showModal();
-} }
-function paymentStallModal(id) { const bills = DEMO.bills.filter(b => b.payerType === 'stall' && b.status === 'unpaid' && b.stall === id); const total = bills.reduce((sum, b) => sum + b.amount, 0); const summary = bills.length ? `<p class="help">${escapeHTML(bills[0].merchant)} · ยอดค้างรวม <b>${money(total)} บาท</b></p>` : '<p class="help">ไม่มียอดค้าง</p>'; return `<div class="modal-inner"><div class="modal-top"><h2 id="modalTitle">แผง ${escapeHTML(id)}</h2><button class="close-btn" onclick="modal.close()" aria-label="ปิด">×</button></div><div class="modal-body">${summary}<button class="qr-demo" onclick="modal.close();findPaymentByQr('${escapeHTML(id)}')">เช็คยอดค้างชำระ</button></div></div>`; }
+    return;
+} if (!stall)
+    return; if (stall.status !== 'available') {
+    modalContent.innerHTML = ownedStallModal(stall);
+    modal.showModal();
+    return;
+} if (selectedStall === id) {
+    openSignupForStall(id);
+    return;
+} selectedStall = id; savePageState(); render(); }
+function ownedStallModal(stall) { const name = stall.tenantName ? `<b>${escapeHTML(stall.tenantName)}</b>` : ''; return `<div class="modal-inner"><div class="modal-top"><h2 id="modalTitle">แผง ${escapeHTML(stall.id)} มีเจ้าของแล้ว</h2><button class="close-btn" onclick="modal.close()" aria-label="ปิด">×</button></div><div class="modal-body"><p class="help">${stall.status === 'reserved' ? 'มีผู้จองแล้ว' : 'มีผู้เช่าแล้ว'}${name ? ` · ${name}` : ''}</p></div></div>`; }
+function paymentStallModal(id) { const bills = DEMO.bills.filter(b => b.payerType === 'stall' && b.status === 'unpaid' && b.stall === id); const tenant = findStall(id)?.tenantName || bills[0]?.merchant; const summary = `<p class="help"><b>${escapeHTML(tenant || 'ยังไม่มีผู้เช่า')}</b></p>`; return `<div class="modal-inner"><div class="modal-top"><h2 id="modalTitle">แผง ${escapeHTML(id)}</h2><button class="close-btn" onclick="modal.close()" aria-label="ปิด">×</button></div><div class="modal-body">${summary}<button class="qr-demo" onclick="modal.close();findPaymentByQr('${escapeHTML(id)}')">เช็คยอดค้างชำระ</button></div></div>`; }
 function findPaymentByQr(raw) { let key = raw.trim(); try {
     const url = new URL(key);
     key = url.searchParams.get('stall') || url.searchParams.get('ref') || url.pathname.split('/').filter(Boolean).pop() || key;
@@ -698,7 +760,7 @@ function stallPage() { if (stallArea === 'outside' && openOutsideLocations().len
     return page;
 } if (!openOutsideLocations().length)
     stallArea = 'regular'; const page = regularStallPage(); return page; }
-function regularStallPage() { const picked = findStall(selectedStall); const labels = { available: 'ว่าง', reserved: 'จอง', occupied: 'เช่า' }; return `<div class="page-heading">${paymentMapMode ? `<button class="back-link" onclick="cancelPaymentMap()">‹ กลับไปเลือกวิธี</button>` : ''}<h1>ผังตลาด อบต.</h1><p>${paymentMapMode ? 'แตะแผงของคุณเพื่อดูยอดค้าง' : 'แตะช่องว่างเพื่อสมัครและขอจอง'}</p></div>${openOutsideLocations().length ? `<div class="area-switch"><button class="active" onclick="chooseStallArea('regular')">แผงประจำ</button><button onclick="chooseStallArea('outside')">แผงลอยนอกผัง</button></div>` : ``}<div class="plan-card"><div class="plan-head"><div><b>แผงประจำ</b><small>แตะเลือกแผงเพื่อดูราคาโซนและค่าขยะแผง · บาท/เดือน</small></div><span>${DEMO.planRows.length} แถว · ${DEMO.stalls.filter(s => s.active !== false).length} แผง</span></div><div class="plan-scroll" tabindex="0" aria-label="ผังตลาด เลือกแผงจากแถว A ถึง E"><div class="plan-canvas"><div class="plan-facilities"><div class="plan-facility"><span>🚻</span><b>ห้องน้ำ</b></div><div class="plan-facility"><span>📦</span><b>ห้องเก็บของ</b></div></div>${DEMO.planRows.map(row => `<section class="plan-row"><div class="plan-row-title"><small>แถว</small><b>${row.id}</b></div><div class="plan-stalls">${DEMO.stalls.filter(s => s.row === row.id && s.active !== false).map(s => `<button class="stall plan-stall ${s.status === 'occupied' ? 'occupied' : s.status === 'reserved' ? 'reserved' : ''} ${selectedStall === s.id ? 'selected' : ''}" aria-label="แผง ${s.id} ${labels[s.status]}" aria-pressed="${selectedStall === s.id}" onclick="selectStall('${s.id}')"><b>${s.id}</b><span>${labels[s.status]}</span></button>`).join('')}</div></section><div class="plan-walkway"><span></span>ทางเดิน<span></span></div>`).join('')}<div class="plan-sides"><div>ที่นั่งพัก</div><div>ที่นั่งพัก</div></div><div class="plan-bottom"><div class="parking-area"><b>ลานจอดรถ</b><span>รถยนต์ · มอเตอร์ไซค์</span></div><div class="market-entry"><b>ทางเข้า - ออก</b><small>จุดรับส่งและทางสัญจร</small></div><div class="trash-area"><span>♻️</span><b>ถังขยะ</b></div></div></div></div><div class="legend"><span><i></i>ว่าง</span><span><i class="leg-r"></i>จอง/รอยืนยัน</span><span><i class="leg-o"></i>มีผู้เช่า</span></div>${picked && !paymentMapMode ? `<div class="selection-box"><span><b>${picked.outside ? 'ช่อง' : 'แผง'} ${picked.id}</b>${picked.tenantName ? `<br><small>${picked.status === 'reserved' ? 'ผู้จอง' : 'ผู้เช่า'} ${escapeHTML(picked.tenantName)}</small>` : ''}<br>${picked.status === 'available' ? `ค่าเช่า ${money(rentRateFor(picked))} + ค่าขยะแผง ${money(DEMO.rates.stallWaste)} รวม ${money(rentRateFor(picked) + DEMO.rates.stallWaste)} บาท/เดือน` : picked.status === 'reserved' ? 'จองแล้ว · รอเจ้าหน้าที่ยืนยัน' : 'มีผู้เช่าแล้ว'}</span>${picked.status === 'available' ? `<button onclick="openSignupForStall('${picked.id}')">สมัครและขอจอง</button>` : ''}</div>` : '<p class="help" style="text-align:center;margin:12px 0 0">เลือกช่องสีเขียวอ่อนเพื่อดูรายละเอียด</p>'}</div><div class="notice"><span class="notice-icon">💡</span><div><b>ข้อมูลผังปรับได้</b><p>ผังสร้างจากจำนวนแถวและจำนวนแผงในข้อมูลระบบ สถานะการจองอัปเดตตามแต่ละแผง</p></div></div>${sectionHead('แผงชั่วคราว', 'กิจกรรมที่เปิดจอง')}${DEMO.events.map(ev => `<div class="panel event-card"><div class="event-date"><div><b>${ev.date}</b><br>${ev.month} 69</div></div><div><h3>${escapeHTML(ev.title)}</h3><p>${escapeHTML(ev.place)} · ${ev.booked}/${ev.slots} ช่อง</p><p>เริ่ม ${money(ev.fee)} บาท/วัน</p></div><button class="small-btn" onclick="toast('ตัวอย่าง: ติดต่อเจ้าหน้าที่เพื่อจอง')">ดู</button></div>`).join('')}`; }
+function regularStallPage() { const picked = findStall(selectedStall); const labels = { available: 'ว่าง', reserved: 'จอง', occupied: 'เช่า' }; return `<div class="page-heading">${paymentMapMode ? `<button class="back-link" onclick="cancelPaymentMap()">‹ กลับไปเลือกวิธี</button>` : ''}<h1>ผังตลาด อบต.</h1><p>${paymentMapMode ? 'แตะแผงของคุณเพื่อดูยอดค้าง' : 'แตะช่องว่างเพื่อสมัครและขอจอง'}</p></div>${openOutsideLocations().length ? `<div class="area-switch"><button class="active" onclick="chooseStallArea('regular')">แผงประจำ</button><button onclick="chooseStallArea('outside')">แผงลอยนอกผัง</button></div>` : ``}<div class="plan-card"><div class="plan-head"><div><b>แผงประจำ</b><small>แตะแผงเพื่อดูผู้จอง หรือจองแผงว่าง</small></div><span>${DEMO.planRows.length} แถว · ${DEMO.stalls.filter(s => s.active !== false).length} แผง</span></div><div class="plan-scroll" tabindex="0" aria-label="ผังตลาด เลือกแผงจากแถว A ถึง E"><div class="plan-canvas"><div class="plan-facilities"><div class="plan-facility"><span>🚻</span><b>ห้องน้ำ</b></div><div class="plan-facility"><span>📦</span><b>ห้องเก็บของ</b></div></div>${DEMO.planRows.map(row => `<section class="plan-row"><div class="plan-row-title"><small>แถว</small><b>${row.id}</b></div><div class="plan-stalls">${DEMO.stalls.filter(s => s.row === row.id && s.active !== false).map(s => `<button class="stall plan-stall ${s.status === 'occupied' ? 'occupied' : s.status === 'reserved' ? 'reserved' : ''} ${selectedStall === s.id ? 'selected' : ''}" aria-label="แผง ${s.id} ${labels[s.status]}" aria-pressed="${selectedStall === s.id}" onclick="selectStall('${s.id}')"><b>${s.id}</b><span>${labels[s.status]}</span></button>`).join('')}</div></section><div class="plan-walkway"><span></span>ทางเดิน<span></span></div>`).join('')}<div class="plan-sides"><div>ที่นั่งพัก</div><div>ที่นั่งพัก</div></div><div class="plan-bottom"><div class="parking-area"><b>ลานจอดรถ</b><span>รถยนต์ · มอเตอร์ไซค์</span></div><div class="market-entry"><b>ทางเข้า - ออก</b><small>จุดรับส่งและทางสัญจร</small></div><div class="trash-area"><span>♻️</span><b>ถังขยะ</b></div></div></div></div><div class="legend"><span><i></i>ว่าง</span><span><i class="leg-r"></i>จอง/รอยืนยัน</span><span><i class="leg-o"></i>มีผู้เช่า</span></div>${picked && !paymentMapMode ? `<div class="selection-box"><span><b>${picked.outside ? 'ช่อง' : 'แผง'} ${picked.id}</b>${picked.tenantName ? `<br><small>${picked.status === 'reserved' ? 'ผู้จอง' : 'ผู้เช่า'} ${escapeHTML(picked.tenantName)}</small>` : ''}<br><small>${picked.status === 'available' ? 'ว่าง · จองได้' : picked.status === 'reserved' ? 'จองแล้ว · รอเจ้าหน้าที่ยืนยัน' : 'มีผู้เช่าแล้ว'}</small></span>${picked.status === 'available' ? `<button onclick="openSignupForStall('${picked.id}')">จองแผงนี้</button>` : ''}</div>` : '<p class="help" style="text-align:center;margin:12px 0 0">แตะแผงเพื่อดูผู้จองหรือจองแผงว่าง</p>'}</div><div class="notice"><span class="notice-icon">💡</span><div><b>ข้อมูลผังปรับได้</b><p>ผังสร้างจากจำนวนแถวและจำนวนแผงในข้อมูลระบบ สถานะการจองอัปเดตตามแต่ละแผง</p></div></div>${sectionHead('แผงชั่วคราว', 'กิจกรรมที่เปิดจอง')}${DEMO.events.map(ev => `<div class="panel event-card"><div class="event-date"><div><b>${ev.date}</b><br>${ev.month} 69</div></div><div><h3>${escapeHTML(ev.title)}</h3><p>${escapeHTML(ev.place)} · ${ev.booked}/${ev.slots} ช่อง</p></div><button class="small-btn" onclick="toast('ตัวอย่าง: ติดต่อเจ้าหน้าที่เพื่อจอง')">ดู</button></div>`).join('')}`; }
 function chooseStallArea(area) { if (area === 'outside') {
     const locations = openOutsideLocations();
     if (!locations.length)
@@ -750,7 +812,7 @@ function submitRegistration(event) { event.preventDefault(); const form = event.
 } const amount = stall ? firstChargeAmount(stall) : 0; const period = stall ? rentPeriodFor(stall) : 'monthly'; const days = rentalDays; if (stall)
     stall.status = 'reserved'; form.reset(); clearIdCard(); signupDraft.name = ''; signupDraft.phone = ''; signupStallId = null; signupLocationId = null; selectedStall = null; rentalStartDate = localISODate(); rentalDays = 1; toast(stall ? `ส่งใบสมัครและคำขอจองแล้ว · ${period === 'daily' ? `${days} วัน` : 'เดือนแรก'} ประมาณ ${money(amount)} บาท` : 'ส่งใบสมัครตัวอย่างแล้ว · เจ้าหน้าที่จะตรวจทาน'); setPage('stalls'); }
 /** หน้าแรกค่าแผง — เลือกว่าจะจ่ายค่าแผงหรือจองแผง */
-function choicePage() { return `<div class="page-heading"><h1>ค่าแผงตลาด</h1><p>เลือกว่าจะทำอะไร</p></div><button class="choice-card" onclick="setPage('dues')"><b>จ่ายค่าแผง</b><small>ดูยอดค้างและจ่ายผ่าน QR หรือเงินสด</small></button><button class="choice-card" onclick="setPage('stalls')"><b>จองแผง</b><small>ดูผังตลาด เลือกแผงว่างแล้วส่งคำขอจอง</small></button>`; }
-function render() { saveOutsideLocations(); app.classList.remove('staff-dashboard'); renderNav(); const page = { home: choicePage, dues: searchPage, stalls: stallPage, signup: signupPage }; app.innerHTML = (page[view] || searchPage)(); }
+function choicePage() { return `<div class="page-heading"><h1>ค่าแผงตลาด</h1><p>เลือกว่าจะทำอะไร</p></div><button class="choice-card" onclick="setPage('dues')"><b>จ่ายค่าแผง</b><small>ดูยอดค้างและจ่ายผ่าน QR หรือเงินสด</small></button><button class="choice-card" onclick="setPage('stalls')"><b>จองแผง (สมัคร)</b><small>สมัครเช่าแผง เลือกแผงว่างแล้วส่งคำขอจอง</small></button>`; }
+function render() { saveOutsideLocations(); app.classList.remove('staff-dashboard'); renderNav(); const page = { home: choicePage, dues: searchPage, stalls: stallPage, signup: signupPage }; app.innerHTML = homeBackHTML() + (page[view] || searchPage)(); }
 applySavedPayments();
 render();

@@ -375,7 +375,7 @@ function render() {
   const subNav = subs.length > 1
     ? `<nav class="staff-subtabs" aria-label="เมนูย่อย">${subs.map(([v, label]) => `<button type="button" class="${sub === v ? 'active' : ''}" aria-current="${sub === v}" onclick="setStaffSub('${v}')">${label}</button>`).join('')}</nav>`
     : '';
-  staffApp.innerHTML = `<nav class="staff-tabs" aria-label="เมนูเจ้าหน้าที่" style="grid-template-columns:repeat(3,minmax(0,1fr))">${tabs.map(([t, label, badge]) => `<button type="button" class="${staffTab === t ? 'active' : ''}" aria-current="${staffTab === t}" onclick="setStaffTab('${t}')">${staffIcon(TAB_ICON[t])}<span>${label}</span>${badge}</button>`).join('')}</nav>${subNav}${body}
+  staffApp.innerHTML = homeBackHTML() + `<nav class="staff-tabs" aria-label="เมนูเจ้าหน้าที่" style="grid-template-columns:repeat(3,minmax(0,1fr))">${tabs.map(([t, label, badge]) => `<button type="button" class="${staffTab === t ? 'active' : ''}" aria-current="${staffTab === t}" onclick="setStaffTab('${t}')">${staffIcon(TAB_ICON[t])}<span>${label}</span>${badge}</button>`).join('')}</nav>${subNav}${body}
   <p class="help staff-foot">ระบบสาธิต · ข้อมูลและสถานะบันทึกเฉพาะเบราว์เซอร์นี้</p>`;
 }
 

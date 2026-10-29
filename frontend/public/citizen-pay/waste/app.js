@@ -1,3 +1,52 @@
+/** ปุ่มขนาดตัวหนังสือบนหัวเว็บ (มือถือตัวเล็กเกินไป) — กดวนได้ 3 ขนาด · จำค่าไว้ใน localStorage · เก็บไม่ได้ก็ใช้ขนาดปกติ */
+const TEXT_SIZE_STEPS = [1, 1.15, 1.3];
+const TEXT_SIZE_LABELS = ['Aa', 'Aa+', 'Aa++'];
+const TEXT_SIZE_KEY = 'citizen:textSize';
+function readTextSizeStep() {
+    try {
+        const v = Number(localStorage.getItem(TEXT_SIZE_KEY));
+        return Number.isInteger(v) && v >= 0 && v < TEXT_SIZE_STEPS.length ? v : 0;
+    }
+    catch {
+        return 0;
+    }
+}
+function applyTextSizeStep(step) {
+    // zoom ทั้งหน้า (ใช้ var --text-scale) — ตัวอักษร ปุ่ม และช่องกรอกขยายพร้อมกัน
+    document.documentElement.style.setProperty('--text-scale', String(TEXT_SIZE_STEPS[step]));
+    const btn = document.getElementById('textSizeBtn');
+    if (btn) {
+        const next = (step + 1) % TEXT_SIZE_STEPS.length;
+        btn.textContent = TEXT_SIZE_LABELS[step];
+        btn.setAttribute('aria-label', `ขนาดตัวหนังสือ ${TEXT_SIZE_LABELS[step]} กดเพื่อเปลี่ยนเป็น ${TEXT_SIZE_LABELS[next]}`);
+    }
+}
+function initTextSizeControl() {
+    const header = document.querySelector('.sao-header-in');
+    if (!header || document.getElementById('textSizeBtn'))
+        return;
+    let step = readTextSizeStep();
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.id = 'textSizeBtn';
+    btn.className = 'text-size-btn';
+    btn.addEventListener('click', () => {
+        step = (step + 1) % TEXT_SIZE_STEPS.length;
+        try {
+            localStorage.setItem(TEXT_SIZE_KEY, String(step));
+        }
+        catch { /* ไม่ต้องจำก็ได้ */ }
+        applyTextSizeStep(step);
+    });
+    header.appendChild(btn);
+    applyTextSizeStep(step);
+}
+initTextSizeControl();
+/** ลิงก์กลับหน้าหลักบนทุกหน้าค่าแผง/ขยะ/เจ้าหน้าที่ — เดโม่ Vercel กลับไป "/" · ระบบจริงกลับไป /citizen */
+function homeBackHTML() {
+    const demo = location.pathname.includes('/citizen-pay/') || location.hostname.endsWith('vercel.app');
+    return `<a class="home-back" href="${demo ? '/' : '/citizen'}">‹ กลับหน้าหลัก</a>`;
+}
 const modal = document.getElementById('modal');
 const modalContent = document.getElementById('modalContent');
 const money = n => Number(n).toLocaleString('th-TH', { maximumFractionDigits: 2 });
@@ -525,7 +574,7 @@ function openCashInfo() { modalContent.innerHTML = `<div class="modal-inner"><di
 function render() {
     const matches = searchTerm ? DEMO.bills.filter(b => PAYABLE.includes(b.status) && householdMatches(b, searchTerm)).sort((a, b) => b.id.localeCompare(a.id)) : [];
     const shortcut = searchTerm ? '' : `<div class="payment-shortcuts"><button class="payment-shortcut" type="button" onclick="scanHouseQr()">${SCAN_HOUSE_ART}<b>สแกน QR หน้าบ้าน</b><small>ส่องรหัสหน้าบ้านหรือเลือกรูป QR เพื่อดูค่าขยะ</small></button><button class="payment-shortcut payment-shortcut-cash" type="button" onclick="openCashInfo()">${CASH_HOUSE_ART}<b>จ่ายเงินสด</b><small>ไปจ่ายที่ ${escapeHTML(PAYMENT.cashPlace)}</small></button></div>`;
-    app.innerHTML = searchHeaderHTML('จ่ายค่าขยะ', 'บ้านเลขที่และหมู่ ชื่อ หรือเบอร์โทร', 'เช่น 18 หมู่ 2 · สมชาย · 081-000-0014', 'ลองค้นหา “18 หมู่ 2”, “สมชาย” หรือ “081-000-0014”', ' with-photo with-waste-photo')
+    app.innerHTML = homeBackHTML() + searchHeaderHTML('จ่ายค่าขยะ', 'บ้านเลขที่และหมู่ ชื่อ หรือเบอร์โทร', 'เช่น 18 หมู่ 2 · สมชาย · 081-000-0014', 'ลองค้นหา “18 หมู่ 2”, “สมชาย” หรือ “081-000-0014”', ' with-photo with-waste-photo')
         + shortcut + billListHTML({ title: 'ค่าขยะ', matches, promptText: 'พิมพ์บ้านเลขที่และหมู่ ชื่อ หรือเบอร์โทร', payerLabel: b => b.location || b.ref, chargeLabel: () => 'ค่าขยะครัวเรือน' });
 }
 applySavedPayments();

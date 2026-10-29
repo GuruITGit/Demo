@@ -3,10 +3,6 @@
   "trailingSlash": false,
   "rewrites": [
     {
-      "source": "/citizen",
-      "destination": "/citizen-pay/market/index.html"
-    },
-    {
       "source": "/citizen/market",
       "destination": "/citizen-pay/market/index.html"
     },
@@ -36,6 +32,13 @@
           "value": "noindex, nofollow"
         }
       ]
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/citizen",
+      "destination": "/",
+      "permanent": false
     }
   ]
 }
