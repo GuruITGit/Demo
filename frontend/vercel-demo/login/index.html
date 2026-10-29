@@ -5,4 +5,15 @@ document.addEventListener('submit', function (e) {
   if (!u || !u.value.trim() || !p || !p.value) { alert('กรุณากรอก Username และ Password'); return; }
   location.href = '/dashboard';
 });
+</script><div id="demoToast" style="position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#0f2a44;color:#fff;padding:10px 16px;border-radius:12px;font:14px/1.4 sans-serif;opacity:0;transition:opacity .2s;pointer-events:none;z-index:9999;max-width:90vw;text-align:center"></div>
+<script>
+(function(){
+  var t=document.getElementById('demoToast'),tm;
+  function say(m){t.textContent=m;t.style.opacity='1';clearTimeout(tm);tm=setTimeout(function(){t.style.opacity='0'},2000)}
+  document.addEventListener('click',function(e){
+    var a=e.target.closest('a'), b=e.target.closest('button');
+    if(a&&a.getAttribute('href')==='#'){e.preventDefault();say('เดโม่: เมนูนี้ยังไม่มีในเดโม่');return}
+    if(b&&!b.closest('form')){e.preventDefault();say('เดโม่: ปุ่มนี้ใช้ได้เฉพาะในระบบจริง')}
+  },true);
+})();
 </script></body></html>
