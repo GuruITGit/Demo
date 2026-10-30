@@ -305,7 +305,7 @@ function ReportForm() {
           <FilePicker file={photo || undefined} onFile={setPhoto} />
         </div>
 
-        <button type="submit" disabled={loading || detail.trim().length < 5 || (needsApplicant && ((isPetition && !subject.trim()) || !name.trim() || !houseNo.trim() || !villageNo.trim() || !phone.trim()))}
+        <button type="submit" disabled={loading}
           className="flex w-full items-center justify-center gap-2 rounded-xl bg-linear-to-r from-cyan-600 to-sky-600 py-3.5 text-base font-bold text-white shadow-sm transition hover:opacity-95 disabled:opacity-50">
           {loading ? 'กำลังส่ง…' : 'ส่งเรื่อง'} <Send className="h-4 w-4" />
         </button>
