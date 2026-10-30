@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth.store';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
 /** ชื่อหน่วยงาน (ไว้พิมพ์หัว QR/ใบเสร็จ) */
 export function useOrgName(): string {
@@ -82,6 +83,25 @@ export function Field({ label, hint, children, className }: { label: string; hin
 }
 
 export const inputCls = 'w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100';
+
+/** กรองผู้ค้างชำระตามจำนวนเดือนที่ค้าง + ค้นหา · เรียงค้างนานสุดก่อน */
+export function filterDues<T extends { months: number; total: number }>(rows: T[], min: number, q: string, text: (r: T) => string): T[] {
+  const k = q.trim().toLowerCase();
+  return rows.filter((r) => r.months >= min && (!k || text(r).toLowerCase().includes(k))).sort((a, b) => b.months - a.months || b.total - a.total);
+}
+/** สีเตือนตามเดือนที่ค้าง: 2 เดือน = เหลือง · 3 เดือนขึ้นไป = แดง */
+export const dueTone = (months: number) => (months >= 3 ? 'font-semibold text-red-600' : months >= 2 ? 'font-semibold text-amber-600' : '');
+const DUE_STEPS = [{ min: 0, label: 'ทั้งหมด' }, { min: 2, label: 'ค้าง 2 เดือนขึ้นไป' }, { min: 3, label: 'ค้าง 3 เดือนขึ้นไป' }, { min: 6, label: 'ค้าง 6 เดือนขึ้นไป' }];
+export function DuesFilter({ min, setMin, q, setQ, placeholder }: { min: number; setMin: (n: number) => void; q: string; setQ: (s: string) => void; placeholder: string }) {
+  return (
+    <div className="no-print flex flex-wrap items-center gap-2 border-b border-gray-100 px-4 py-3">
+      {DUE_STEPS.map((s) => (
+        <Button key={s.min} size="sm" variant={min === s.min ? 'default' : 'outline'} onClick={() => setMin(s.min)}>{s.label}</Button>
+      ))}
+      <input className={cn(inputCls, 'ml-auto max-w-xs')} value={q} onChange={(e) => setQ(e.target.value)} placeholder={placeholder} />
+    </div>
+  );
+}
 
 export function Empty({ children }: { children: ReactNode }) {
   return <p className="px-4 py-10 text-center text-sm text-gray-500">{children}</p>;

@@ -7,8 +7,9 @@ import { toast } from '@/hooks/use-toast';
 import { useAuthStore } from '@/stores/auth.store';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/shared/confirm-dialog';
-import { money } from '@/lib/payment-labels';
-import { Empty, Field, Metric, Panel, PayTabs, inputCls, useOrgName } from '@/components/pay/pay-ui';
+import { money, periodLabel } from '@/lib/payment-labels';
+import { cn } from '@/lib/utils';
+import { DuesFilter, Empty, Field, Metric, Panel, PayTabs, dueTone, filterDues, inputCls, useOrgName } from '@/components/pay/pay-ui';
 import { QrSvg, downloadQrPng, printQrSheet, stallQrUrl, type QrItem } from '@/components/pay/qr';
 import { SlipQueue } from '@/components/pay/slip-queue';
 import { PaySettings } from '@/components/pay/pay-settings';
@@ -22,7 +23,7 @@ type Stall = {
 };
 type Summary = {
   byStatus: { status: string; count: number; total: number }[];
-  arrears: { stallCode: string; payerName: string; months: number; total: number }[];
+  arrears: { stallCode: string; payerName: string; months: number; oldest?: string; total: number }[];
   stallCounts: { status: string; count: number }[];
 };
 type Tab = 'overview' | 'queue' | 'reserve' | 'plan' | 'bills' | 'dues' | 'outside' | 'qr' | 'settings';
@@ -312,29 +313,33 @@ function StallEditor({ stall, canManage, saving, onClose, onBills, onDelete, onS
 
 // ───────────────────────────── ค้างชำระ
 function Dues({ sum, onBills }: { sum?: Summary; onBills: (code: string) => void }) {
-  const rows = sum?.arrears ?? [];
+  const [min, setMin] = useState(0);
+  const [q, setQ] = useState('');
+  const rows = filterDues(sum?.arrears ?? [], min, q, (r) => `${r.stallCode} ${r.payerName}`);
   const total = rows.reduce((s, r) => s + r.total, 0);
   return (
     <Panel
       title={<>ผู้ค้างชำระ <span className="text-sm font-normal text-gray-500">{rows.length} แผง · รวม {money(total)} บาท</span></>}
       actions={<Button size="sm" variant="outline" onClick={() => window.print()}>พิมพ์รายงาน</Button>}
     >
+      <DuesFilter min={min} setMin={setMin} q={q} setQ={setQ} placeholder="ค้นหาแผงหรือชื่อผู้เช่า" />
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-gray-50 text-left text-gray-600">
-            <tr><th className="px-4 py-2">แผง</th><th className="px-4 py-2">ผู้เช่า</th><th className="px-4 py-2 text-right">บิลค้าง</th><th className="px-4 py-2 text-right">ยอดค้าง (บาท)</th><th className="px-4 py-2 no-print" /></tr>
+            <tr><th className="px-4 py-2">แผง</th><th className="px-4 py-2">ผู้เช่า</th><th className="px-4 py-2 text-right">ค้างมา</th><th className="px-4 py-2">ค้างตั้งแต่</th><th className="px-4 py-2 text-right">ยอดค้าง (บาท)</th><th className="px-4 py-2 no-print" /></tr>
           </thead>
           <tbody>
             {rows.map((r) => (
               <tr key={r.stallCode} className="border-t border-gray-100">
                 <td className="px-4 py-2 font-medium">{r.stallCode}</td>
                 <td className="px-4 py-2">{r.payerName}</td>
-                <td className="px-4 py-2 text-right">{r.months} รายการ</td>
+                <td className={cn('px-4 py-2 text-right', dueTone(r.months))}>{r.months} เดือน</td>
+                <td className="px-4 py-2 text-gray-600">{r.oldest ? periodLabel(r.oldest) : '—'}</td>
                 <td className="px-4 py-2 text-right font-semibold">{money(r.total)}</td>
                 <td className="px-4 py-2 no-print"><Button size="sm" variant="outline" onClick={() => onBills(r.stallCode)}>ดูบิล / รับชำระ</Button></td>
               </tr>
             ))}
-            {!rows.length && <tr><td colSpan={5}><Empty>ไม่มียอดค้างชำระ</Empty></td></tr>}
+            {!rows.length && <tr><td colSpan={6}><Empty>{min || q ? 'ไม่มีรายการตามเงื่อนไขที่เลือก' : 'ไม่มียอดค้างชำระ'}</Empty></td></tr>}
           </tbody>
         </table>
       </div>

@@ -7,7 +7,8 @@ import { useAuthStore } from '@/stores/auth.store';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/shared/confirm-dialog';
 import { BILL_STATUS, PAY_METHOD, periodLabel, money } from '@/lib/payment-labels';
-import { Empty, Field, Metric, Panel, PayTabs, inputCls, recentPeriods, useOrgName } from '@/components/pay/pay-ui';
+import { DuesFilter, Empty, Field, Metric, Panel, PayTabs, dueTone, filterDues, inputCls, recentPeriods, useOrgName } from '@/components/pay/pay-ui';
+import { cn } from '@/lib/utils';
 import { QrSvg, downloadQrPng, printQrSheet, houseQrUrl, type QrItem } from '@/components/pay/qr';
 import { SlipQueue } from '@/components/pay/slip-queue';
 import { PaySettings } from '@/components/pay/pay-settings';
@@ -25,7 +26,7 @@ type Summary = {
   householdCount: number; unpaidCount: number; unpaidTotal: number;
   byStatus: { status: string; count: number; total: number }[];
 };
-type Arrear = { householdRef: string; holderName: string; houseNo: string; moo: string; phone: string | null; months: number; total: number };
+type Arrear = { householdRef: string; holderName: string; houseNo: string; moo: string; phone: string | null; months: number; oldest?: string; total: number };
 type Tab = 'overview' | 'queue' | 'households' | 'bills' | 'dues' | 'qr' | 'settings';
 
 const STATUS_TONE: Record<string, string> = {
@@ -391,30 +392,35 @@ function Bills({ canManage, orgName, seedQ, seedStatus }: { canManage: boolean; 
 // ───────────────────────────── ค้างชำระ
 function Dues({ onBills }: { onBills: (ref: string) => void }) {
   const { data = [], isLoading } = useQuery<Arrear[]>({ queryKey: ['waste', 'arrears'], queryFn: async () => (await api.get('/waste/arrears')).data.data });
-  const total = data.reduce((s, r) => s + r.total, 0);
+  const [min, setMin] = useState(0);
+  const [q, setQ] = useState('');
+  const rows = filterDues(data, min, q, (r) => `${r.householdRef} ${r.holderName} ${r.houseNo} หมู่ ${Number(r.moo)} ${r.phone ?? ''}`);
+  const total = rows.reduce((s, r) => s + r.total, 0);
   return (
     <Panel
-      title={<>ผู้ค้างชำระ <span className="text-sm font-normal text-gray-500">{data.length} หลัง · รวม {money(total)} บาท</span></>}
+      title={<>ผู้ค้างชำระ <span className="text-sm font-normal text-gray-500">{rows.length} หลัง · รวม {money(total)} บาท</span></>}
       actions={<Button size="sm" variant="outline" onClick={() => window.print()}>พิมพ์รายงาน</Button>}
     >
+      <DuesFilter min={min} setMin={setMin} q={q} setQ={setQ} placeholder="ค้นหาชื่อ บ้านเลขที่ หมู่ หรือเบอร์" />
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-gray-50 text-left text-gray-600">
-            <tr><th className="px-4 py-2">รหัส</th><th className="px-4 py-2">ผู้รับบิล</th><th className="px-4 py-2">บ้านเลขที่</th><th className="px-4 py-2">เบอร์โทร</th><th className="px-4 py-2 text-right">ค้าง</th><th className="px-4 py-2 text-right">ยอดค้าง (บาท)</th><th className="px-4 py-2 no-print" /></tr>
+            <tr><th className="px-4 py-2">รหัส</th><th className="px-4 py-2">ผู้รับบิล</th><th className="px-4 py-2">บ้านเลขที่</th><th className="px-4 py-2">เบอร์โทร</th><th className="px-4 py-2 text-right">ค้างมา</th><th className="px-4 py-2">ค้างตั้งแต่</th><th className="px-4 py-2 text-right">ยอดค้าง (บาท)</th><th className="px-4 py-2 no-print" /></tr>
           </thead>
           <tbody>
-            {data.map((r) => (
+            {rows.map((r) => (
               <tr key={r.householdRef} className="border-t border-gray-100">
                 <td className="px-4 py-2 font-medium">{r.householdRef}</td>
                 <td className="px-4 py-2">{r.holderName}</td>
                 <td className="px-4 py-2">{r.houseNo} หมู่ {Number(r.moo)}</td>
-                <td className="px-4 py-2">{r.phone ?? '—'}</td>
-                <td className="px-4 py-2 text-right">{r.months} เดือน</td>
+                <td className="px-4 py-2">{r.phone ? <a href={`tel:${r.phone}`} className="text-sky-700 underline">{r.phone}</a> : '—'}</td>
+                <td className={cn('px-4 py-2 text-right', dueTone(r.months))}>{r.months} เดือน</td>
+                <td className="px-4 py-2 text-gray-600">{r.oldest ? periodLabel(r.oldest) : '—'}</td>
                 <td className="px-4 py-2 text-right font-semibold">{money(r.total)}</td>
                 <td className="px-4 py-2 no-print"><Button size="sm" variant="outline" onClick={() => onBills(r.householdRef)}>ดูบิล / รับชำระ</Button></td>
               </tr>
             ))}
-            {!data.length && <tr><td colSpan={7}>{isLoading ? <Empty>กำลังโหลด…</Empty> : <Empty>ไม่มียอดค้างชำระ</Empty>}</td></tr>}
+            {!rows.length && <tr><td colSpan={8}>{isLoading ? <Empty>กำลังโหลด…</Empty> : <Empty>{min || q ? 'ไม่มีรายการตามเงื่อนไขที่เลือก' : 'ไม่มียอดค้างชำระ'}</Empty>}</td></tr>}
           </tbody>
         </table>
       </div>
