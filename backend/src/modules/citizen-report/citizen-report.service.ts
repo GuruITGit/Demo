@@ -6,6 +6,8 @@ import { Organization } from '../../database/entities/organization.entity';
 import { WaterCustomer } from '../../database/entities/water-customer.entity';
 import { Department } from '../../database/entities/department.entity';
 import { StorageService } from '../storage/storage.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { notifyUsersWithPermission } from '../../common/notify-permission';
 import { PdfService } from '../pdf/pdf.service';
 import { CreateReportDto, UpdateReportDto, SignatureSlot } from './dto/citizen-report.dto';
 
@@ -25,7 +27,15 @@ export class CitizenReportService {
     @InjectRepository(WaterCustomer) private readonly waterCustomerRepo: Repository<WaterCustomer>,
     @InjectRepository(Department) private readonly deptRepo: Repository<Department>,
     private readonly storage: StorageService,
+    private readonly notifications: NotificationsService,
   ) {}
+
+  /** แจ้งผู้ที่มีสิทธิ์จัดการเรื่องแจ้ง/ร้องเรียนว่ามีเรื่องใหม่ */
+  private async notifyNewReport(orgId: string, refNo: string, id: string, title: string) {
+    await notifyUsersWithPermission(this.repo.manager.connection, this.notifications, orgId, { module: 'complaint', action: 'manage', subject: 'Report' }, {
+      type: 'complaint:new', title: 'มีเรื่องแจ้ง/ร้องเรียนใหม่', body: `${refNo} · ${title}`, actionUrl: '/citizen-reports', refType: 'citizen_report', refId: id,
+    });
+  }
 
   /** หา org: ใช้ code ถ้าส่งมา, ไม่งั้นถ้ามี อบต. เดียวใช้อันนั้น (พอร์ทัลสาธารณะไม่มี JWT) */
   private async resolveOrg(code?: string): Promise<string> {
@@ -116,6 +126,7 @@ export class CitizenReportService {
       villageNo, geo, answers,
       photoUrl, status: 'new',
     }));
+    await this.notifyNewReport(orgId, row.refNo, row.id, row.category);
     return { refNo: row.refNo, id: row.id, status: row.status };
   }
 
@@ -145,6 +156,7 @@ export class CitizenReportService {
       location: (answers.location ? String(answers.location).slice(0, 500) : (answers.address ? String(answers.address).slice(0, 500) : null)),
       photoUrl: files[0]?.url || null, status: 'new',
     }));
+    await this.notifyNewReport(orgId, row.refNo, row.id, formTitle);
     return { refNo: row.refNo, id: row.id, status: row.status };
   }
 
