@@ -37,7 +37,8 @@ export function FormEngine({ def }: { def: FormDef }) {
   }, [answers, def]);
 
   const locateMe = () => {
-    if (!navigator.geolocation) { toast.error('อุปกรณ์ไม่รองรับการระบุตำแหน่ง'); return; }
+    if (!window.isSecureContext) { toast.error('ระบุตำแหน่งได้เฉพาะเว็บที่เปิดแบบ https — พิมพ์ที่อยู่เองหรือข้ามขั้นนี้ได้'); return; }
+    if (!navigator.geolocation) { toast.error('เบราว์เซอร์นี้ไม่รองรับการระบุตำแหน่ง'); return; }
     setGpsBusy(true);
     navigator.geolocation.getCurrentPosition(
       (pos) => { setGeo({ lat: +pos.coords.latitude.toFixed(6), lng: +pos.coords.longitude.toFixed(6) }); setGpsBusy(false); },
@@ -300,6 +301,10 @@ export function VoiceTextarea({ label, value, onChange, placeholder, className, 
   label: string; value: string; onChange: (v: string) => void; placeholder?: string; className: string; voice?: boolean;
 }) {
   const supported = useSyncExternalStore(noopSubscribe, () => !!getSpeechCtor(), () => false);
+  // กดแล้วไม่ทำงานเงียบ ๆ: บอกสาเหตุจริง (เว็บไม่ได้เปิดแบบ https / เบราว์เซอร์ไม่รองรับ)
+  const speechBlocked = () => toast.error(!window.isSecureContext
+    ? 'ใช้ไมค์ได้เฉพาะเว็บที่เปิดแบบ https — ลองเปิดจากลิงก์ https หรือพิมพ์เอง'
+    : 'เบราว์เซอร์นี้ไม่รองรับการพูดแทนการพิมพ์ — ลองเปิดด้วย Chrome หรือ Safari หรือพิมพ์เอง');
   const [listening, setListening] = useState(false);
   const recRef = useRef<SpeechRecLike | null>(null);
   const wantRef = useRef(false);
@@ -344,9 +349,9 @@ export function VoiceTextarea({ label, value, onChange, placeholder, className, 
     <div>
       <textarea value={value} onChange={(e) => onChange(e.target.value)} rows={3} placeholder={placeholder}
         aria-label={label} readOnly={listening} className={className} />
-      {supported && voice && (
+      {voice && (
         <div className="mt-2">
-          <button type="button" onClick={listening ? stop : start}
+          <button type="button" onClick={listening ? stop : () => (supported && window.isSecureContext ? start() : speechBlocked())}
             className={`flex w-full items-center justify-center gap-2 rounded-xl py-3 text-base font-semibold transition ${listening ? 'animate-pulse bg-rose-500 text-white' : 'border border-cyan-200 bg-cyan-50 text-cyan-700 hover:bg-cyan-100'}`}>
             {listening ? <><Square className="h-4 w-4" /> กำลังฟัง… แตะเพื่อหยุด</> : <><Mic className="h-5 w-5" /> แตะแล้วพูดแทนการพิมพ์</>}
           </button>

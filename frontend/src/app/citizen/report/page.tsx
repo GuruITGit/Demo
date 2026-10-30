@@ -118,12 +118,14 @@ function ReportForm() {
       });
     };
     const fallback: [number, number] = geo ? [geo.lat, geo.lng] : DEFAULT_CENTER;
+    const useFallback = (why: string) => { toast.error(why + ' — เลื่อนแผนที่หรือปักหมุดไปยังจุดเกิดเหตุเองได้'); start(fallback); };
+    if (!window.isSecureContext) { useFallback('ระบุตำแหน่งอัตโนมัติได้เฉพาะเว็บที่เปิดแบบ https'); return; }
     // เผื่อกรณี callback ของตำแหน่งไม่เคยถูกเรียก (บางเบราว์เซอร์มือถือค้างเงียบ) — ไม่ให้ปุ่มค้างสถานะกำลังหา
-    watchdog = setTimeout(() => start(fallback), 12000);
-    if (!navigator.geolocation) { start(fallback); return; }
+    watchdog = setTimeout(() => useFallback('ระบุตำแหน่งไม่ทัน'), 12000);
+    if (!navigator.geolocation) { useFallback('เบราว์เซอร์นี้ไม่รองรับการระบุตำแหน่ง'); return; }
     navigator.geolocation.getCurrentPosition(
       (pos) => start([pos.coords.latitude, pos.coords.longitude]),
-      () => start(fallback),
+      (err) => useFallback(err.code === 1 ? 'ยังไม่ได้อนุญาตให้ใช้ตำแหน่ง (ตั้งสิทธิ์ตำแหน่งของเว็บนี้ในเบราว์เซอร์)' : 'ระบุตำแหน่งไม่สำเร็จ'),
       { enableHighAccuracy: false, timeout: 9000, maximumAge: 60000 },
     );
   };
