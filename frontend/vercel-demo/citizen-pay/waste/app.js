@@ -43,6 +43,15 @@ function initTextSizeControl() {
 }
 initTextSizeControl();
 /** ลิงก์กลับหน้าหลักบนทุกหน้าค่าแผง/ขยะ/เจ้าหน้าที่ — เดโม่ Vercel กลับไป "/" · ระบบจริงกลับไป /citizen */
+/** กล่องติดต่อเจ้าหน้าที่ท้ายหน้า (เบอร์ฉุกเฉิน) — ไม่มีเบอร์ = ไม่แสดง */
+function contactFooterHTML() {
+    const phone = PAYMENT.contactPhone;
+    if (!phone)
+        return '';
+    return `<div class="contact-box"><b>ติดต่อเจ้าหน้าที่</b><span>${escapeHTML(PAYMENT.cashPlace)}</span><a href="tel:${escapeHTML(phone.replace(/[^0-9+]/g, ''))}">โทร ${escapeHTML(phone)}</a><small>มีเหตุฉุกเฉินหรือติดปัญหาการชำระ โทรหาเจ้าหน้าที่ได้ตามเวลาทำการ</small></div>`;
+}
+/** เดโม่: คีย์เทียบชื่อ ตัดคำนำหน้า/ช่องว่าง (ตรงกับ nameKey ฝั่ง backend) */
+const demoNameKey = (n) => n.replace(/\s+/g, '').replace(/^(นางสาว|น\.ส\.|นาย|นาง|เด็กชาย|เด็กหญิง|คุณ)/, '').toLowerCase();
 function homeBackHTML() {
     const demo = location.pathname.includes('/citizen-pay/') || location.hostname.endsWith('vercel.app');
     return `<a class="home-back" href="${demo ? '/' : '/citizen'}">‹ กลับหน้าหลัก</a>`;
@@ -116,6 +125,8 @@ const PAYMENT = {
     accountNo: '000-0-00000-0',
     cashPlace: 'งานการเงิน ที่ทำการ อบต.',
     cashHours: 'จันทร์–ศุกร์ 08:30–16:30 น. (เว้นวันหยุดราชการ)',
+    // เบอร์ตัวอย่างของเดโม่ — ระบบจริงใช้ค่าที่ อบต. ตั้งไว้ (ว่าง = ไม่แสดงกล่อง)
+    contactPhone: '044-000-000',
     // URL scheme เปิดแอปธนาคาร — แอปเปิดขึ้นมาเฉยๆ ไม่กรอกยอดให้ (ธนาคารไม่มี deeplink กลาง) · ต้องทดสอบบนมือถือจริงทุกตัว
     banks: [
         { name: 'กสิกรไทย', short: 'K+', color: '#138F2D', scheme: 'kplus://' },
@@ -155,7 +166,7 @@ async function payApi(path, init) {
 function applyPayConfig(c) {
     Object.assign(PAYMENT, {
         promptpayId: c.promptpayId || '', promptpayType: c.promptpayType || 'mobile', payeeName: c.payeeName || '',
-        accountBank: c.accountBank || '', accountNo: c.accountNo || '', cashPlace: c.cashPlace || PAYMENT.cashPlace, cashHours: c.cashHours || PAYMENT.cashHours,
+        accountBank: c.accountBank || '', accountNo: c.accountNo || '', cashPlace: c.cashPlace || PAYMENT.cashPlace, cashHours: c.cashHours || PAYMENT.cashHours, contactPhone: c.contactPhone || '',
         demo: false,
     });
 }
@@ -642,6 +653,7 @@ function toWasteBill(x) {
     const status = x.status === 'pending' ? (cash ? 'cash' : 'pending') : x.status === 'mismatch' ? 'mismatch' : 'unpaid';
     return { id: x.id, payerType: 'household', merchant: verifiedName || x.holderName, ref: x.householdRef, location: `บ้านเลขที่ ${x.houseNo} หมู่ ${Number(x.moo)}`, houseNo: x.houseNo, moo: x.moo, phone: x.phone || '', kind: 'ค่าเก็บขยะ', month: periodToThai(x.period), due: x.dueDate || '', amount: Number(x.amount), status };
 }
+let demoBillsAll = null;
 async function searchWasteBills(name, q) {
     verifiedName = name.trim();
     draftQuery = q.trim();
@@ -655,8 +667,15 @@ async function searchWasteBills(name, q) {
     }
     try {
         const rows = await payApi(`/waste/bills?q=${enc(searchTerm)}&name=${enc(verifiedName)}`);
-        if (rows === null)
-            return searchBills(searchTerm); // เดโม่: ไม่มี API ใช้ข้อมูลตัวอย่าง
+        if (rows === null) { // เดโม่: ไม่มี API → กรองข้อมูลตัวอย่างให้ตรงทั้งชื่อและบ้านเลขที่/เบอร์/รหัสครัวเรือน
+            demoBillsAll ?? (demoBillsAll = DEMO.bills);
+            const k = (s) => s.replace(/\s+/g, '').replace(/หมู่ที่|ม\./g, 'หมู่');
+            DEMO.bills = demoBillsAll.filter((b) => b.payerType === 'household' && demoNameKey(b.merchant) === demoNameKey(verifiedName)
+                && (k(searchTerm) === k(`${b.houseNo} หมู่ ${b.moo}`) || searchTerm.replace(/[\s-]/g, '') === b.phone || searchTerm.toUpperCase() === b.ref));
+            if (!DEMO.bills.length)
+                toast('ไม่พบข้อมูลที่ตรงกัน กรุณาตรวจสอบชื่อและเลขล็อก/บ้านเลขที่ให้ตรงกับที่ลงทะเบียนไว้');
+            return render();
+        }
         DEMO.bills = rows.map(toWasteBill);
     }
     catch (e) {
@@ -696,7 +715,7 @@ function searchFormHTML() {
 function render() {
     const matches = searchTerm ? DEMO.bills.filter(b => PAYABLE.includes(b.status) || b.status === 'pending' || b.status === 'cash').sort((a, b) => b.id.localeCompare(a.id)) : [];
     const shortcut = searchTerm ? '' : `<div class="payment-shortcuts"><button class="payment-shortcut" type="button" onclick="scanHouseQr()">${SCAN_HOUSE_ART}<b>สแกน QR หน้าบ้าน</b><small>ส่องรหัสหน้าบ้านหรือเลือกรูป QR เพื่อดูค่าขยะ</small></button><button class="payment-shortcut payment-shortcut-cash" type="button" onclick="openCashInfo()">${CASH_HOUSE_ART}<b>จ่ายเงินสด</b><small>ไปจ่ายที่ ${escapeHTML(PAYMENT.cashPlace)}</small></button></div>`;
-    app.innerHTML = homeBackHTML() + searchFormHTML() + shortcut + billListHTML({ title: 'ค่าขยะ', matches, promptText: 'กรอกชื่อผู้รับบิลและบ้านเลขที่ แล้วกดค้นหา', payerLabel: b => b.location || b.ref, chargeLabel: () => 'ค่าขยะครัวเรือน' });
+    app.innerHTML = homeBackHTML() + searchFormHTML() + shortcut + billListHTML({ title: 'ค่าขยะ', matches, promptText: 'กรอกชื่อผู้รับบิลและบ้านเลขที่ แล้วกดค้นหา', payerLabel: b => b.location || b.ref, chargeLabel: () => 'ค่าขยะครัวเรือน' }) + contactFooterHTML();
 }
 applySavedPayments();
 // ถ้าเข้าถึงระบบจริงได้: ใช้ช่องทางรับเงินจริงและส่งการแจ้งชำระเข้าระบบ · ไม่ได้ (เดโม่) ใช้ข้อมูลตัวอย่างเดิม

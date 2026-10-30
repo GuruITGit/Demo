@@ -40,7 +40,7 @@ const HOUSEHOLDS = [
 ];
 const CONFIG = {
   promptpayId: '', promptpayType: 'mobile', payeeName: '', accountBank: '', accountNo: '',
-  cashPlace: 'งานการเงิน ที่ทำการ อบต.', cashHours: 'จันทร์–ศุกร์ 08:30–16:30 น. (เว้นวันหยุดราชการ)',
+  cashPlace: 'งานการเงิน ที่ทำการ อบต.', cashHours: 'จันทร์–ศุกร์ 08:30–16:30 น. (เว้นวันหยุดราชการ)', contactPhone: '044-000-000',
   wasteStallFee: 30, householdFee: 40,
 };
 
@@ -398,7 +398,7 @@ function saveConfig(c: Ctx) {
     promptpayId: text(b.promptpayId, 20, row.promptpayId).replace(/\D/g, ''),
     promptpayType: ['mobile', 'natid', 'ewallet'].includes(b.promptpayType) ? b.promptpayType : row.promptpayType,
     payeeName: text(b.payeeName, 120, row.payeeName), accountBank: text(b.accountBank, 60, row.accountBank), accountNo: text(b.accountNo, 30, row.accountNo),
-    cashPlace: text(b.cashPlace, 120, row.cashPlace), cashHours: text(b.cashHours, 120, row.cashHours),
+    cashPlace: text(b.cashPlace, 120, row.cashPlace), cashHours: text(b.cashHours, 120, row.cashHours), contactPhone: text(b.contactPhone, 40, row.contactPhone ?? ''),
     wasteStallFee: fee(b.wasteStallFee, row.wasteStallFee), householdFee: fee(b.householdFee, row.householdFee),
   });
   return { ...row, id: undefined };

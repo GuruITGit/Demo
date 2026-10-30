@@ -32,6 +32,7 @@ function toWasteBill(x: any): Bill {
   const status: BillStatus = x.status === 'pending' ? (cash ? 'cash' : 'pending') : x.status === 'mismatch' ? 'mismatch' : 'unpaid';
   return { id: x.id, payerType: 'household', merchant: verifiedName || x.holderName, ref: x.householdRef, location: `บ้านเลขที่ ${x.houseNo} หมู่ ${Number(x.moo)}`, houseNo: x.houseNo, moo: x.moo, phone: x.phone || '', kind: 'ค่าเก็บขยะ', month: periodToThai(x.period), due: x.dueDate || '', amount: Number(x.amount), status };
 }
+let demoBillsAll: Bill[] | null = null;
 async function searchWasteBills(name: string, q: string) {
   verifiedName = name.trim(); draftQuery = q.trim();
   searchTerm = draftQuery; resetSelection();
@@ -39,7 +40,14 @@ async function searchWasteBills(name: string, q: string) {
   if (verifiedName.length < 4) { toast('กรุณากรอกชื่อ-นามสกุลผู้รับบิล'); return render(); }
   try {
     const rows = await payApi<any[]>(`/waste/bills?q=${enc(searchTerm)}&name=${enc(verifiedName)}`);
-    if (rows === null) return searchBills(searchTerm); // เดโม่: ไม่มี API ใช้ข้อมูลตัวอย่าง
+    if (rows === null) { // เดโม่: ไม่มี API → กรองข้อมูลตัวอย่างให้ตรงทั้งชื่อและบ้านเลขที่/เบอร์/รหัสครัวเรือน
+      demoBillsAll ??= DEMO.bills;
+      const k = (s: string) => s.replace(/\s+/g, '').replace(/หมู่ที่|ม\./g, 'หมู่');
+      DEMO.bills = demoBillsAll.filter((b) => b.payerType === 'household' && demoNameKey(b.merchant) === demoNameKey(verifiedName)
+        && (k(searchTerm) === k(`${b.houseNo} หมู่ ${b.moo}`) || searchTerm.replace(/[\s-]/g, '') === b.phone || searchTerm.toUpperCase() === b.ref));
+      if (!DEMO.bills.length) toast('ไม่พบข้อมูลที่ตรงกัน กรุณาตรวจสอบชื่อและเลขล็อก/บ้านเลขที่ให้ตรงกับที่ลงทะเบียนไว้');
+      return render();
+    }
     DEMO.bills = rows.map(toWasteBill);
   } catch (e) { DEMO.bills = []; toast((e as Error).message); }
   render();
@@ -70,7 +78,7 @@ function searchFormHTML() {
 function render(){
  const matches=searchTerm?DEMO.bills.filter(b=>PAYABLE.includes(b.status)||b.status==='pending'||b.status==='cash').sort((a,b)=>b.id.localeCompare(a.id)):[];
  const shortcut=searchTerm?'':`<div class="payment-shortcuts"><button class="payment-shortcut" type="button" onclick="scanHouseQr()">${SCAN_HOUSE_ART}<b>สแกน QR หน้าบ้าน</b><small>ส่องรหัสหน้าบ้านหรือเลือกรูป QR เพื่อดูค่าขยะ</small></button><button class="payment-shortcut payment-shortcut-cash" type="button" onclick="openCashInfo()">${CASH_HOUSE_ART}<b>จ่ายเงินสด</b><small>ไปจ่ายที่ ${escapeHTML(PAYMENT.cashPlace)}</small></button></div>`;
- app.innerHTML=homeBackHTML()+searchFormHTML()+shortcut+billListHTML({title:'ค่าขยะ',matches,promptText:'กรอกชื่อผู้รับบิลและบ้านเลขที่ แล้วกดค้นหา',payerLabel:b=>b.location||b.ref,chargeLabel:()=>'ค่าขยะครัวเรือน'});
+ app.innerHTML=homeBackHTML()+searchFormHTML()+shortcut+billListHTML({title:'ค่าขยะ',matches,promptText:'กรอกชื่อผู้รับบิลและบ้านเลขที่ แล้วกดค้นหา',payerLabel:b=>b.location||b.ref,chargeLabel:()=>'ค่าขยะครัวเรือน'})+contactFooterHTML();
 }
 
 applySavedPayments();

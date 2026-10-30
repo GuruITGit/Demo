@@ -8,7 +8,7 @@ import { Field, Panel, inputCls } from './pay-ui';
 
 export type PayConfig = {
   promptpayId: string; promptpayType: 'mobile' | 'natid' | 'ewallet'; payeeName: string; accountBank: string; accountNo: string;
-  cashPlace: string; cashHours: string; wasteStallFee: number; householdFee: number;
+  cashPlace: string; cashHours: string; contactPhone: string; wasteStallFee: number; householdFee: number;
   slipProvider: string; slipTokenSet: boolean;
 };
 
@@ -91,6 +91,7 @@ export function PaySettings({ kind, canManage }: { kind: 'market' | 'waste'; can
         <div className="grid gap-4 p-4 sm:grid-cols-2">
           <Field label="สถานที่"><input className={inputCls} disabled={dis} value={f.cashPlace} onChange={(e) => set('cashPlace', e.target.value)} /></Field>
           <Field label="วัน-เวลาทำการ"><input className={inputCls} disabled={dis} value={f.cashHours} onChange={(e) => set('cashHours', e.target.value)} /></Field>
+          <Field label="เบอร์ติดต่อเจ้าหน้าที่ / เหตุฉุกเฉิน" hint="แสดงท้ายหน้าประชาชนให้โทรหาได้"><input className={inputCls} disabled={dis} inputMode="tel" value={f.contactPhone ?? ''} onChange={(e) => set('contactPhone', e.target.value)} placeholder="เช่น 044-123456" /></Field>
         </div>
       </Panel>
 

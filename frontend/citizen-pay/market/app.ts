@@ -41,6 +41,7 @@ function renderNav(){nav.innerHTML=navItems().map(([id,ic,label])=>`<button clas
 // ---------- ต่อ API จริง: เลขล็อก + ชื่อผู้เช่า ต้องตรงกันจึงเห็นยอด ----------
 let verifiedName = '';
 let draftStall = '';
+let demoBillsAll: Bill[] | null = null;
 function toStallBill(x: any): Bill {
   const cash = x.status === 'pending' && x.submittedMethod === 'cash';
   const status: BillStatus = x.status === 'pending' ? (cash ? 'cash' : 'pending') : x.status === 'mismatch' ? 'mismatch' : 'unpaid';
@@ -53,7 +54,12 @@ async function searchStallBills(name: string, stall: string) {
   if (verifiedName.length < 4) { toast('กรุณากรอกชื่อ-นามสกุลผู้เช่า'); return render(); }
   try {
     const r = await payApi<any>(`/market/bills?stall=${encodeURIComponent(searchTerm)}&name=${encodeURIComponent(verifiedName)}`);
-    if (r === null) return searchBills(searchTerm); // เดโม่: ไม่มี API ใช้ข้อมูลตัวอย่าง
+    if (r === null) { // เดโม่: ไม่มี API → กรองข้อมูลตัวอย่างให้ตรงทั้งรหัสแผงและชื่อ
+      demoBillsAll ??= DEMO.bills;
+      DEMO.bills = demoBillsAll.filter((b) => b.payerType === 'stall' && b.stall?.toUpperCase() === searchTerm && demoNameKey(b.merchant) === demoNameKey(verifiedName));
+      if (!DEMO.bills.length) toast('ไม่พบข้อมูลที่ตรงกัน กรุณาตรวจสอบชื่อและเลขล็อก/บ้านเลขที่ให้ตรงกับที่ลงทะเบียนไว้');
+      return render();
+    }
     DEMO.bills = (r.bills || []).map(toStallBill);
   } catch (e) { DEMO.bills = []; toast((e as Error).message); }
   render();
@@ -91,7 +97,7 @@ function searchPage(){
  const matches=searchTerm?DEMO.bills.filter(b=>b.payerType==='stall'&&(PAYABLE.includes(b.status)||b.status==='pending'||b.status==='cash')).sort((a,b)=>b.id.localeCompare(a.id)):[];
  const shortcuts=searchTerm?'':`<div class="payment-shortcuts" style="grid-template-columns:1fr"><button class="payment-shortcut" type="button" onclick="openQrScanner()">${SHORTCUT_QR_ART}<b>สแกน QR ที่แผง</b><small>เปิดกล้องส่องรหัสบนแผง</small></button></div>`;
  const form=`<div class="page-heading with-photo"><h1>จ่ายค่าแผงตลาด</h1><p>ค้นหาด้วยชื่อผู้เช่าและรหัสแผงในช่องเดียว · ไม่ต้องเข้าสู่ระบบ</p></div><form class="search-card" onsubmit="event.preventDefault();searchStallFromForm()"><label for="sq">ชื่อ-นามสกุล แล้วต่อด้วยรหัสแผง</label><div class="search-row"><input id="sq" name="sq" value="${escapeHTML([verifiedName, draftStall].filter(Boolean).join(' '))}" placeholder="เช่น สมใจ ใจดี A06" autocomplete="name"><button type="submit">ค้นหา</button></div><p class="help">พิมพ์ชื่อผู้เช่าแล้วตามด้วยรหัสแผง · ผู้สมัครแผงลอยใช้รหัส OUT-xxxx ที่ได้รับ · ชื่อต้องตรงกับที่ลงทะเบียนไว้</p></form>`;
- return form+shortcuts+billListHTML({title:'ค่าแผงตลาด',matches,promptText:'พิมพ์ชื่อผู้เช่าตามด้วยรหัสแผง แล้วกดค้นหา',payerLabel:b=>'ล็อก '+(b.stall||b.ref),chargeLabel:b=>b.kind==='ค่าขยะ'?'ค่าขยะแผง':'ค่าเช่าแผง'});
+ return form+shortcuts+billListHTML({title:'ค่าแผงตลาด',matches,promptText:'พิมพ์ชื่อผู้เช่าตามด้วยรหัสแผง แล้วกดค้นหา',payerLabel:b=>'ล็อก '+(b.stall||b.ref),chargeLabel:b=>b.kind==='ค่าขยะ'?'ค่าขยะแผง':'ค่าเช่าแผง'})+contactFooterHTML();
 }
 const SHORTCUT_QR_ART='<img class="shortcut-art shortcut-art-photo" src="/citizen-pay/shared/img/scan-qr-market.webp" width="600" height="386" alt="" aria-hidden="true">';
 const SHORTCUT_MAP_ART='<img class="shortcut-art shortcut-art-photo" src="/citizen-pay/shared/img/pick-stall-map.webp" width="600" height="386" alt="" aria-hidden="true">';
