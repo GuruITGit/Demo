@@ -123,7 +123,7 @@ export class MarketService {
     const byStatus = await this.bills.query(
       `SELECT status, COUNT(*)::int AS count, COALESCE(SUM(amount),0)::float AS total FROM market_bills WHERE organization_id = $1 ${cond} GROUP BY status`, params);
     const arrears = await this.bills.query(
-      `SELECT stall_code AS "stallCode", MAX(payer_name) AS "payerName", COUNT(*)::int AS months, SUM(amount)::float AS total
+      `SELECT stall_code AS "stallCode", MAX(payer_name) AS "payerName", COUNT(DISTINCT period)::int AS months, MIN(period) AS oldest, SUM(amount)::float AS total
          FROM market_bills WHERE organization_id = $1 AND status <> 'paid' ${cond} GROUP BY stall_code ORDER BY total DESC, stall_code LIMIT 200`, params);
     const stallCounts = await this.stalls.query(
       `SELECT status, COUNT(*)::int AS count FROM market_stalls WHERE organization_id = $1 AND active = true GROUP BY status`, [orgId]);

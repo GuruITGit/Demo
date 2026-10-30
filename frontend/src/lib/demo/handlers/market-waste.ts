@@ -429,7 +429,7 @@ get('/market/summary', (c) => {
   const codes = [...new Set(open.map((b) => b.stallCode))];
   const arrears = codes.map((code) => {
     const rows = open.filter((b) => b.stallCode === code);
-    return { stallCode: code, payerName: rows[0].payerName, months: rows.length, total: rows.reduce((s, b) => s + Number(b.amount), 0) };
+    return { stallCode: code, payerName: rows[0].payerName, months: new Set(rows.map((b) => b.period)).size, oldest: rows.map((b) => b.period).sort()[0], total: rows.reduce((s, b) => s + Number(b.amount), 0) };
   }).sort((a, b) => b.total - a.total || a.stallCode.localeCompare(b.stallCode)).slice(0, 200);
   const stallCounts = ['available', 'reserved', 'occupied'].map((status) => ({ status, count: c.db.marketStalls.filter((s) => s.active && s.status === status).length }));
   return { period: per, byStatus, arrears, stallCounts };
@@ -604,7 +604,7 @@ get('/waste/arrears', (c) => {
   return refs.map((ref) => {
     const rows = open.filter((b) => b.householdRef === ref);
     const first = rows[0];
-    return { householdRef: ref, holderName: first.holderName, houseNo: first.houseNo, moo: first.moo, phone: first.phone, months: rows.length, total: rows.reduce((s, b) => s + Number(b.amount), 0) };
+    return { householdRef: ref, holderName: first.holderName, houseNo: first.houseNo, moo: first.moo, phone: first.phone, months: new Set(rows.map((b) => b.period)).size, oldest: rows.map((b) => b.period).sort()[0], total: rows.reduce((s, b) => s + Number(b.amount), 0) };
   }).sort((a, b) => b.total - a.total || a.householdRef.localeCompare(b.householdRef)).slice(0, 500);
 });
 

@@ -145,7 +145,7 @@ export class WasteService {
     if (period) params.push(period);
     return this.bills.query(
       `SELECT household_ref AS "householdRef", MAX(holder_name) AS "holderName", MAX(house_no) AS "houseNo", MAX(moo) AS moo,
-              MAX(phone) AS phone, COUNT(*)::int AS months, SUM(amount)::float AS total
+              MAX(phone) AS phone, COUNT(DISTINCT period)::int AS months, MIN(period) AS oldest, SUM(amount)::float AS total
          FROM waste_bills WHERE organization_id = $1 AND status <> 'paid' ${period ? 'AND period = $2' : ''}
          GROUP BY household_ref ORDER BY total DESC, household_ref LIMIT 500`, params);
   }
