@@ -57,6 +57,19 @@ export class WasteBill {
   @Column({ name: 'receipt_no', type: 'varchar', length: 30, nullable: true })
   receiptNo: string | null;
 
+  /** ประชาชนแจ้งชำระเอง: รูปสลิป / วิธีที่แจ้ง (transfer | cash) / เวลาแจ้ง / หมายเหตุจากเจ้าหน้าที่ตอนไม่รับ */
+  @Column({ name: 'slip_url', type: 'text', nullable: true })
+  slipUrl: string | null;
+
+  @Column({ name: 'submitted_method', type: 'varchar', length: 12, nullable: true })
+  submittedMethod: string | null;
+
+  @Column({ name: 'submitted_at', type: 'timestamptz', nullable: true })
+  submittedAt: Date | null;
+
+  @Column({ name: 'review_note', type: 'varchar', length: 300, nullable: true })
+  reviewNote: string | null;
+
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
 }
