@@ -35,7 +35,7 @@ export class MarketService {
     const codes = rows.slice(0, 8).map((r) => r.stallCode).join(', ') + (rows.length > 8 ? ' ...' : '');
     await notifyUsersWithPermission(this.ds, this.notifications, orgId, { module: 'market', action: 'manage', subject: 'MarketStall' }, {
       type: 'market:reserved_pending', title: `มีการจองรอยืนยัน ${rows.length} แผง`, body: `แผง ${codes}`,
-      actionUrl: '/market',
+      actionUrl: '/market?tab=reserve',
     });
     return { ok: true, count: rows.length };
   }

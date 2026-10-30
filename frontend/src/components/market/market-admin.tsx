@@ -1,5 +1,6 @@
 'use client';
 import { useMemo, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, getErrorMessage } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
@@ -24,7 +25,7 @@ type Summary = {
   arrears: { stallCode: string; payerName: string; months: number; total: number }[];
   stallCounts: { status: string; count: number }[];
 };
-type Tab = 'overview' | 'queue' | 'plan' | 'bills' | 'dues' | 'outside' | 'qr' | 'settings';
+type Tab = 'overview' | 'queue' | 'reserve' | 'plan' | 'bills' | 'dues' | 'outside' | 'qr' | 'settings';
 
 const STALL_LABEL = { available: 'ว่าง', reserved: 'จอง', occupied: 'มีผู้เช่า' } as const;
 // สีตามผังเดิม: มีผู้เช่า = ฟ้าอ่อน · จอง = เหลืองอ่อน · ว่าง = ขาว
@@ -40,11 +41,13 @@ export function MarketAdmin() {
   const canStall = has('market:manage:MarketStall');
   const canBill = has('market:manage:MarketBill');
   const orgName = useOrgName();
-  const [tab, setTab] = useState<Tab>('overview');
+  const sp = useSearchParams();
+  const [tab, setTab] = useState<Tab>(sp.get('tab') === 'reserve' ? 'reserve' : 'overview');
   const [billFilter, setBillFilter] = useState<{ stall?: string; status?: string; n: number }>({ n: 0 });
 
   const { data: sum } = useQuery<Summary>({ queryKey: ['market', 'summary'], queryFn: async () => (await api.get('/market/summary')).data.data, refetchInterval: 60_000 });
   const pendingCount = sum?.byStatus.find((s) => s.status === 'pending')?.count ?? 0;
+  const { data: reservations = [] } = useQuery<unknown[]>({ queryKey: ['market', 'reservations'], queryFn: async () => (await api.get('/market/reservations')).data.data, refetchInterval: 15_000 });
 
   const goBills = (stall?: string, status?: string) => { setBillFilter({ stall, status, n: billFilter.n + 1 }); setTab('bills'); };
 
@@ -56,6 +59,7 @@ export function MarketAdmin() {
         tabs={[
           { key: 'overview', label: 'ภาพรวม' },
           { key: 'queue', label: 'รอตรวจ', badge: pendingCount },
+          { key: 'reserve', label: 'จองแผง', badge: reservations.length },
           { key: 'plan', label: 'ผังแผง' },
           { key: 'bills', label: 'บิล' },
           { key: 'dues', label: 'ค้างชำระ' },
@@ -66,6 +70,7 @@ export function MarketAdmin() {
       />
       {tab === 'overview' && <Overview sum={sum} onGo={setTab} />}
       {tab === 'queue' && <SlipQueue kind="market" canManage={canBill} />}
+      {tab === 'reserve' && <ReservationCheck canManage={canStall} />}
       {tab === 'plan' && <Plan canManage={canStall} onBills={(code) => goBills(code)} />}
       {tab === 'bills' && <MarketBills key={billFilter.n} canManage={canBill} orgName={orgName} initialStall={billFilter.stall} initialStatus={billFilter.status} />}
       {tab === 'dues' && <Dues sum={sum} onBills={(code) => goBills(code, 'unpaid')} />}
@@ -203,8 +208,6 @@ function Plan({ canManage, onBills }: { canManage: boolean; onBills: (code: stri
           </div>
         </Panel>
       )}
-
-      <ReservationCheck canManage={canManage} />
 
       {reservedList.length > 0 && (
         <Panel title={<>แผงที่ประชาชนจองมา <span className="text-sm font-normal text-gray-500">({reservedList.length})</span></>}>
