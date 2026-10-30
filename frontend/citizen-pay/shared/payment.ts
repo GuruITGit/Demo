@@ -3,7 +3,7 @@
 declare const qrcode: (typeNumber: number, level: string) => { addData(s: string): void; make(): void; getModuleCount(): number; isDark(r: number, c: number): boolean };
 
 type PayMethod = 'qr' | 'app' | 'cash';
-interface PaymentRecord { status: 'pending' | 'cash' | 'confirmed' | 'rejected'; method: PayMethod; ref: string; at: string; amount: number; slipName?: string }
+interface PaymentRecord { status: 'pending' | 'cash' | 'confirmed' | 'rejected'; method: PayMethod; ref: string; at: string; amount: number; slipName?: string; meta?: { t: string; s: string; k: string; m: string } }
 
 const PAY_STORE = 'market:payments';
 let payMethod: PayMethod = 'qr';
@@ -185,7 +185,7 @@ function recordPayment(status: 'pending' | 'cash', ref: string) {
   const all = loadPaymentRecords(); const at = new Date().toISOString(); const amount = payTotal();
   for (const id of payBillIds) {
     const b = DEMO.bills.find(x => x.id === id); if (!b) continue;
-    b.status = status; all[id] = { status, method: payMethod, ref, at, amount, slipName: slipFile?.name };
+    b.status = status; all[id] = { status, method: payMethod, ref, at, amount, slipName: slipFile?.name, meta: { t: b.payerType, s: b.stall || b.ref, k: b.kind, m: b.month } };
   }
   writePaymentRecords(all);
 }

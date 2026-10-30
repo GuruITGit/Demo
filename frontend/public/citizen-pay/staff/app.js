@@ -332,7 +332,7 @@ function recordPayment(status, ref) {
         if (!b)
             continue;
         b.status = status;
-        all[id] = { status, method: payMethod, ref, at, amount, slipName: slipFile?.name };
+        all[id] = { status, method: payMethod, ref, at, amount, slipName: slipFile?.name, meta: { t: b.payerType, s: b.stall || b.ref, k: b.kind, m: b.month } };
     }
     writePaymentRecords(all);
 }

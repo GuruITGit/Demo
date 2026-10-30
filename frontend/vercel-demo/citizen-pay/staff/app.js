@@ -67,6 +67,8 @@ const PAYMENT = {
     accountNo: '000-0-00000-0',
     cashPlace: 'งานการเงิน ที่ทำการ อบต.',
     cashHours: 'จันทร์–ศุกร์ 08:30–16:30 น. (เว้นวันหยุดราชการ)',
+    // เบอร์ตัวอย่างของเดโม่ — ระบบจริงใช้ค่าที่ อบต. ตั้งไว้ (ว่าง = ไม่แสดงกล่อง)
+    contactPhone: '044-000-000',
     // URL scheme เปิดแอปธนาคาร — แอปเปิดขึ้นมาเฉยๆ ไม่กรอกยอดให้ (ธนาคารไม่มี deeplink กลาง) · ต้องทดสอบบนมือถือจริงทุกตัว
     banks: [
         { name: 'กสิกรไทย', short: 'K+', color: '#138F2D', scheme: 'kplus://' },
@@ -320,6 +322,7 @@ function pickSlip(input) {
     slipPreviewUrl = URL.createObjectURL(f);
     renderPaymentModal();
 }
+let billSubmitter = null;
 function recordPayment(status, ref) {
     const all = loadPaymentRecords();
     const at = new Date().toISOString();
@@ -329,13 +332,24 @@ function recordPayment(status, ref) {
         if (!b)
             continue;
         b.status = status;
-        all[id] = { status, method: payMethod, ref, at, amount, slipName: slipFile?.name };
+        all[id] = { status, method: payMethod, ref, at, amount, slipName: slipFile?.name, meta: { t: b.payerType, s: b.stall || b.ref, k: b.kind, m: b.month } };
     }
     writePaymentRecords(all);
 }
-function submitTransferPayment() {
+async function submitTransferPayment() {
     if (!slipFile)
         return toast('แนบรูปสลิปก่อนส่งค่ะ');
+    if (billSubmitter) {
+        const res = await billSubmitter(payBillIds, 'transfer', slipFile);
+        if (!res)
+            return;
+        clearSlip();
+        resetSelection();
+        modal.close();
+        toast(res.status === 'paid' ? 'ตรวจสลิปผ่านแล้ว · ชำระเรียบร้อย' : res.reason ? `ส่งสลิปแล้ว · ${res.reason}` : 'ส่งสลิปแล้ว · รอเจ้าหน้าที่ตรวจสอบ');
+        render();
+        return;
+    }
     recordPayment('pending', newPaymentRef('TRF'));
     clearSlip();
     resetSelection();
@@ -343,7 +357,18 @@ function submitTransferPayment() {
     toast('ส่งสลิปแล้ว · รอเจ้าหน้าที่ตรวจสอบ');
     render();
 }
-function submitCashPayment() {
+async function submitCashPayment() {
+    if (billSubmitter) {
+        const total = payTotal();
+        const res = await billSubmitter(payBillIds, 'cash', null);
+        if (!res)
+            return;
+        clearSlip();
+        resetSelection();
+        render();
+        showCashTicket(newPaymentRef('CSH'), total);
+        return;
+    }
     payRef = newPaymentRef('CSH');
     const total = payTotal();
     recordPayment('cash', payRef);
