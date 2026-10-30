@@ -88,6 +88,20 @@ registerSeed((db) => {
 });
 
 // ───────────────────────────── ตัวช่วย
+/** เดโม่: จุดแผงลอยที่เปิดให้เช่า ซิงก์ไปคีย์ localStorage ที่หน้าประชาชน (same origin) อ่านอยู่ — รูปแบบต้องตรงกับ market/app.ts */
+const CITIZEN_OUTSIDE_KEY = 'lamplaimat:outside-locations';
+function syncCitizenOutside(db: Ctx['db']) {
+  try {
+    const rows = db.marketOutsideLocations
+      .filter((l) => l.active && l.organizationId === ORG_ID)
+      .slice(0, 50)
+      .map((l, i) => ({
+        id: 'LOC-' + (i + 1), name: String(l.name).slice(0, 60), rentRate: Number(l.rentRate) || 0,
+        rentPeriod: l.rentPeriod === 'monthly' ? 'monthly' : 'daily', enabled: !!l.enabled, deleted: false, tenants: [],
+      }));
+    localStorage.setItem(CITIZEN_OUTSIDE_KEY, JSON.stringify(rows));
+  } catch { /* เบราว์เซอร์ไม่ให้เขียน = ข้าม */ }
+}
 const cfg = (c: Ctx) => c.db.payConfig[0] as Row;
 const one = (list: Row[], pred: (r: Row) => boolean, msg: string): Row => { const r = list.find(pred); if (!r) throw notFound(msg); return r; };
 const byIdOrThrow = (list: Row[], id: string, msg: string) => one(list, (r) => r.id === id && r.organizationId === ORG_ID, msg);
@@ -297,6 +311,7 @@ post('/market/outside/locations', (c) => {
   if (!name) throw badRequest('กรุณาระบุชื่อจุดแผงลอย');
   const row = { id: uid(), organizationId: ORG_ID, name, rentRate: String(Number(c.body?.rentRate) || 0), rentPeriod: c.body?.rentPeriod === 'monthly' ? 'monthly' : 'daily', enabled: c.body?.enabled ?? true, active: true, createdAt: nowIso() };
   c.db.marketOutsideLocations.push(row);
+  syncCitizenOutside(c.db);
   return row;
 });
 patch('/market/outside/locations/:id', (c) => {
@@ -307,12 +322,14 @@ patch('/market/outside/locations/:id', (c) => {
   if (b.rentRate !== undefined) l.rentRate = String(Number(b.rentRate) || 0);
   if (b.rentPeriod !== undefined) l.rentPeriod = b.rentPeriod === 'monthly' ? 'monthly' : 'daily';
   if (b.enabled !== undefined) l.enabled = !!b.enabled;
+  syncCitizenOutside(c.db);
   return l;
 });
 del('/market/outside/locations/:id', (c) => {
   needPerm(c, 'market:manage:MarketStall');
   const l = one(c.db.marketOutsideLocations, (x) => x.id === c.params.id && x.active && x.organizationId === ORG_ID, 'ไม่พบจุดแผงลอยนี้');
   Object.assign(l, { active: false, enabled: false });
+  syncCitizenOutside(c.db);
   return { ok: true };
 });
 get('/market/outside/collections', (c) => {
