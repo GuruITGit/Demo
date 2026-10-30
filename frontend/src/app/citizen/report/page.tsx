@@ -72,7 +72,7 @@ function ReportForm() {
   // แผนที่ปักหมุดแบบลาก (คล้าย Grab) — หมุดอยู่กึ่งกลางคงที่ ลากแผนที่ข้างใต้แทน
   const [mapOpen, setMapOpen] = useState(false);
   const mapEl = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<any>(null);
+  const mapRef = useRef<import('leaflet').Map | null>(null);
 
   // ลากแผนที่แล้วหยุด (ปล่อยนิ้ว/ปล่อยเมาส์) → บันทึกจุดกึ่งกลางให้อัตโนมัติเลย ไม่ต้องกดยืนยัน
   // พิกัดเก็บแยก (geoLat/geoLng) ไม่เขียนลงช่องที่อยู่ — ไม่งั้นเลขพิกัดไปโผล่ในเอกสารคำร้อง
@@ -91,11 +91,11 @@ function ReportForm() {
     setMapOpen(true);
     setGpsBusy(true);
     let started = false;
-    let watchdog: ReturnType<typeof setTimeout> | undefined;
+    const timers: { watchdog?: ReturnType<typeof setTimeout> } = {};
     const start = (center: [number, number]) => {
       if (started) return;
       started = true;
-      clearTimeout(watchdog);
+      clearTimeout(timers.watchdog);
       setGpsBusy(false);
       // สร้างแผนที่หลัง div เรนเดอร์แล้ว (mapOpen เปลี่ยนเป็น true ก่อนหน้านี้ 1 tick)
       requestAnimationFrame(async () => {
@@ -118,14 +118,14 @@ function ReportForm() {
       });
     };
     const fallback: [number, number] = geo ? [geo.lat, geo.lng] : DEFAULT_CENTER;
-    const useFallback = (why: string) => { toast.error(why + ' — เลื่อนแผนที่หรือปักหมุดไปยังจุดเกิดเหตุเองได้'); start(fallback); };
-    if (!window.isSecureContext) { useFallback('ระบุตำแหน่งอัตโนมัติได้เฉพาะเว็บที่เปิดแบบ https'); return; }
+    const fallbackTo = (why: string) => { toast.error(why + ' — เลื่อนแผนที่หรือปักหมุดไปยังจุดเกิดเหตุเองได้'); start(fallback); };
+    if (!window.isSecureContext) { fallbackTo('ระบุตำแหน่งอัตโนมัติได้เฉพาะเว็บที่เปิดแบบ https'); return; }
     // เผื่อกรณี callback ของตำแหน่งไม่เคยถูกเรียก (บางเบราว์เซอร์มือถือค้างเงียบ) — ไม่ให้ปุ่มค้างสถานะกำลังหา
-    watchdog = setTimeout(() => useFallback('ระบุตำแหน่งไม่ทัน'), 12000);
-    if (!navigator.geolocation) { useFallback('เบราว์เซอร์นี้ไม่รองรับการระบุตำแหน่ง'); return; }
+    timers.watchdog = setTimeout(() => fallbackTo('ระบุตำแหน่งไม่ทัน'), 12000);
+    if (!navigator.geolocation) { fallbackTo('เบราว์เซอร์นี้ไม่รองรับการระบุตำแหน่ง'); return; }
     navigator.geolocation.getCurrentPosition(
       (pos) => start([pos.coords.latitude, pos.coords.longitude]),
-      (err) => useFallback(err.code === 1 ? 'ยังไม่ได้อนุญาตให้ใช้ตำแหน่ง (ตั้งสิทธิ์ตำแหน่งของเว็บนี้ในเบราว์เซอร์)' : 'ระบุตำแหน่งไม่สำเร็จ'),
+      (err) => fallbackTo(err.code === 1 ? 'ยังไม่ได้อนุญาตให้ใช้ตำแหน่ง (ตั้งสิทธิ์ตำแหน่งของเว็บนี้ในเบราว์เซอร์)' : 'ระบุตำแหน่งไม่สำเร็จ'),
       { enableHighAccuracy: false, timeout: 9000, maximumAge: 60000 },
     );
   };

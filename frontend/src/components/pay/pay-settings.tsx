@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, getErrorMessage } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
@@ -18,8 +18,9 @@ export type PayConfig = {
 export function PaySettings({ kind, canManage }: { kind: 'market' | 'waste'; canManage: boolean }) {
   const qc = useQueryClient();
   const { data } = useQuery<PayConfig>({ queryKey: ['pay-config'], queryFn: async () => (await api.get(`/${kind}/config`)).data.data });
-  const [f, setF] = useState<PayConfig | null>(null);
-  useEffect(() => { if (data) setF(data); }, [data]);
+  // ค่าที่แก้ค้างไว้ก่อนบันทึก (ยังไม่แก้ = ใช้ค่าจากเซิร์ฟเวอร์)
+  const [draft, setDraft] = useState<PayConfig | null>(null);
+  const f = draft ?? data ?? null;
 
   const save = useMutation({
     mutationFn: (body: PayConfig) => api.put(`/${kind}/config`, body),
@@ -28,7 +29,7 @@ export function PaySettings({ kind, canManage }: { kind: 'market' | 'waste'; can
   });
 
   if (!f) return <p className="p-6 text-sm text-gray-500">กำลังโหลด…</p>;
-  const set = <K extends keyof PayConfig>(k: K, v: PayConfig[K]) => setF({ ...f, [k]: v });
+  const set = <K extends keyof PayConfig>(k: K, v: PayConfig[K]) => setDraft({ ...f, [k]: v } as PayConfig);
   const dis = !canManage;
   const invalidPp = f.promptpayId !== '' && !/^(\d{10}|\d{13}|\d{15})$/.test(f.promptpayId);
 
