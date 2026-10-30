@@ -116,12 +116,59 @@ function nextReceipt(c: Ctx, prefix: string): string {
   return `${prefix}-${yy}-${String(row.last).padStart(6, '0')}`;
 }
 
+// ───────────────────────────── เดโม่: รับการแจ้งชำระที่ประชาชนส่งมา (หน้าประชาชนบันทึกลง localStorage 'market:payments')
+const CITIZEN_PAY_KEY = 'market:payments';
+const MONTHS_TH = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+/** ดึงรายการแจ้งชำระเข้าบิลเดโม่เป็น "รอตรวจ" + แจ้งเตือน (ต่อ 1 การส่ง) — บิลที่หาไม่เจอข้าม */
+function absorbPayments(db: Ctx['db']) {
+  let raw: Record<string, Row>;
+  try { raw = JSON.parse(localStorage.getItem(CITIZEN_PAY_KEY) || '{}'); } catch { return; }
+  db.demoPayLinks ??= [];
+  const told = new Set<string>();
+  let changed = false;
+  for (const [cid, r] of Object.entries(raw)) {
+    if (!r?.meta || !['pending', 'cash'].includes(r.status) || db.demoPayLinks.some((l) => l.citizenId === cid && l.at === r.at)) continue;
+    const [mn, y] = String(r.meta.m).split(' ');
+    const mi = MONTHS_TH.indexOf(mn) + 1;
+    if (!mi) continue;
+    const per = `${y}-${pad2(mi)}`;
+    const household = r.meta.t === 'household';
+    const bill = household
+      ? db.wasteBills.find((b) => b.organizationId === ORG_ID && b.householdRef === r.meta.s && b.period === per)
+      : db.marketBills.find((b) => b.organizationId === ORG_ID && b.stallCode === r.meta.s && b.kind === (r.meta.k === 'ค่าขยะ' ? 'waste' : 'rent') && b.period === per);
+    if (!bill) continue;
+    db.demoPayLinks.push({ citizenId: cid, at: r.at, billId: bill.id });
+    changed = true;
+    if (bill.status === 'paid') continue;
+    Object.assign(bill, { status: 'pending', submittedMethod: r.method === 'cash' ? 'cash' : 'transfer', submittedAt: r.at, slipUrl: null, reviewNote: r.method === 'cash' ? null : 'เดโม่: ไม่มีรูปสลิปจริง' });
+    if (told.has(r.ref)) continue;
+    told.add(r.ref);
+    notify(db, db.users.map((u: Row) => u.id), {
+      type: household ? 'waste:pending' : 'market:pending', title: 'มีการแจ้งชำระรอตรวจ',
+      body: `${household ? 'บ้าน ' : 'แผง '}${r.meta.s} · ${Number(r.amount).toLocaleString('th-TH')} บาท · ${r.method === 'cash' ? 'เงินสด' : 'โอน'}`, actionUrl: household ? '/waste' : '/market',
+    });
+  }
+  if (changed) persist();
+}
+/** เจ้าหน้าที่ยืนยัน/ปฏิเสธบิลที่ประชาชนแจ้งมา → เขียนผลกลับให้หน้าประชาชนเห็น */
+function syncPayBack(db: Ctx['db'], billId: string, status: 'confirmed' | 'rejected') {
+  try {
+    const links = (db.demoPayLinks ?? []).filter((l) => l.billId === billId);
+    if (!links.length) return;
+    const raw = JSON.parse(localStorage.getItem(CITIZEN_PAY_KEY) || '{}');
+    for (const l of links) if (raw[l.citizenId]?.at === l.at) raw[l.citizenId].status = status;
+    localStorage.setItem(CITIZEN_PAY_KEY, JSON.stringify(raw));
+    db.demoPayLinks = db.demoPayLinks.filter((l) => l.billId !== billId);
+  } catch { /* เขียนไม่ได้ = ข้าม */ }
+}
+
 function payBill(c: Ctx, list: Row[], prefix: string, notFoundMsg: string) {
   const bill = list.find((b) => b.id === c.params.id && b.organizationId === ORG_ID);
   if (!bill) throw notFound(notFoundMsg);
   if (bill.status === 'paid') throw badRequest('บิลนี้ชำระแล้ว');
   const method = METHODS.includes(c.body?.method) ? c.body.method : 'cash';
   Object.assign(bill, { status: 'paid', paidMethod: method, paidAt: nowIso(), reviewNote: null, receiptNo: nextReceipt(c, prefix) });
+  syncPayBack(c.db, bill.id, 'confirmed');
   return bill;
 }
 
@@ -131,6 +178,7 @@ function rejectBill(c: Ctx, list: Row[], notFoundMsg: string, status: string) {
   if (bill.status === 'paid') throw badRequest('บิลนี้ชำระแล้ว ไม่สามารถปฏิเสธได้');
   bill.status = status;
   bill.reviewNote = String(c.body?.note ?? '').trim().slice(0, 300) || 'เจ้าหน้าที่ตรวจแล้วไม่ตรง กรุณาแจ้งชำระใหม่';
+  syncPayBack(c.db, bill.id, 'rejected');
   return bill;
 }
 
@@ -307,6 +355,7 @@ del('/market/stalls/:id', (c) => {
 
 // ───────────────────────────── ค่าแผงตลาด: บิล
 get('/market/bills', (c) => {
+  absorbPayments(c.db);
   needPerm(c, 'market:read:MarketBill');
   const { status, period: per, stallCode } = c.query;
   return c.db.marketBills
@@ -368,6 +417,7 @@ get('/market/bills/:id/receipt', (c) => {
 });
 
 get('/market/summary', (c) => {
+  absorbPayments(c.db);
   needPerm(c, 'market:read:MarketBill');
   const per = c.query.period || null;
   const bills = c.db.marketBills.filter((b) => !per || b.period === per);
@@ -480,6 +530,7 @@ function wasteMatches(b: Row, raw: string): boolean {
   return b.holderName.toLowerCase().includes(t) || b.householdRef.toLowerCase().includes(t);
 }
 get('/waste/bills', (c) => {
+  absorbPayments(c.db);
   needPerm(c, 'waste:read:WasteBill');
   const { q, status, period: per } = c.query;
   return c.db.wasteBills
@@ -531,6 +582,7 @@ function wasteBillOf(h: Row, per: string, amount: string): Row {
 post('/waste/bills/:id/pay', (c) => { needPerm(c, 'waste:manage:WasteBill'); return payBill(c, c.db.wasteBills, 'WS', 'ไม่พบบิลค่าขยะนี้'); });
 post('/waste/bills/:id/reject', (c) => { needPerm(c, 'waste:manage:WasteBill'); return rejectBill(c, c.db.wasteBills, 'ไม่พบบิลค่าขยะนี้', 'mismatch'); });
 get('/waste/summary', (c) => {
+  absorbPayments(c.db);
   needPerm(c, 'waste:read:WasteBill');
   const per = c.query.period || null;
   const bills = c.db.wasteBills.filter((b) => b.organizationId === ORG_ID && (!per || b.period === per));
