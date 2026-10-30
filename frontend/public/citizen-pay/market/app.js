@@ -712,7 +712,7 @@ function byId(id) { const element = window.document.getElementById(id); if (!ele
 const app = byId('app');
 const nav = byId('bottomNav');
 function validOutsideLocations(value) { return Array.isArray(value) && value.every((location) => { if (!location || typeof location !== 'object')
-    return false; const item = location; return typeof item.id === 'string' && /^LOC-\d+$/.test(item.id) && typeof item.name === 'string' && item.name.length <= 60 && Number.isFinite(item.rentRate) && item.rentRate >= 0 && (item.rentPeriod === 'daily' || item.rentPeriod === 'monthly') && typeof item.enabled === 'boolean' && typeof item.deleted === 'boolean' && Array.isArray(item.tenants) && item.tenants.every(tenant => tenant && typeof tenant.name === 'string' && tenant.name.length <= 100 && typeof tenant.paid === 'boolean'); }); }
+    return false; const item = location; return typeof item.id === 'string' && item.id.length > 0 && item.id.length <= 64 && typeof item.name === 'string' && item.name.length <= 60 && Number.isFinite(item.rentRate) && item.rentRate >= 0 && (item.rentPeriod === 'daily' || item.rentPeriod === 'monthly') && typeof item.enabled === 'boolean' && typeof item.deleted === 'boolean' && Array.isArray(item.tenants) && item.tenants.every(tenant => tenant && typeof tenant.name === 'string' && tenant.name.length <= 100 && typeof tenant.paid === 'boolean'); }); }
 function loadOutsideLocations() { try {
     const stored = localStorage.getItem('lamplaimat:outside-locations');
     if (stored) {
@@ -839,10 +839,24 @@ async function searchStallBills(name, stall) {
     }
     render();
 }
+/** ช่องเดียว: "สมใจ ใจดี A06" → ชื่อ + รหัสแผงต่อท้าย · รองรับรหัสแผงลอย OUT-0001 (พิมพ์ OUT0001 ก็ได้) */
+function parseStallQuery(raw) {
+    const text = raw.replace(/\s+/g, ' ').trim();
+    const m = text.match(/^(.*?)\s*((?:OUT-?\d{1,4})|(?:[A-Za-z]{1,3}-?\d{1,3}))$/i);
+    if (!m)
+        return { name: text, code: '' };
+    let code = m[2].toUpperCase();
+    if (code.startsWith('OUT') && !code.includes('-'))
+        code = 'OUT-' + code.slice(3);
+    return { name: m[1].trim(), code };
+}
 function searchStallFromForm() {
-    const name = document.getElementById('sname')?.value || '';
-    const stall = document.getElementById('sstall')?.value || '';
-    void searchStallBills(name, stall);
+    const { name, code } = parseStallQuery(document.getElementById('sq')?.value || '');
+    if (!code)
+        return toast('พิมพ์รหัสแผงต่อท้ายชื่อ เช่น สมใจ ใจดี A06');
+    if (!name)
+        return toast('พิมพ์ชื่อ-นามสกุลก่อนรหัสแผง เช่น สมใจ ใจดี A06');
+    void searchStallBills(name, code);
 }
 /** ส่งการแจ้งชำระของบิลค่าแผงทีละใบ (แนบสลิปเฉพาะโอน) แล้วโหลดรายการใหม่ */
 async function submitStallBills(ids, method, slip) {
@@ -867,8 +881,8 @@ async function submitStallBills(ids, method, slip) {
 function searchPage() {
     const matches = searchTerm ? DEMO.bills.filter(b => b.payerType === 'stall' && (PAYABLE.includes(b.status) || b.status === 'pending' || b.status === 'cash')).sort((a, b) => b.id.localeCompare(a.id)) : [];
     const shortcuts = searchTerm ? '' : `<div class="payment-shortcuts" style="grid-template-columns:1fr"><button class="payment-shortcut" type="button" onclick="openQrScanner()">${SHORTCUT_QR_ART}<b>สแกน QR ที่แผง</b><small>เปิดกล้องส่องรหัสบนแผง</small></button></div>`;
-    const form = `<div class="page-heading with-photo"><h1>จ่ายค่าแผงตลาด</h1><p>ค้นหาด้วยเลขล็อกและชื่อผู้เช่า · ไม่ต้องเข้าสู่ระบบ</p></div><form class="search-card" onsubmit="event.preventDefault();searchStallFromForm()"><label for="sstall">เลขล็อก</label><div class="search-row"><input id="sstall" name="sstall" value="${escapeHTML(draftStall)}" placeholder="เช่น A06"></div><label for="sname">ชื่อ-นามสกุลผู้เช่า</label><div class="search-row"><input id="sname" name="sname" value="${escapeHTML(verifiedName)}" placeholder="เช่น สมใจ ใจดี" autocomplete="name"><button type="submit">ค้นหา</button></div><p class="help">ชื่อต้องตรงกับผู้เช่าของล็อกนั้น จึงจะเห็นยอดค้าง</p></form>`;
-    return form + shortcuts + billListHTML({ title: 'ค่าแผงตลาด', matches, promptText: 'กรอกเลขล็อกและชื่อผู้เช่า แล้วกดค้นหา', payerLabel: b => 'ล็อก ' + (b.stall || b.ref), chargeLabel: b => b.kind === 'ค่าขยะ' ? 'ค่าขยะแผง' : 'ค่าเช่าแผง' });
+    const form = `<div class="page-heading with-photo"><h1>จ่ายค่าแผงตลาด</h1><p>ค้นหาด้วยชื่อผู้เช่าและรหัสแผงในช่องเดียว · ไม่ต้องเข้าสู่ระบบ</p></div><form class="search-card" onsubmit="event.preventDefault();searchStallFromForm()"><label for="sq">ชื่อ-นามสกุล แล้วต่อด้วยรหัสแผง</label><div class="search-row"><input id="sq" name="sq" value="${escapeHTML([verifiedName, draftStall].filter(Boolean).join(' '))}" placeholder="เช่น สมใจ ใจดี A06" autocomplete="name"><button type="submit">ค้นหา</button></div><p class="help">พิมพ์ชื่อผู้เช่าแล้วตามด้วยรหัสแผง · ผู้สมัครแผงลอยใช้รหัส OUT-xxxx ที่ได้รับ · ชื่อต้องตรงกับที่ลงทะเบียนไว้</p></form>`;
+    return form + shortcuts + billListHTML({ title: 'ค่าแผงตลาด', matches, promptText: 'พิมพ์ชื่อผู้เช่าตามด้วยรหัสแผง แล้วกดค้นหา', payerLabel: b => 'ล็อก ' + (b.stall || b.ref), chargeLabel: b => b.kind === 'ค่าขยะ' ? 'ค่าขยะแผง' : 'ค่าเช่าแผง' });
 }
 const SHORTCUT_QR_ART = '<img class="shortcut-art shortcut-art-photo" src="/citizen-pay/shared/img/scan-qr-market.webp" width="600" height="386" alt="" aria-hidden="true">';
 const SHORTCUT_MAP_ART = '<img class="shortcut-art shortcut-art-photo" src="/citizen-pay/shared/img/pick-stall-map.webp" width="600" height="386" alt="" aria-hidden="true">';
@@ -887,8 +901,7 @@ function chooseStallArea(area) { if (area === 'outside') {
 } stallArea = area; selectedStall = null; savePageState(); render(); }
 function openOutsideSignup() { const location = openOutsideLocations().find(x => x.id === selectedOutsideLocationId); if (!location)
     return toast('ยังไม่มีพื้นที่ให้เช่า'); signupLocationId = location.id; setPage('signup'); }
-function payOutsideLocation() { const location = openOutsideLocations().find(x => x.id === selectedOutsideLocationId); if (!location)
-    return; searchTerm = location.name; resetSelection(); setPage('dues'); }
+function payOutsideLocation() { toast('พิมพ์ชื่อ แล้วต่อด้วยรหัสแผงลอย OUT-xxxx ที่ได้รับตอนสมัคร'); setPage('dues'); }
 function chooseOutsideLocation(id) { if (!outsideLocationIsOpen(id))
     return; selectedOutsideLocationId = id; selectedStall = null; savePageState(); render(); }
 function outsideStallPage() { const locations = openOutsideLocations(); if (!locations.length) {
@@ -898,7 +911,9 @@ function outsideStallPage() { const locations = openOutsideLocations(); if (!loc
     selectedOutsideLocationId = locations[0].id; const location = locations.find(x => x.id === selectedOutsideLocationId); return `<div class="page-heading"><h1>ผังตลาด อบต.</h1><p>พื้นที่ที่เปิดให้เช่า</p></div><div class="area-switch"><button onclick="chooseStallArea('regular')">แผงประจำ</button><button class="active" onclick="chooseStallArea('outside')">แผงลอยนอกผัง</button></div><div class="loc-list" role="radiogroup" aria-label="เลือกพื้นที่แผงลอย">${locations.map(l => `<button type="button" class="loc-card ${l.id === location.id ? 'active' : ''}" role="radio" aria-checked="${l.id === location.id}" onclick="chooseOutsideLocation('${l.id}')"><span class="loc-name">${escapeHTML(l.name)}</span><span class="loc-rent">${money(l.rentRate)} บาท/${rentPeriodUnit(l.rentPeriod)}</span></button>`).join('')}</div><div class="outside-actions"><button type="button" class="primary-btn" onclick="openOutsideSignup()">เช่าแผงลอยนี้</button><button type="button" class="primary-btn alt" onclick="payOutsideLocation()">ชำระค่าเช่า</button></div>`; }
 function openSignupForStall(id) { const s = findStall(id); if (!s || s.active === false || s.status !== 'available' || (s.outside && !outsideLocationIsOpen(s.locationId)))
     return toast('ช่องนี้ไม่พร้อมให้จองแล้ว'); selectedStall = id; signupStallId = id; setPage('signup'); }
-function signupPage() { const stall = signupStallId ? findStall(signupStallId) : null; const outside = !stall && signupLocationId ? DEMO.outsideLocations.find(x => x.id === signupLocationId) : undefined; const daily = stall && rentPeriodFor(stall) === 'daily'; return `<div class="page-heading"><button class="back-link" onclick="setPage('${stall || outside ? 'stalls' : 'home'}')">‹ ${stall || outside ? 'กลับไปเลือกแผง' : 'กลับไปเลือกเมนู'}</button><h1>${outside ? `สมัครแผงลอย ${escapeHTML(outside.name)}` : stall ? `${stall.outside ? 'สมัครแผงลอย' : 'สมัครและจองล็อก'} ${escapeHTML(stall.id)}` : 'สมัครใช้บริการ'}</h1><p>${stall || outside ? 'กรอกข้อมูลติดต่อเพื่อส่งคำขอจองให้เจ้าหน้าที่' : 'กรอกข้อมูลผู้เช่าและล็อกที่ต้องการ'}</p></div><form class="panel signup-form" onsubmit="submitRegistration(event)"><label class="field"><span class="field-label">ชื่อและนามสกุล</span><input id="signupName" name="name" required placeholder="เช่น ใจดี มั่นคง" autocomplete="name" value="${escapeHTML(signupDraft.name)}"></label><label class="field"><span class="field-label">เบอร์โทรศัพท์</span><input id="signupPhone" name="phone" type="tel" inputmode="tel" pattern="[0-9+ ()-]{9,15}" required placeholder="08X-XXX-XXXX" autocomplete="tel" value="${escapeHTML(signupDraft.phone)}"></label>${idCardFieldHTML()}<label class="field"><span class="field-label">${outside ? 'พื้นที่ที่เช่า' : `ล็อกที่จองไว้${stall ? '' : ' (ถ้ามี)'}`}</span><input id="signupStall" name="stall" ${stall || outside ? 'readonly' : ''} value="${stall ? escapeHTML(stall.id) : outside ? escapeHTML(outside.name) : ''}" placeholder="เช่น A06"></label>${stall ? `<label class="field"><span class="field-label">วันที่เริ่มเช่า</span><input id="rentalStartDate" name="rentalStartDate" type="date" min="${localISODate()}" value="${rentalStartDate}" required onchange="setRentalStartDate(this.value)"></label>${daily ? `<label class="field"><span class="field-label">จำนวนวันที่เช่า</span><input id="rentalDays" name="rentalDays" type="number" min="1" max="365" step="1" value="${rentalDays}" required onchange="setRentalDays(this.value)"></label>` : ''}<div class="first-month-estimate"><span>${daily ? `ยอดประมาณ ${rentalDays} วัน` : 'ค่าใช้จ่ายเดือนแรกโดยประมาณ'}</span><b>${money(firstChargeAmount(stall))} บาท</b><small>${daily ? 'คิดค่าเช่ารายวันรวมค่าขยะแผงเฉลี่ยตามจำนวนวันที่เลือก' : 'เฉลี่ยค่าเช่าและค่าขยะแผงตามวันที่เช่าถึงสิ้นเดือน โดยนับวันเริ่มเช่าด้วย'}</small></div>` : ''}<label class="consent"><input type="checkbox" required> ยินยอมให้ อบต. ใช้ข้อมูลและรูปบัตรประชาชนเพื่อยืนยันตัวตนและติดต่อเรื่องบริการนี้</label><button class="primary-btn submit-signup" type="submit">${stall ? 'ส่งใบสมัครและขอจอง' : 'ส่งใบสมัคร'} <span>→</span></button></form><p class="help" style="text-align:center">ยอดค่าแผงเป็นการประเมิน เจ้าหน้าที่ตรวจสอบก่อนยืนยัน</p>`; }
+/** ฟิลด์วันเริ่มเช่า/จำนวนวันของแผงลอย (รายวันต้องระบุจำนวนวัน) */
+function outsideRentFieldsHTML(o) { const daily = o.rentPeriod === 'daily'; const est = daily ? o.rentRate * rentalDays : o.rentRate; return `<label class="field"><span class="field-label">วันที่เริ่มเช่า</span><input id="rentalStartDate" name="rentalStartDate" type="date" min="${localISODate()}" value="${rentalStartDate}" required onchange="setRentalStartDate(this.value)"></label>${daily ? `<label class="field"><span class="field-label">จำนวนวันที่เช่า</span><input id="rentalDays" name="rentalDays" type="number" min="1" max="365" step="1" value="${rentalDays}" required onchange="setRentalDays(this.value)"></label>` : ''}<div class="first-month-estimate"><span>${daily ? `ยอดประมาณ ${rentalDays} วัน` : 'ค่าเช่าต่อเดือน'}</span><b>${money(est)} บาท</b><small>ยอดเป็นการประเมิน เจ้าหน้าที่ออกบิลจริงหลังอนุมัติ</small></div>`; }
+function signupPage() { const stall = signupStallId ? findStall(signupStallId) : null; const outside = !stall && signupLocationId ? DEMO.outsideLocations.find(x => x.id === signupLocationId) : undefined; const daily = stall && rentPeriodFor(stall) === 'daily'; return `<div class="page-heading"><button class="back-link" onclick="setPage('${stall || outside ? 'stalls' : 'home'}')">‹ ${stall || outside ? 'กลับไปเลือกแผง' : 'กลับไปเลือกเมนู'}</button><h1>${outside ? `สมัครแผงลอย ${escapeHTML(outside.name)}` : stall ? `${stall.outside ? 'สมัครแผงลอย' : 'สมัครและจองล็อก'} ${escapeHTML(stall.id)}` : 'สมัครใช้บริการ'}</h1><p>${stall || outside ? 'กรอกข้อมูลติดต่อเพื่อส่งคำขอจองให้เจ้าหน้าที่' : 'กรอกข้อมูลผู้เช่าและล็อกที่ต้องการ'}</p></div><form class="panel signup-form" onsubmit="submitRegistration(event)"><label class="field"><span class="field-label">ชื่อและนามสกุล</span><input id="signupName" name="name" required placeholder="เช่น ใจดี มั่นคง" autocomplete="name" value="${escapeHTML(signupDraft.name)}"></label><label class="field"><span class="field-label">เบอร์โทรศัพท์</span><input id="signupPhone" name="phone" type="tel" inputmode="tel" pattern="[0-9+ ()-]{9,15}" required placeholder="08X-XXX-XXXX" autocomplete="tel" value="${escapeHTML(signupDraft.phone)}"></label>${idCardFieldHTML()}<label class="field"><span class="field-label">${outside ? 'พื้นที่ที่เช่า' : `ล็อกที่จองไว้${stall ? '' : ' (ถ้ามี)'}`}</span><input id="signupStall" name="stall" ${stall || outside ? 'readonly' : ''} value="${stall ? escapeHTML(stall.id) : outside ? escapeHTML(outside.name) : ''}" placeholder="เช่น A06"></label>${outside ? outsideRentFieldsHTML(outside) : ''}${stall ? `<label class="field"><span class="field-label">วันที่เริ่มเช่า</span><input id="rentalStartDate" name="rentalStartDate" type="date" min="${localISODate()}" value="${rentalStartDate}" required onchange="setRentalStartDate(this.value)"></label>${daily ? `<label class="field"><span class="field-label">จำนวนวันที่เช่า</span><input id="rentalDays" name="rentalDays" type="number" min="1" max="365" step="1" value="${rentalDays}" required onchange="setRentalDays(this.value)"></label>` : ''}<div class="first-month-estimate"><span>${daily ? `ยอดประมาณ ${rentalDays} วัน` : 'ค่าใช้จ่ายเดือนแรกโดยประมาณ'}</span><b>${money(firstChargeAmount(stall))} บาท</b><small>${daily ? 'คิดค่าเช่ารายวันรวมค่าขยะแผงเฉลี่ยตามจำนวนวันที่เลือก' : 'เฉลี่ยค่าเช่าและค่าขยะแผงตามวันที่เช่าถึงสิ้นเดือน โดยนับวันเริ่มเช่าด้วย'}</small></div>` : ''}<label class="consent"><input type="checkbox" required> ยินยอมให้ อบต. ใช้ข้อมูลและรูปบัตรประชาชนเพื่อยืนยันตัวตนและติดต่อเรื่องบริการนี้</label><button class="primary-btn submit-signup" type="submit">${stall ? 'ส่งใบสมัครและขอจอง' : 'ส่งใบสมัคร'} <span>→</span></button></form><p class="help" style="text-align:center">ยอดค่าแผงเป็นการประเมิน เจ้าหน้าที่ตรวจสอบก่อนยืนยัน</p>`; }
 // ---------- ใบสมัคร: รูปบัตรประชาชน (จำเป็น) + จำค่าที่กรอกไว้ตอนหน้า re-render (เปลี่ยนวันเริ่มเช่า/จำนวนวัน) ----------
 let idCardFile = null, idCardUrl = '';
 const signupDraft = { name: '', phone: '' };
@@ -954,6 +969,9 @@ async function reserveStallOnline(form, stall) {
     const fd = new FormData();
     fd.append('name', form.querySelector('[name=name]')?.value || '');
     fd.append('phone', form.querySelector('[name=phone]')?.value || '');
+    fd.append('rentalStartDate', rentalStartDate);
+    if (rentPeriodFor(stall) === 'daily')
+        fd.append('rentalDays', String(rentalDays));
     if (idCardFile)
         fd.append('idCard', idCardFile, idCardFile.name);
     try {
@@ -983,10 +1001,41 @@ async function reserveStallOnline(form, stall) {
         toast('เชื่อมต่อระบบไม่ได้ ลองใหม่อีกครั้ง');
     }
 }
+/** สมัครแผงลอยผ่านระบบจริง: ส่งชื่อ เบอร์ วันเริ่ม จำนวนวัน และรูปบัตร → ได้รหัส OUT-xxxx ไว้ชำระค่าเช่า */
+async function applyOutsideOnline(form, locationId) {
+    const fd = new FormData();
+    fd.append('name', form.querySelector('[name=name]')?.value || '');
+    fd.append('phone', form.querySelector('[name=phone]')?.value || '');
+    fd.append('startDate', rentalStartDate);
+    fd.append('days', String(rentalDays));
+    if (idCardFile)
+        fd.append('idCard', idCardFile, idCardFile.name);
+    try {
+        const r = await fetch(`/v1/citizen/pay/market/outside/${encodeURIComponent(locationId)}/apply`, { method: 'POST', body: fd });
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok || j.success === false)
+            return toast(j?.error?.message || j?.message || 'ส่งใบสมัครไม่สำเร็จ');
+        form.reset();
+        clearIdCard();
+        signupDraft.name = '';
+        signupDraft.phone = '';
+        signupLocationId = null;
+        rentalStartDate = localISODate();
+        rentalDays = 1;
+        toast(`ส่งใบสมัครแล้ว · รหัส ${j.data?.appCode} · จดรหัสนี้ไว้เพื่อชำระค่าเช่า`);
+        setPage('stalls');
+    }
+    catch {
+        toast('เชื่อมต่อระบบไม่ได้ ลองใหม่อีกครั้ง');
+    }
+}
 function submitRegistration(event) { event.preventDefault(); const form = event.currentTarget; if (!form.reportValidity())
     return; if (!idCardFile) {
     toast('แนบรูปบัตรประชาชนก่อนส่งใบสมัครค่ะ');
     document.getElementById('idCardPreview')?.scrollIntoView({ block: 'center' });
+    return;
+} if (signupLocationId && !signupStallId && apiOnline && /^[0-9a-f-]{36}$/i.test(signupLocationId)) {
+    void applyOutsideOnline(form, signupLocationId);
     return;
 } const stallId = signupStallId; const stall = stallId && findStall(stallId); if (stall && !stall.outside && apiOnline) {
     void reserveStallOnline(form, stall);
@@ -1015,7 +1064,7 @@ async function refreshOutside() { try {
         if (r.ok) {
             const j = await r.json();
             if (Array.isArray(j?.data))
-                list = j.data.slice(0, 50).map((x, i) => ({ id: 'LOC-' + (i + 1), name: String(x.name).slice(0, 60), rentRate: Number(x.rentRate) || 0, rentPeriod: x.rentPeriod === 'monthly' ? 'monthly' : 'daily', enabled: true, deleted: false, tenants: [] }));
+                list = j.data.slice(0, 50).map((x) => ({ id: String(x.id), name: String(x.name).slice(0, 60), rentRate: Number(x.rentRate) || 0, rentPeriod: x.rentPeriod === 'monthly' ? 'monthly' : 'daily', enabled: true, deleted: false, tenants: [] }));
         }
     }
     catch { }

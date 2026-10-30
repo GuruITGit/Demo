@@ -13,6 +13,7 @@ import { SlipQueue } from '@/components/pay/slip-queue';
 import { PaySettings } from '@/components/pay/pay-settings';
 import { MarketBills } from './market-bills';
 import { MarketOutside } from './market-outside';
+import { ReservationCheck } from './reservation-check';
 
 type Stall = {
   id: string; stallCode: string; zone: string; status: 'available' | 'reserved' | 'occupied';
@@ -202,6 +203,8 @@ function Plan({ canManage, onBills }: { canManage: boolean; onBills: (code: stri
           </div>
         </Panel>
       )}
+
+      <ReservationCheck canManage={canManage} />
 
       {reservedList.length > 0 && (
         <Panel title={<>แผงที่ประชาชนจองมา <span className="text-sm font-normal text-gray-500">({reservedList.length})</span></>}>

@@ -6,11 +6,12 @@ import { MarketBill } from '../../database/entities/market-bill.entity';
 import { WasteBill } from '../../database/entities/waste-bill.entity';
 import { Organization } from '../../database/entities/organization.entity';
 import { MarketOutsideLocation } from '../../database/entities/market-outside.entity';
+import { MarketOutsideApplication } from '../../database/entities/market-outside-application.entity';
 import { StorageService } from '../storage/storage.service';
 import { OrganizationsService } from '../organizations/organizations.service';
 import { PayConfigService } from '../market/pay-config.service';
 import { PayConfig } from '../market/pay-config';
-import { nextReceiptNo } from '../market/receipt';
+import { nextReceiptNo, currentPeriod, periodEndDate } from '../market/receipt';
 import { verifySlip } from '../water/slip-verify';
 import { NotificationsService } from '../notifications/notifications.service';
 import { notifyUsersWithPermission } from '../../common/notify-permission';
@@ -60,6 +61,7 @@ export class CitizenPayService {
     @InjectRepository(WasteBill) private readonly wasteBills: Repository<WasteBill>,
     @InjectRepository(Organization) private readonly orgRepo: Repository<Organization>,
     @InjectRepository(MarketOutsideLocation) private readonly outsideLocs: Repository<MarketOutsideLocation>,
+    @InjectRepository(MarketOutsideApplication) private readonly outsideApps: Repository<MarketOutsideApplication>,
     private readonly storage: StorageService,
     private readonly orgs: OrganizationsService,
     private readonly config: PayConfigService,
@@ -123,6 +125,7 @@ export class CitizenPayService {
     const code = (stallCode || '').trim().toUpperCase();
     if (!code) throw new BadRequestException('กรุณากรอกเลขล็อก');
     if (!nameMatchReady(nameRaw)) throw new BadRequestException('กรุณากรอกชื่อ-นามสกุลผู้เช่า');
+    if (code.startsWith('OUT-')) return this.outsideBillsFor(orgId, code, nameRaw);
     const stall = await this.stalls.findOne({ where: { organizationId: orgId, stallCode: code, active: true } });
     if (!stall || !nameMatches(stall.tenantName, nameRaw)) throw new NotFoundException(NO_MATCH);
     const rows = await this.marketBills.find({ where: { organizationId: orgId, stallCode: code, status: In(OPEN_STATUSES) }, order: { period: 'DESC', kind: 'ASC' }, take: 60 });
@@ -207,7 +210,7 @@ export class CitizenPayService {
   }
 
   /** จองแผงว่างจากหน้าประชาชน → สถานะ "จอง" รอเจ้าหน้าที่ยืนยัน (อัปเดตแบบมีเงื่อนไข กันแย่งกันจอง) + แจ้งเจ้าหน้าที่ */
-  async reserve(orgId: string, stallCode: string, name: string, phone: string, card?: Express.Multer.File) {
+  async reserve(orgId: string, stallCode: string, name: string, phone: string, card?: Express.Multer.File, rentalStartDate?: string, rentalDays?: number) {
     const n = (name || '').trim();
     const p = (phone || '').replace(/[\s-]/g, '');
     if (n.length < 2 || n.length > 200) throw new BadRequestException('กรุณากรอกชื่อ-นามสกุล');
@@ -216,17 +219,60 @@ export class CitizenPayService {
     const stall = await this.stalls.findOne({ where: { organizationId: orgId, stallCode: code, active: true } });
     if (!stall) throw new NotFoundException('ไม่พบแผงนี้');
     if (stall.status !== 'available') throw new ConflictException('แผงนี้ไม่ว่างแล้ว กรุณาเลือกแผงอื่น');
+    const sd = rentalStartDate && /^\d{4}-\d{2}-\d{2}$/.test(rentalStartDate) ? rentalStartDate : null;
+    const rd = sd ? Math.min(Math.max(Number(rentalDays) || 1, 1), 365) : null;
     const cardUrl = card ? await this.storage.storeCitizenAttachment(card.buffer, card.mimetype, card.originalname, 'stall-cards') : null;
     const r = await this.stalls.update(
       { organizationId: orgId, stallCode: code, status: 'available', active: true },
-      { status: 'reserved', tenantName: n, contactPhone: p, reservedAt: new Date(), reserveCardUrl: cardUrl },
+      { status: 'reserved', tenantName: n, contactPhone: p, reservedAt: new Date(), reserveCardUrl: cardUrl, reserveStartDate: sd, reserveDays: rd },
     );
     if (!r.affected) throw new ConflictException('แผงนี้ไม่ว่างแล้ว กรุณาเลือกแผงอื่น');
     await notifyUsersWithPermission(this.ds, this.notifications, orgId, { module: 'market', action: 'manage', subject: 'MarketStall' }, {
-      type: 'market:reserved', title: 'มีการจองแผงใหม่', body: `แผง ${code} · ${n} · โทร ${p} — รอยืนยัน`,
+      type: 'market:reserved', title: 'มีการจองแผงใหม่', body: `แผง ${code} · ${n} · โทร ${p}${sd ? ` · เริ่ม ${sd} ${rd} วัน` : ''} — รอยืนยัน`,
       actionUrl: '/market', refType: 'market_stall', refId: stall.id,
     });
     return { ok: true, stallCode: code };
+  }
+
+  /** รหัสใบสมัครแผงลอยถัดไปของ อบต. เช่น OUT-0007 */
+  private async nextAppCode(orgId: string): Promise<string> {
+    const [r] = await this.ds.query(
+      `SELECT COALESCE(MAX(CAST(SUBSTRING(app_code FROM 5) AS INT)), 0) + 1 AS n FROM market_outside_applications WHERE organization_id = $1`, [orgId]);
+    return `OUT-${String(r.n).padStart(4, '0')}`;
+  }
+
+  /** สมัครแผงลอยจากหน้าประชาชน (ต้องแนบรูปบัตร) → รอเจ้าหน้าที่อนุมัติ แล้วจึงออกบิลค่าเช่า */
+  async applyOutside(orgId: string, locId: string, name: string, phone: string, card?: Express.Multer.File, startDate?: string, days?: number) {
+    const n = (name || '').trim();
+    const p = (phone || '').replace(/[\s-]/g, '');
+    if (n.length < 2 || n.length > 200) throw new BadRequestException('กรุณากรอกชื่อ-นามสกุล');
+    if (!/^0\d{8,9}$/.test(p)) throw new BadRequestException('เบอร์โทรไม่ถูกต้อง');
+    if (!card) throw new BadRequestException('กรุณาแนบรูปบัตรประชาชน');
+    const loc = await this.outsideLocs.findOne({ where: { id: locId, organizationId: orgId, active: true, enabled: true } });
+    if (!loc) throw new NotFoundException('ไม่พบจุดแผงลอยนี้หรือปิดให้เช่าแล้ว');
+    const d = Math.min(Math.max(Number(days) || 1, 1), 365);
+    const sd = startDate && /^\d{4}-\d{2}-\d{2}$/.test(startDate) ? startDate : null;
+    const cardUrl = await this.storage.storeCitizenAttachment(card.buffer, card.mimetype, card.originalname, 'outside-cards');
+    const code = await this.nextAppCode(orgId);
+    const row = await this.outsideApps.save(this.outsideApps.create({
+      organizationId: orgId, locationId: loc.id, appCode: code, applicantName: n, phone: p, idCardUrl: cardUrl, startDate: sd, days: d, status: 'pending',
+    }));
+    await notifyUsersWithPermission(this.ds, this.notifications, orgId, { module: 'market', action: 'manage', subject: 'MarketStall' }, {
+      type: 'market:outside_applied', title: 'มีใบสมัครแผงลอยใหม่', body: `${code} · ${loc.name} · ${n} · โทร ${p}`,
+      actionUrl: '/market', refType: 'market_outside_application', refId: row.id,
+    });
+    return { ok: true, appCode: code };
+  }
+
+  /** ค้นบิลแผงลอยด้วยรหัสใบสมัคร (OUT-xxxx) — ใบต้องอนุมัติแล้ว และชื่อผู้สมัครต้องตรงกัน */
+  private async outsideBillsFor(orgId: string, code: string, nameRaw: string) {
+    const app = await this.outsideApps.findOne({ where: { organizationId: orgId, appCode: code, status: 'approved' }, relations: ['location'] });
+    if (!app || !nameMatches(app.applicantName, nameRaw)) throw new NotFoundException(NO_MATCH);
+    const rows = await this.marketBills.find({ where: { organizationId: orgId, stallCode: code, status: In(OPEN_STATUSES) }, order: { period: 'DESC', kind: 'ASC' }, take: 60 });
+    return {
+      stall: { stallCode: code, zone: `แผงลอย · ${app.location?.name ?? ''}`, status: 'outside', monthlyRate: Number(app.location?.rentRate ?? 0) },
+      bills: rows.map(publicMarketBill),
+    };
   }
 
   /** แจ้งเจ้าหน้าที่ที่มีสิทธิ์ตรวจ เมื่อประชาชนแจ้งชำระ (ชำระแล้วอัตโนมัติ หรือรอตรวจ) */

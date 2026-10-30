@@ -5,7 +5,7 @@ import { PermissionsGuard } from '../../common/guards/permissions.guard';
 import { RequirePermissions } from '../../common/decorators/permissions.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { MarketOutsideService } from './market-outside.service';
-import { OutsideCollectionDto, OutsideLocationDto } from './dto/market.dto';
+import { OutsideCollectionDto, OutsideLocationDto, RejectBillDto } from './dto/market.dto';
 
 /** แผงลอย (เจ้าหน้าที่) — จุดเก็บค่าที่นอกผังประจำ · สิทธิ์ market:read / market:manage */
 @ApiTags('market')
@@ -41,6 +41,27 @@ export class MarketOutsideController {
   @RequirePermissions({ module: 'market', action: 'manage', subject: 'MarketStall' })
   remove(@CurrentUser('organizationId') orgId: string, @Param('id', ParseUUIDPipe) id: string) {
     return this.service.remove(orgId, id);
+  }
+
+  @Get('applications')
+  @ApiOperation({ summary: 'ใบสมัครแผงลอยจากประชาชน (กรองสถานะ pending/approved/rejected)' })
+  @RequirePermissions({ module: 'market', action: 'read', subject: 'MarketBill' })
+  applications(@CurrentUser('organizationId') orgId: string, @Query('status') status?: string) {
+    return this.service.listApplications(orgId, status);
+  }
+
+  @Post('applications/:id/approve')
+  @ApiOperation({ summary: 'อนุมัติใบสมัคร → ออกบิลค่าเช่าให้ผู้สมัคร' })
+  @RequirePermissions({ module: 'market', action: 'manage', subject: 'MarketBill' })
+  approve(@CurrentUser('organizationId') orgId: string, @Param('id', ParseUUIDPipe) id: string) {
+    return this.service.approveApplication(orgId, id);
+  }
+
+  @Post('applications/:id/reject')
+  @ApiOperation({ summary: 'ไม่อนุมัติใบสมัครแผงลอย' })
+  @RequirePermissions({ module: 'market', action: 'manage', subject: 'MarketBill' })
+  reject(@CurrentUser('organizationId') orgId: string, @Param('id', ParseUUIDPipe) id: string, @Body() dto: RejectBillDto) {
+    return this.service.rejectApplication(orgId, id, dto.note);
   }
 
   @Get('collections')

@@ -8,6 +8,7 @@ import { ConfirmDialog } from '@/components/shared/confirm-dialog';
 import { money } from '@/lib/payment-labels';
 import { Empty, Field, Panel, inputCls } from '@/components/pay/pay-ui';
 import { printReceipt } from '@/components/pay/receipt-print';
+import { OutsideApplications } from './outside-applications';
 
 type Location = { id: string; name: string; rentRate: string; rentPeriod: 'daily' | 'monthly'; enabled: boolean };
 type Collection = { id: string; locationId: string; vendorName: string; collectedOn: string; amount: string; receiptNo: string | null };
@@ -81,6 +82,8 @@ export function MarketOutside({ canManageStall, canManageBill, orgName }: { canM
 
   return (
     <div className="space-y-5">
+      <OutsideApplications canManage={canManageBill} />
+
       <Panel title="จุดแผงลอย" actions={canManageStall && <Button size="sm" onClick={() => startEdit('new')}>+ เปิดจุดใหม่</Button>}>
         {editId && canManageStall && (
           <div className="grid gap-3 border-b border-gray-100 p-4 sm:grid-cols-4">

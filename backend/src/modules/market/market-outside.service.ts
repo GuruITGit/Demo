@@ -2,8 +2,10 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { InjectRepository } from '@nestjs/typeorm';
 import { Between, DataSource, Repository } from 'typeorm';
 import { MarketOutsideCollection, MarketOutsideLocation } from '../../database/entities/market-outside.entity';
-import { OutsideCollectionDto, OutsideLocationDto } from './dto/market.dto';
-import { nextReceiptNo } from './receipt';
+import { MarketOutsideApplication } from '../../database/entities/market-outside-application.entity';
+import { MarketBill } from '../../database/entities/market-bill.entity';
+import { OutsideCollectionDto, OutsideLocationDto, RejectBillDto } from './dto/market.dto';
+import { currentPeriod, nextReceiptNo, periodEndDate } from './receipt';
 
 /** วันนี้ (ค.ศ. YYYY-MM-DD) ตามเวลาเครื่องเซิร์ฟเวอร์ */
 const today = () => {
@@ -17,8 +19,44 @@ export class MarketOutsideService {
   constructor(
     @InjectRepository(MarketOutsideLocation) private readonly locs: Repository<MarketOutsideLocation>,
     @InjectRepository(MarketOutsideCollection) private readonly cols: Repository<MarketOutsideCollection>,
+    @InjectRepository(MarketOutsideApplication) private readonly apps: Repository<MarketOutsideApplication>,
     private readonly ds: DataSource,
   ) {}
+
+  /** ใบสมัครแผงลอยจากประชาชน (กรองตามสถานะได้: pending / approved / rejected) */
+  listApplications(orgId: string, status?: string) {
+    return this.apps.find({ where: { organizationId: orgId, ...(status ? { status } : {}) }, relations: ['location'], order: { createdAt: 'DESC' }, take: 200 });
+  }
+
+  /** อนุมัติใบสมัคร → ออกบิลค่าเช่า: รายวัน = ค่าเช่า × จำนวนวัน · รายเดือน = ค่าเช่าต่อเดือน · งวดตามวันเริ่มเช่า */
+  async approveApplication(orgId: string, id: string) {
+    const app = await this.apps.findOne({ where: { id, organizationId: orgId }, relations: ['location'] });
+    if (!app) throw new NotFoundException('ไม่พบใบสมัครนี้');
+    if (app.status !== 'pending') throw new BadRequestException('ใบสมัครนี้ดำเนินการไปแล้ว');
+    const rate = Number(app.location.rentRate);
+    const amount = app.location.rentPeriod === 'monthly' ? rate : rate * app.days;
+    // วันเริ่มเช่า (ค.ศ.) → งวดพุทธศักราช YYYY-MM
+    const period = app.startDate ? `${Number(app.startDate.slice(0, 4)) + 543}-${app.startDate.slice(5, 7)}` : currentPeriod();
+    return this.ds.transaction(async (em) => {
+      const bill = await em.save(em.create(MarketBill, {
+        organizationId: orgId, stallId: null, stallCode: app.appCode, payerName: app.applicantName, kind: 'rent', period,
+        amount: amount.toFixed(2), dueDate: periodEndDate(period), status: 'unpaid',
+      }));
+      app.status = 'approved'; app.billId = bill.id; app.reviewNote = null;
+      await em.save(app);
+      return { ok: true, billId: bill.id, appCode: app.appCode, amount };
+    });
+  }
+
+  async rejectApplication(orgId: string, id: string, note?: string) {
+    const app = await this.apps.findOne({ where: { id, organizationId: orgId } });
+    if (!app) throw new NotFoundException('ไม่พบใบสมัครนี้');
+    if (app.status !== 'pending') throw new BadRequestException('ใบสมัครนี้ดำเนินการไปแล้ว');
+    app.status = 'rejected';
+    app.reviewNote = note?.trim() || null;
+    await this.apps.save(app);
+    return { ok: true };
+  }
 
   list(orgId: string) {
     return this.locs.find({ where: { organizationId: orgId, active: true }, order: { createdAt: 'ASC' } });

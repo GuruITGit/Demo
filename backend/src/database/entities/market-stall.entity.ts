@@ -50,6 +50,13 @@ export class MarketStall {
   @Column({ name: 'reserve_card_url', type: 'text', nullable: true })
   reserveCardUrl: string | null;
 
+  /** วันเริ่มเช่า / จำนวนวัน (รายวัน) ที่ผู้จองระบุ */
+  @Column({ name: 'reserve_start_date', type: 'date', nullable: true })
+  reserveStartDate: string | null;
+
+  @Column({ name: 'reserve_days', type: 'int', nullable: true })
+  reserveDays: number | null;
+
   @Column({ type: 'boolean', default: true })
   active: boolean;
 
