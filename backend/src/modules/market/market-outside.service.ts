@@ -6,6 +6,7 @@ import { MarketOutsideApplication } from '../../database/entities/market-outside
 import { MarketBill } from '../../database/entities/market-bill.entity';
 import { OutsideCollectionDto, OutsideLocationDto, RejectBillDto } from './dto/market.dto';
 import { currentPeriod, nextReceiptNo, periodEndDate } from './receipt';
+import { StorageService } from '../storage/storage.service';
 
 /** วันนี้ (ค.ศ. YYYY-MM-DD) ตามเวลาเครื่องเซิร์ฟเวอร์ */
 const today = () => {
@@ -21,11 +22,13 @@ export class MarketOutsideService {
     @InjectRepository(MarketOutsideCollection) private readonly cols: Repository<MarketOutsideCollection>,
     @InjectRepository(MarketOutsideApplication) private readonly apps: Repository<MarketOutsideApplication>,
     private readonly ds: DataSource,
+    private readonly storage: StorageService,
   ) {}
 
   /** ใบสมัครแผงลอยจากประชาชน (กรองตามสถานะได้: pending / approved / rejected) */
-  listApplications(orgId: string, status?: string) {
-    return this.apps.find({ where: { organizationId: orgId, ...(status ? { status } : {}) }, relations: ['location'], order: { createdAt: 'DESC' }, take: 200 });
+  async listApplications(orgId: string, status?: string) {
+    const rows = await this.apps.find({ where: { organizationId: orgId, ...(status ? { status } : {}) }, relations: ['location'], order: { createdAt: 'DESC' }, take: 200 });
+    return rows.map((a) => ({ ...a, idCardUrl: this.storage.signUrlIfPrivate(a.idCardUrl) })); // รูปบัตรอยู่ใน private bucket
   }
 
   /** อนุมัติใบสมัคร → ออกบิลค่าเช่า: รายวัน = ค่าเช่า × จำนวนวัน · รายเดือน = ค่าเช่าต่อเดือน · งวดตามวันเริ่มเช่า */

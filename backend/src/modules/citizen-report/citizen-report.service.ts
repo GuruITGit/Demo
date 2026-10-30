@@ -165,8 +165,8 @@ export class CitizenReportService {
   /** เช็กสถานะด้วยเลขอ้างอิง + เบอร์ (กันไล่สุ่มดูของคนอื่น) — เทียบเบอร์แบบตัวเลขล้วน ไม่สนขีด/เว้นวรรค */
   async statusByRef(refNo: string, phone: string, org?: string) {
     const orgId = await this.resolveOrg(org);
-    const row = await this.repo.findOne({ where: { organizationId: orgId, refNo: refNo?.trim() } });
-    if (!row) throw new NotFoundException('ไม่พบเลขอ้างอิงนี้');
+    const row = await this.repo.findOne({ where: { organizationId: orgId, refNo: (refNo || '').trim().toUpperCase() } });
+    if (!row) throw new NotFoundException('เลขอ้างอิงหรือเบอร์ไม่ถูกต้อง');
     if (row.reporterPhone && this.digits(row.reporterPhone) !== this.digits(phone)) {
       throw new NotFoundException('เลขอ้างอิงหรือเบอร์ไม่ถูกต้อง');
     }

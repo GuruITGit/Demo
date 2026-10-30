@@ -32,7 +32,7 @@ export class MarketService {
     const rows = await this.stalls.find({ where: { organizationId: orgId, active: true, status: 'reserved' }, order: { reservedAt: 'ASC' } });
     return rows.map((s) => ({
       id: s.id, stallCode: s.stallCode, zone: s.zone, tenantName: s.tenantName, contactPhone: s.contactPhone,
-      reservedAt: s.reservedAt, reserveStartDate: s.reserveStartDate, reserveDays: s.reserveDays, reserveCardUrl: s.reserveCardUrl,
+      reservedAt: s.reservedAt, reserveStartDate: s.reserveStartDate, reserveDays: s.reserveDays, reserveCardUrl: this.storage.signUrlIfPrivate(s.reserveCardUrl),
     }));
   }
 
@@ -48,8 +48,10 @@ export class MarketService {
     return { ok: true, count: rows.length };
   }
 
-  listStalls(orgId: string) {
-    return this.stalls.find({ where: { organizationId: orgId, active: true }, order: { zone: 'ASC', stallCode: 'ASC' } });
+  /** รูปบัตรของผู้จองอยู่ใน private bucket → ออกลิงก์มีลายเซ็นอายุสั้นให้เจ้าหน้าที่เปิดดูได้ */
+  async listStalls(orgId: string) {
+    const rows = await this.stalls.find({ where: { organizationId: orgId, active: true }, order: { zone: 'ASC', stallCode: 'ASC' } });
+    return rows.map((s) => ({ ...s, reserveCardUrl: this.storage.signUrlIfPrivate(s.reserveCardUrl) }));
   }
 
   /** แก้ไขแผง: ถ้าเป็นว่างจะล้างชื่อผู้เช่า/ผู้จองให้เอง */
@@ -63,12 +65,13 @@ export class MarketService {
     return this.stalls.save(stall);
   }
 
-  listBills(orgId: string, q: MarketBillQueryDto) {
+  async listBills(orgId: string, q: MarketBillQueryDto) {
     const where: FindOptionsWhere<MarketBill> = { organizationId: orgId };
     if (q.status) where.status = q.status;
     if (q.period) where.period = q.period;
     if (q.stallCode) where.stallCode = q.stallCode;
-    return this.bills.find({ where, order: { period: 'DESC', stallCode: 'ASC', kind: 'ASC' }, take: 500 });
+    const rows = await this.bills.find({ where, order: { period: 'DESC', stallCode: 'ASC', kind: 'ASC' }, take: 500 });
+    return rows.map((b) => ({ ...b, slipUrl: this.storage.signUrlIfPrivate(b.slipUrl) })); // สลิปอยู่ใน private bucket
   }
 
   /** รับชำระ/ยืนยันสลิป — บันทึกวิธีรับและออกเลขใบเสร็จ (atomic) · บิลที่จ่ายแล้วซ้ำไม่ได้ */
