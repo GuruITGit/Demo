@@ -69,10 +69,17 @@ function submitRegistration(event){event.preventDefault();const form=event.curre
 function choicePage(){return `<div class="page-heading"><h1>ค่าแผงตลาด</h1><p>เลือกว่าจะทำอะไร</p></div><div class="choice-grid"><button class="choice-card choice-card-photo" onclick="setPage('dues')" aria-label="จ่ายค่าแผงตลาด — ดูยอดค้างและจ่ายผ่าน QR หรือเงินสด"><img src="/citizen-pay/shared/img/market-pay-banner.webp" width="1672" height="941" alt="จ่ายค่าแผงตลาด" loading="lazy"></button><button class="choice-card choice-card-photo" onclick="setPage('stalls')" aria-label="จองแผง (สมัคร) — เลือกแผงว่างแล้วส่งคำขอจอง"><img src="/citizen-pay/shared/img/market-reserve-banner.webp" width="1774" height="887" alt="สมัครจองแผงตลาดออนไลน์" loading="lazy"></button></div>`}
 function render(){saveOutsideLocations();app.classList.remove('staff-dashboard');renderNav();const page={home:choicePage,dues:searchPage,stalls:stallPage,signup:signupPage};app.innerHTML=homeBackHTML()+(page[view]||searchPage)()}
 applySavedPayments();
-// ดึงจุดแผงลอยที่เจ้าหน้าที่เปิดให้เช่าจากระบบจริง (ถ้าเข้าถึงไม่ได้ เช่นเดโม่ ใช้ข้อมูลตัวอย่างเดิม)
-async function loadRemoteOutside(){try{const r=await fetch('/v1/citizen/pay/market/outside');if(!r.ok)return;const j=await r.json();const rows=Array.isArray(j?.data)?j.data:null;if(!rows)return;DEMO.outsideLocations=rows.slice(0,50).map((x:any,i:number)=>({id:'LOC-'+(i+1),name:String(x.name).slice(0,60),rentRate:Number(x.rentRate)||0,rentPeriod:x.rentPeriod==='monthly'?'monthly':'daily',enabled:true,deleted:false,tenants:[]}));if(!DEMO.outsideLocations.some(l=>l.id===selectedOutsideLocationId))selectedOutsideLocationId=DEMO.outsideLocations[0]?.id??'';render()}catch{}}
+// จุดแผงลอยที่เปิดให้เช่า: อัปเดตเกือบเรียลไทม์ (ราว 2 วินาที)
+// - ระบบจริง: ดึงจาก API ทุก 2 วินาทีตอนแท็บเปิดอยู่ (ถ้า API ไม่ตอบ ใช้ข้อมูลที่เก็บในเครื่อง)
+// - เดโม่: หน้าผู้ดูแลเขียนลง localStorage แล้วหน้านี้รับทันทีผ่านเหตุการณ์ storage
+// render ใหม่เฉพาะตอนรายการเปลี่ยนจริง เพื่อไม่ให้หน้ากระพริบ
+const OUTSIDE_KEY='lamplaimat:outside-locations';
+let outsideSig='';
+async function refreshOutside(){try{let list:OutsideLocation[]|null=null;try{const r=await fetch('/v1/citizen/pay/market/outside',{cache:'no-store'});if(r.ok){const j=await r.json();if(Array.isArray(j?.data))list=j.data.slice(0,50).map((x:any,i:number)=>({id:'LOC-'+(i+1),name:String(x.name).slice(0,60),rentRate:Number(x.rentRate)||0,rentPeriod:x.rentPeriod==='monthly'?'monthly':'daily',enabled:true,deleted:false,tenants:[]}))}}catch{}if(!list){const stored=JSON.parse(localStorage.getItem(OUTSIDE_KEY)||'null');if(validOutsideLocations(stored))list=stored.filter(l=>l.enabled&&!l.deleted)}if(!list)return;const sig=JSON.stringify(list);if(sig===outsideSig)return;outsideSig=sig;DEMO.outsideLocations=list;if(!list.some(l=>l.id===selectedOutsideLocationId))selectedOutsideLocationId=list[0]?.id??'';render()}catch{}}
+window.addEventListener('storage',(e)=>{if(e.key===OUTSIDE_KEY)void refreshOutside()});
+setInterval(()=>{if(document.visibilityState==='visible')void refreshOutside()},2000);
 render();
-void loadRemoteOutside();
+void refreshOutside();
 
 
 
