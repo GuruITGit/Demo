@@ -4,7 +4,6 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth.store';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
 
 /** ชื่อหน่วยงาน (ไว้พิมพ์หัว QR/ใบเสร็จ) */
 export function useOrgName(): string {
@@ -91,13 +90,18 @@ export function filterDues<T extends { months: number; total: number }>(rows: T[
 }
 /** สีเตือนตามเดือนที่ค้าง: 2 เดือน = เหลือง · 3 เดือนขึ้นไป = แดง */
 export const dueTone = (months: number) => (months >= 3 ? 'font-semibold text-red-600' : months >= 2 ? 'font-semibold text-amber-600' : '');
-const DUE_STEPS = [{ min: 0, label: 'ทั้งหมด' }, { min: 2, label: 'ค้าง 2 เดือนขึ้นไป' }, { min: 3, label: 'ค้าง 3 เดือนขึ้นไป' }, { min: 6, label: 'ค้าง 6 เดือนขึ้นไป' }];
+const DUE_SUGGEST = [1, 2, 3, 6, 12];
+/** ช่องเดียว: พิมพ์จำนวนเดือนเอง หรือเลือกจากรายการแนะนำ (ว่าง = ทั้งหมด) + ค้นหา */
 export function DuesFilter({ min, setMin, q, setQ, placeholder }: { min: number; setMin: (n: number) => void; q: string; setQ: (s: string) => void; placeholder: string }) {
   return (
-    <div className="no-print flex flex-wrap items-center gap-2 border-b border-gray-100 px-4 py-3">
-      {DUE_STEPS.map((s) => (
-        <Button key={s.min} size="sm" variant={min === s.min ? 'default' : 'outline'} onClick={() => setMin(s.min)}>{s.label}</Button>
-      ))}
+    <div className="no-print flex flex-wrap items-center gap-3 border-b border-gray-100 px-4 py-3">
+      <label className="flex items-center gap-2 text-sm text-gray-700">
+        ค้างตั้งแต่
+        <input type="number" inputMode="numeric" min={1} max={99} list="due-months" className={cn(inputCls, 'w-24 text-center')}
+          value={min || ''} placeholder="ทั้งหมด" onChange={(e) => setMin(Math.max(0, Math.floor(Number(e.target.value)) || 0))} />
+        เดือนขึ้นไป
+      </label>
+      <datalist id="due-months">{DUE_SUGGEST.map((n) => <option key={n} value={n}>{`${n} เดือน`}</option>)}</datalist>
       <input className={cn(inputCls, 'ml-auto max-w-xs')} value={q} onChange={(e) => setQ(e.target.value)} placeholder={placeholder} />
     </div>
   );
