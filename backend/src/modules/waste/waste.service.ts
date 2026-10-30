@@ -6,6 +6,8 @@ import { WasteHousehold } from '../../database/entities/waste-household.entity';
 import { CreateWasteBillDto, HouseholdDto, WasteBillQueryDto } from './dto/waste.dto';
 import { nextReceiptNo, currentPeriod, periodEndDate } from '../market/receipt';
 import { PayConfigService } from '../market/pay-config.service';
+import { StorageService } from '../storage/storage.service';
+import { verifyPendingSlips } from '../market/slip-check';
 
 /** แปลงเลขไทยเป็นอารบิก แล้วตัดช่องว่างซ้ำ */
 const normalize = (s: string) => s.replace(/[๐-๙]/g, (d) => String('๐๑๒๓๔๕๖๗๘๙'.indexOf(d))).replace(/\s+/g, ' ').trim();
@@ -18,7 +20,13 @@ export class WasteService {
     @InjectRepository(WasteHousehold) private readonly households: Repository<WasteHousehold>,
     private readonly ds: DataSource,
     private readonly config: PayConfigService,
+    private readonly storage: StorageService,
   ) {}
+
+  /** ตรวจสลิปโอนที่รอตรวจทั้งหมดในคลิกเดียว (ต้องผูกโทเคนตรวจสลิปไว้) */
+  async verifySlips(orgId: string) {
+    return verifyPendingSlips(this.ds, this.storage, await this.config.get(orgId), orgId, WasteBill, 'WS', (b: WasteBill) => `บ้านเลขที่ ${b.houseNo} หมู่ ${Number(b.moo)}`);
+  }
 
   /**
    * ค้นหาบิลค่าขยะบ้าน — เบอร์ (ตรงทั้งเบอร์) · บ้านเลขที่ (+หมู่) ตรงตัว · ชื่อ/รหัสครัวเรือนมีคำที่พิมพ์

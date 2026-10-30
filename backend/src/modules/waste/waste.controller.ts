@@ -47,6 +47,13 @@ export class WasteController {
     return this.service.generate(orgId, dto.period);
   }
 
+  @Post('bills/verify-slips')
+  @ApiOperation({ summary: 'ตรวจสลิปโอนที่รอตรวจทั้งหมดในคลิกเดียว — ผ่านชำระให้เลย ไม่ผ่านค้างรอตรวจพร้อมเหตุผล' })
+  @RequirePermissions({ module: 'waste', action: 'manage', subject: 'WasteBill' })
+  verifySlips(@CurrentUser('organizationId') orgId: string) {
+    return this.service.verifySlips(orgId);
+  }
+
   @Post('bills/:id/pay')
   @ApiOperation({ summary: 'รับชำระ/ยืนยันสลิปบิลค่าขยะบ้าน' })
   @RequirePermissions({ module: 'waste', action: 'manage', subject: 'WasteBill' })

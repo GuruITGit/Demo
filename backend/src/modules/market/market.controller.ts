@@ -16,6 +16,13 @@ import { PayConfigService } from './pay-config.service';
 export class MarketController {
   constructor(private readonly service: MarketService, private readonly config: PayConfigService) {}
 
+  @Post('bills/verify-slips')
+  @ApiOperation({ summary: 'ตรวจสลิปโอนที่รอตรวจทั้งหมดในคลิกเดียว (Slip2Go ฯลฯ) — ผ่านชำระให้เลย ไม่ผ่านค้างรอตรวจพร้อมเหตุผล' })
+  @RequirePermissions({ module: 'market', action: 'manage', subject: 'MarketBill' })
+  verifySlips(@CurrentUser('organizationId') orgId: string) {
+    return this.service.verifySlips(orgId);
+  }
+
   @Get('reservations')
   @ApiOperation({ summary: 'รายการจองแผงที่รอยืนยัน (ชื่อ/เบอร์/วันเริ่มเช่า/รูปบัตร)' })
   @RequirePermissions({ module: 'market', action: 'read', subject: 'MarketStall' })

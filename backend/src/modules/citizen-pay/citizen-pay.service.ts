@@ -10,9 +10,8 @@ import { MarketOutsideApplication } from '../../database/entities/market-outside
 import { StorageService } from '../storage/storage.service';
 import { OrganizationsService } from '../organizations/organizations.service';
 import { PayConfigService } from '../market/pay-config.service';
-import { PayConfig } from '../market/pay-config';
 import { nextReceiptNo, currentPeriod, periodEndDate } from '../market/receipt';
-import { verifySlip } from '../water/slip-verify';
+import { checkSlip } from '../market/slip-check';
 import { NotificationsService } from '../notifications/notifications.service';
 import { notifyUsersWithPermission } from '../../common/notify-permission';
 
@@ -24,13 +23,6 @@ export const maskName = (n: string | null) => {
   if (!n) return null;
   const [first, ...rest] = n.trim().split(/\s+/);
   return rest.length ? `${first} ${rest.join(' ').slice(0, 1)}***` : first;
-};
-/** ชื่อผู้รับในสลิปตรงกับชื่อบัญชี อบต. ไหม (ไม่สนคำนำหน้า/ช่องว่าง/เครื่องหมาย; ยอมให้ชื่อใดชื่อหนึ่งเป็นส่วนของอีกชื่อ) */
-const payeeLike = (payee: string, receiver: string) => {
-  const k = (v: string) => String(v || '').replace(/^(นางสาว|น\.ส\.|นาย|นาง|บริษัท|องค์การบริหารส่วนตำบล|อบต\.?)/g, '').replace(/[\s.()\-]/g, '').toLowerCase();
-  const a = k(payee), b = k(receiver);
-  if (!a || !b) return false;
-  return a === b || (a.length >= 4 && b.includes(a)) || (b.length >= 4 && a.includes(b));
 };
 const maskPhone = (p: string | null) => (p && p.length >= 9 ? `${p.slice(0, 3)}-xxx-${p.slice(-4)}` : null);
 
@@ -162,7 +154,7 @@ export class CitizenPayService {
 
     if (method === 'transfer') {
       const cfg = await this.config.get(orgId);
-      const check = await this.checkSlip(cfg, file as Express.Multer.File, total);
+      const check = await checkSlip(cfg, (file as Express.Multer.File).buffer, (file as Express.Multer.File).mimetype, total);
       if (check.ok) {
         try {
           await this.ds.transaction(async (em) => {
@@ -185,17 +177,6 @@ export class CitizenPayService {
       return this.holdForReview(repo, bills, method, slipUrl, now, check.reason);
     }
     return this.holdForReview(repo, bills, method, null, now, null);
-  }
-
-  /** ตรวจสลิปกับผู้ให้บริการ + เทียบยอด/ผู้รับ/เลขอ้างอิง — คืน ok=false พร้อมเหตุผลถ้าไม่ผ่าน */
-  private async checkSlip(cfg: PayConfig, file: Express.Multer.File, total: number): Promise<{ ok: boolean; reason: string; transRef: string | null }> {
-    if (!cfg.slipProvider || !cfg.slipToken) return { ok: false, reason: 'ยังไม่ได้เปิดตรวจสลิปอัตโนมัติ เจ้าหน้าที่จะตรวจให้', transRef: null };
-    const r = await verifySlip(cfg.slipProvider, cfg.slipToken, file.buffer, file.mimetype);
-    if (!r.ok) return { ok: false, reason: `ตรวจสลิปไม่ผ่าน: ${r.error || 'อ่านสลิปไม่ได้'}`, transRef: null };
-    if (Math.abs((r.amount ?? 0) - total) > 0.009) return { ok: false, reason: `ยอดในสลิป ${r.amount ?? '-'} บาท ไม่ตรงกับยอดที่ต้องชำระ ${total} บาท`, transRef: null };
-    if (cfg.payeeName && !(r.receiverName && payeeLike(cfg.payeeName, r.receiverName))) return { ok: false, reason: 'บัญชีผู้รับในสลิปไม่ใช่บัญชีของ อบต.', transRef: null };
-    if (!r.transRef) return { ok: false, reason: 'ไม่พบเลขอ้างอิงในสลิป', transRef: null };
-    return { ok: true, reason: '', transRef: r.transRef };
   }
 
   /** เข้าคิวให้เจ้าหน้าที่ตรวจ (สลิปโอนที่ตรวจไม่ผ่าน หรือแจ้งเงินสด) */
