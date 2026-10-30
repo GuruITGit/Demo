@@ -10,6 +10,8 @@ export interface PayConfig {
   accountNo: string;
   cashPlace: string;
   cashHours: string;
+  /** เบอร์ติดต่อเจ้าหน้าที่/เหตุฉุกเฉิน (แสดงท้ายหน้าประชาชน) */
+  contactPhone: string;
   /** ค่าขยะแผงต่อเดือน (บาท) */
   wasteStallFee: number;
   /** ค่าเก็บขยะบ้านต่อเดือน (บาท) */
@@ -28,6 +30,7 @@ export const DEFAULT_PAY_CONFIG: PayConfig = {
   accountNo: '',
   cashPlace: 'งานการเงิน ที่ทำการ อบต.',
   cashHours: 'จันทร์–ศุกร์ 08:30–16:30 น. (เว้นวันหยุดราชการ)',
+  contactPhone: '',
   wasteStallFee: 30,
   householdFee: 40,
   slipProvider: '',
@@ -49,6 +52,7 @@ export function readPayConfig(meta: any): PayConfig {
     accountNo: str(p.accountNo, 30, d.accountNo),
     cashPlace: str(p.cashPlace, 120, d.cashPlace),
     cashHours: str(p.cashHours, 120, d.cashHours),
+    contactPhone: str(p.contactPhone, 40, d.contactPhone),
     wasteStallFee: fee(p.wasteStallFee, d.wasteStallFee),
     householdFee: fee(p.householdFee, d.householdFee),
     slipProvider: ['', 'slip2go', 'easyslip', 'slipok'].includes(p.slipProvider) ? p.slipProvider : d.slipProvider,

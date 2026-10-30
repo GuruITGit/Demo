@@ -692,3 +692,5 @@
   body:not(.staff-mode) #app{max-width:720px;margin:0 auto;width:100%}
   .choice-grid{max-width:620px;margin:0 auto}
 }
+
+.contact-box{margin:18px 14px 90px;padding:14px 16px;border:1px solid #d4deea;border-radius:12px;background:#fff;display:grid;gap:4px;text-align:center}.contact-box b{font-size:15px}.contact-box span,.contact-box small{color:#4f6178;font-size:13px}.contact-box a{font-size:20px;font-weight:700;color:#0f766e;text-decoration:none}

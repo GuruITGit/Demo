@@ -47,6 +47,8 @@ const DEMO: DemoData = {
     { id:'INV-2569-10-002', payerType:'stall', merchant:'นางสาวศิริพร ทองดี', ref:'LM-001', stall:'A01', kind:'ค่าขยะ', month:'ตุลาคม 2569', due:'ชำระแล้ว', amount:30, status:'confirmed' },
     { id:'INV-2569-10-003', payerType:'stall', merchant:'นายประเสริฐ ศรีสุข', ref:'LM-002', stall:'A02', kind:'ค่าเช่าแผง', month:'ตุลาคม 2569', due:'31 ต.ค. 2569', amount:1200, status:'unpaid' },
     { id:'INV-2569-10-004', payerType:'stall', merchant:'นายประเสริฐ ศรีสุข', ref:'LM-002', stall:'A02', kind:'ค่าขยะ', month:'ตุลาคม 2569', due:'31 ต.ค. 2569', amount:30, status:'unpaid' },
+    { id:'INV-2569-10-037', payerType:'stall', merchant:'นายธนพล วงศ์ษา', ref:'LM-004', stall:'A04', kind:'ค่าเช่าแผง', month:'ตุลาคม 2569', due:'31 ต.ค. 2569', amount:1200, status:'unpaid' },
+    { id:'INV-2569-10-038', payerType:'stall', merchant:'นายธนพล วงศ์ษา', ref:'LM-004', stall:'A04', kind:'ค่าขยะ', month:'ตุลาคม 2569', due:'31 ต.ค. 2569', amount:30, status:'unpaid' },
     { id:'INV-2569-09-005', payerType:'stall', merchant:'นางอำไพ บุญรอด', ref:'LM-003', stall:'A03', kind:'ค่าเช่าแผง', month:'กันยายน 2569', due:'30 ก.ย. 2569', amount:1200, status:'unpaid' },
     { id:'INV-2569-09-007', payerType:'stall', merchant:'นางอำไพ บุญรอด', ref:'LM-003', stall:'A03', kind:'ค่าขยะ', month:'กันยายน 2569', due:'30 ก.ย. 2569', amount:30, status:'unpaid' },
     { id:'INV-2569-10-008', payerType:'stall', merchant:'นางอำไพ บุญรอด', ref:'LM-003', stall:'A03', kind:'ค่าเช่าแผง', month:'ตุลาคม 2569', due:'31 ต.ค. 2569', amount:1200, status:'unpaid' },

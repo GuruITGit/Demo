@@ -43,6 +43,15 @@ function initTextSizeControl() {
 }
 initTextSizeControl();
 /** ลิงก์กลับหน้าหลักบนทุกหน้าค่าแผง/ขยะ/เจ้าหน้าที่ — เดโม่ Vercel กลับไป "/" · ระบบจริงกลับไป /citizen */
+/** กล่องติดต่อเจ้าหน้าที่ท้ายหน้า (เบอร์ฉุกเฉิน) — ไม่มีเบอร์ = ไม่แสดง */
+function contactFooterHTML() {
+    const phone = PAYMENT.contactPhone;
+    if (!phone)
+        return '';
+    return `<div class="contact-box"><b>ติดต่อเจ้าหน้าที่</b><span>${escapeHTML(PAYMENT.cashPlace)}</span><a href="tel:${escapeHTML(phone.replace(/[^0-9+]/g, ''))}">โทร ${escapeHTML(phone)}</a><small>มีเหตุฉุกเฉินหรือติดปัญหาการชำระ โทรหาเจ้าหน้าที่ได้ตามเวลาทำการ</small></div>`;
+}
+/** เดโม่: คีย์เทียบชื่อ ตัดคำนำหน้า/ช่องว่าง (ตรงกับ nameKey ฝั่ง backend) */
+const demoNameKey = (n) => n.replace(/\s+/g, '').replace(/^(นางสาว|น\.ส\.|นาย|นาง|เด็กชาย|เด็กหญิง|คุณ)/, '').toLowerCase();
 function homeBackHTML() {
     const demo = location.pathname.includes('/citizen-pay/') || location.hostname.endsWith('vercel.app');
     return `<a class="home-back" href="${demo ? '/' : '/citizen'}">‹ กลับหน้าหลัก</a>`;
@@ -116,6 +125,8 @@ const PAYMENT = {
     accountNo: '000-0-00000-0',
     cashPlace: 'งานการเงิน ที่ทำการ อบต.',
     cashHours: 'จันทร์–ศุกร์ 08:30–16:30 น. (เว้นวันหยุดราชการ)',
+    // เบอร์ตัวอย่างของเดโม่ — ระบบจริงใช้ค่าที่ อบต. ตั้งไว้ (ว่าง = ไม่แสดงกล่อง)
+    contactPhone: '044-000-000',
     // URL scheme เปิดแอปธนาคาร — แอปเปิดขึ้นมาเฉยๆ ไม่กรอกยอดให้ (ธนาคารไม่มี deeplink กลาง) · ต้องทดสอบบนมือถือจริงทุกตัว
     banks: [
         { name: 'กสิกรไทย', short: 'K+', color: '#138F2D', scheme: 'kplus://' },
@@ -155,7 +166,7 @@ async function payApi(path, init) {
 function applyPayConfig(c) {
     Object.assign(PAYMENT, {
         promptpayId: c.promptpayId || '', promptpayType: c.promptpayType || 'mobile', payeeName: c.payeeName || '',
-        accountBank: c.accountBank || '', accountNo: c.accountNo || '', cashPlace: c.cashPlace || PAYMENT.cashPlace, cashHours: c.cashHours || PAYMENT.cashHours,
+        accountBank: c.accountBank || '', accountNo: c.accountNo || '', cashPlace: c.cashPlace || PAYMENT.cashPlace, cashHours: c.cashHours || PAYMENT.cashHours, contactPhone: c.contactPhone || '',
         demo: false,
     });
 }
@@ -628,6 +639,8 @@ const DEMO = {
         { id: 'INV-2569-10-002', payerType: 'stall', merchant: 'นางสาวศิริพร ทองดี', ref: 'LM-001', stall: 'A01', kind: 'ค่าขยะ', month: 'ตุลาคม 2569', due: 'ชำระแล้ว', amount: 30, status: 'confirmed' },
         { id: 'INV-2569-10-003', payerType: 'stall', merchant: 'นายประเสริฐ ศรีสุข', ref: 'LM-002', stall: 'A02', kind: 'ค่าเช่าแผง', month: 'ตุลาคม 2569', due: '31 ต.ค. 2569', amount: 1200, status: 'unpaid' },
         { id: 'INV-2569-10-004', payerType: 'stall', merchant: 'นายประเสริฐ ศรีสุข', ref: 'LM-002', stall: 'A02', kind: 'ค่าขยะ', month: 'ตุลาคม 2569', due: '31 ต.ค. 2569', amount: 30, status: 'unpaid' },
+        { id: 'INV-2569-10-037', payerType: 'stall', merchant: 'นายธนพล วงศ์ษา', ref: 'LM-004', stall: 'A04', kind: 'ค่าเช่าแผง', month: 'ตุลาคม 2569', due: '31 ต.ค. 2569', amount: 1200, status: 'unpaid' },
+        { id: 'INV-2569-10-038', payerType: 'stall', merchant: 'นายธนพล วงศ์ษา', ref: 'LM-004', stall: 'A04', kind: 'ค่าขยะ', month: 'ตุลาคม 2569', due: '31 ต.ค. 2569', amount: 30, status: 'unpaid' },
         { id: 'INV-2569-09-005', payerType: 'stall', merchant: 'นางอำไพ บุญรอด', ref: 'LM-003', stall: 'A03', kind: 'ค่าเช่าแผง', month: 'กันยายน 2569', due: '30 ก.ย. 2569', amount: 1200, status: 'unpaid' },
         { id: 'INV-2569-09-007', payerType: 'stall', merchant: 'นางอำไพ บุญรอด', ref: 'LM-003', stall: 'A03', kind: 'ค่าขยะ', month: 'กันยายน 2569', due: '30 ก.ย. 2569', amount: 30, status: 'unpaid' },
         { id: 'INV-2569-10-008', payerType: 'stall', merchant: 'นางอำไพ บุญรอด', ref: 'LM-003', stall: 'A03', kind: 'ค่าเช่าแผง', month: 'ตุลาคม 2569', due: '31 ต.ค. 2569', amount: 1200, status: 'unpaid' },
@@ -811,6 +824,7 @@ function renderNav() { nav.innerHTML = navItems().map(([id, ic, label]) => `<but
 // ---------- ต่อ API จริง: เลขล็อก + ชื่อผู้เช่า ต้องตรงกันจึงเห็นยอด ----------
 let verifiedName = '';
 let draftStall = '';
+let demoBillsAll = null;
 function toStallBill(x) {
     const cash = x.status === 'pending' && x.submittedMethod === 'cash';
     const status = x.status === 'pending' ? (cash ? 'cash' : 'pending') : x.status === 'mismatch' ? 'mismatch' : 'unpaid';
@@ -829,8 +843,13 @@ async function searchStallBills(name, stall) {
     }
     try {
         const r = await payApi(`/market/bills?stall=${encodeURIComponent(searchTerm)}&name=${encodeURIComponent(verifiedName)}`);
-        if (r === null)
-            return searchBills(searchTerm); // เดโม่: ไม่มี API ใช้ข้อมูลตัวอย่าง
+        if (r === null) { // เดโม่: ไม่มี API → กรองข้อมูลตัวอย่างให้ตรงทั้งรหัสแผงและชื่อ
+            demoBillsAll ?? (demoBillsAll = DEMO.bills);
+            DEMO.bills = demoBillsAll.filter((b) => b.payerType === 'stall' && b.stall?.toUpperCase() === searchTerm && demoNameKey(b.merchant) === demoNameKey(verifiedName));
+            if (!DEMO.bills.length)
+                toast('ไม่พบข้อมูลที่ตรงกัน กรุณาตรวจสอบชื่อและเลขล็อก/บ้านเลขที่ให้ตรงกับที่ลงทะเบียนไว้');
+            return render();
+        }
         DEMO.bills = (r.bills || []).map(toStallBill);
     }
     catch (e) {
@@ -882,7 +901,7 @@ function searchPage() {
     const matches = searchTerm ? DEMO.bills.filter(b => b.payerType === 'stall' && (PAYABLE.includes(b.status) || b.status === 'pending' || b.status === 'cash')).sort((a, b) => b.id.localeCompare(a.id)) : [];
     const shortcuts = searchTerm ? '' : `<div class="payment-shortcuts" style="grid-template-columns:1fr"><button class="payment-shortcut" type="button" onclick="openQrScanner()">${SHORTCUT_QR_ART}<b>สแกน QR ที่แผง</b><small>เปิดกล้องส่องรหัสบนแผง</small></button></div>`;
     const form = `<div class="page-heading with-photo"><h1>จ่ายค่าแผงตลาด</h1><p>ค้นหาด้วยชื่อผู้เช่าและรหัสแผงในช่องเดียว · ไม่ต้องเข้าสู่ระบบ</p></div><form class="search-card" onsubmit="event.preventDefault();searchStallFromForm()"><label for="sq">ชื่อ-นามสกุล แล้วต่อด้วยรหัสแผง</label><div class="search-row"><input id="sq" name="sq" value="${escapeHTML([verifiedName, draftStall].filter(Boolean).join(' '))}" placeholder="เช่น สมใจ ใจดี A06" autocomplete="name"><button type="submit">ค้นหา</button></div><p class="help">พิมพ์ชื่อผู้เช่าแล้วตามด้วยรหัสแผง · ผู้สมัครแผงลอยใช้รหัส OUT-xxxx ที่ได้รับ · ชื่อต้องตรงกับที่ลงทะเบียนไว้</p></form>`;
-    return form + shortcuts + billListHTML({ title: 'ค่าแผงตลาด', matches, promptText: 'พิมพ์ชื่อผู้เช่าตามด้วยรหัสแผง แล้วกดค้นหา', payerLabel: b => 'ล็อก ' + (b.stall || b.ref), chargeLabel: b => b.kind === 'ค่าขยะ' ? 'ค่าขยะแผง' : 'ค่าเช่าแผง' });
+    return form + shortcuts + billListHTML({ title: 'ค่าแผงตลาด', matches, promptText: 'พิมพ์ชื่อผู้เช่าตามด้วยรหัสแผง แล้วกดค้นหา', payerLabel: b => 'ล็อก ' + (b.stall || b.ref), chargeLabel: b => b.kind === 'ค่าขยะ' ? 'ค่าขยะแผง' : 'ค่าเช่าแผง' }) + contactFooterHTML();
 }
 const SHORTCUT_QR_ART = '<img class="shortcut-art shortcut-art-photo" src="/citizen-pay/shared/img/scan-qr-market.webp" width="600" height="386" alt="" aria-hidden="true">';
 const SHORTCUT_MAP_ART = '<img class="shortcut-art shortcut-art-photo" src="/citizen-pay/shared/img/pick-stall-map.webp" width="600" height="386" alt="" aria-hidden="true">';

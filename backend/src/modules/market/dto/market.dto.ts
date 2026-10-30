@@ -56,6 +56,8 @@ export class PayConfigDto {
   @IsOptional() @IsString() @MaxLength(30) accountNo?: string;
   @IsOptional() @IsString() @MaxLength(120) cashPlace?: string;
   @IsOptional() @IsString() @MaxLength(120) cashHours?: string;
+
+  @IsOptional() @IsString() @MaxLength(40) contactPhone?: string;
   @IsOptional() @IsNumber() @Min(0) wasteStallFee?: number;
   @IsOptional() @IsNumber() @Min(0) householdFee?: number;
 }

@@ -20,7 +20,7 @@ async function payApi<T>(path: string, init?: RequestInit): Promise<T | null> {
 function applyPayConfig(c: any): void {
   Object.assign(PAYMENT, {
     promptpayId: c.promptpayId || '', promptpayType: c.promptpayType || 'mobile', payeeName: c.payeeName || '',
-    accountBank: c.accountBank || '', accountNo: c.accountNo || '', cashPlace: c.cashPlace || PAYMENT.cashPlace, cashHours: c.cashHours || PAYMENT.cashHours,
+    accountBank: c.accountBank || '', accountNo: c.accountNo || '', cashPlace: c.cashPlace || PAYMENT.cashPlace, cashHours: c.cashHours || PAYMENT.cashHours, contactPhone: c.contactPhone || '',
     demo: false,
   });
 }
