@@ -402,7 +402,6 @@ function pickSlip(input) {
     slipPreviewUrl = URL.createObjectURL(f);
     renderPaymentModal();
 }
-/** หน้าที่ต่อ API จริงตั้งค่านี้: ส่งการแจ้งชำระของบิลที่เลือก (คืน true เมื่อสำเร็จ) · ไม่ตั้ง = ใช้ข้อมูลตัวอย่างในเครื่อง */
 let billSubmitter = null;
 function recordPayment(status, ref) {
     const all = loadPaymentRecords();
@@ -421,13 +420,14 @@ async function submitTransferPayment() {
     if (!slipFile)
         return toast('แนบรูปสลิปก่อนส่งค่ะ');
     if (billSubmitter) {
-        if (await billSubmitter(payBillIds, 'transfer', slipFile)) {
-            clearSlip();
-            resetSelection();
-            modal.close();
-            toast('ส่งสลิปแล้ว · รอเจ้าหน้าที่ตรวจสอบ');
-            render();
-        }
+        const res = await billSubmitter(payBillIds, 'transfer', slipFile);
+        if (!res)
+            return;
+        clearSlip();
+        resetSelection();
+        modal.close();
+        toast(res.status === 'paid' ? 'ตรวจสลิปผ่านแล้ว · ชำระเรียบร้อย' : res.reason ? `ส่งสลิปแล้ว · ${res.reason}` : 'ส่งสลิปแล้ว · รอเจ้าหน้าที่ตรวจสอบ');
+        render();
         return;
     }
     recordPayment('pending', newPaymentRef('TRF'));
@@ -440,7 +440,8 @@ async function submitTransferPayment() {
 async function submitCashPayment() {
     if (billSubmitter) {
         const total = payTotal();
-        if (!(await billSubmitter(payBillIds, 'cash', null)))
+        const res = await billSubmitter(payBillIds, 'cash', null);
+        if (!res)
             return;
         clearSlip();
         resetSelection();
@@ -672,22 +673,21 @@ function searchWasteFromForm() {
 /** ส่งการแจ้งชำระทีละบิล (แนบสลิปเฉพาะโอน) แล้วโหลดรายการใหม่ให้เห็นสถานะ */
 async function submitWasteBills(ids, method, slip) {
     try {
-        for (const id of ids) {
-            const fd = new FormData();
-            fd.append('method', method);
-            fd.append('name', verifiedName);
-            if (slip)
-                fd.append('slip', slip, slip.name);
-            const r = await payApi(`/waste/bills/${id}/submit`, { method: 'POST', body: fd });
-            if (r === null)
-                throw new Error('ส่งข้อมูลไม่ได้ ตรวจการเชื่อมต่อแล้วลองใหม่');
-        }
+        const fd = new FormData();
+        fd.append('billIds', ids.join(','));
+        fd.append('method', method);
+        fd.append('name', verifiedName);
+        if (slip)
+            fd.append('slip', slip, slip.name);
+        const r = await payApi('/waste/submit', { method: 'POST', body: fd });
+        if (r === null)
+            throw new Error('ส่งข้อมูลไม่ได้ ตรวจการเชื่อมต่อแล้วลองใหม่');
         await searchWasteBills(verifiedName, searchTerm);
-        return true;
+        return r;
     }
     catch (e) {
         toast(e.message);
-        return false;
+        return null;
     }
 }
 function searchFormHTML() {

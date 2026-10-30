@@ -50,19 +50,18 @@ function searchWasteFromForm() {
   void searchWasteBills(name, q);
 }
 /** ส่งการแจ้งชำระทีละบิล (แนบสลิปเฉพาะโอน) แล้วโหลดรายการใหม่ให้เห็นสถานะ */
-async function submitWasteBills(ids: string[], method: 'transfer' | 'cash', slip: File | null): Promise<boolean> {
+async function submitWasteBills(ids: string[], method: 'transfer' | 'cash', slip: File | null): Promise<{ status: 'paid' | 'pending'; reason?: string | null } | null> {
   try {
-    for (const id of ids) {
-      const fd = new FormData();
-      fd.append('method', method);
-      fd.append('name', verifiedName);
-      if (slip) fd.append('slip', slip, slip.name);
-      const r = await payApi<unknown>(`/waste/bills/${id}/submit`, { method: 'POST', body: fd });
-      if (r === null) throw new Error('ส่งข้อมูลไม่ได้ ตรวจการเชื่อมต่อแล้วลองใหม่');
-    }
+    const fd = new FormData();
+    fd.append('billIds', ids.join(','));
+    fd.append('method', method);
+    fd.append('name', verifiedName);
+    if (slip) fd.append('slip', slip, slip.name);
+    const r = await payApi<{ status: 'paid' | 'pending'; reason?: string | null }>('/waste/submit', { method: 'POST', body: fd });
+    if (r === null) throw new Error('ส่งข้อมูลไม่ได้ ตรวจการเชื่อมต่อแล้วลองใหม่');
     await searchWasteBills(verifiedName, searchTerm);
-    return true;
-  } catch (e) { toast((e as Error).message); return false; }
+    return r;
+  } catch (e) { toast((e as Error).message); return null; }
 }
 function searchFormHTML() {
   return `<div class="page-heading with-photo with-waste-photo"><h1>จ่ายค่าขยะ</h1><p>ค้นหาด้วยชื่อผู้รับบิลและบ้านเลขที่ · ไม่ต้องเข้าสู่ระบบ</p></div><form class="search-card" onsubmit="event.preventDefault();searchWasteFromForm()"><label for="wname">ชื่อ-นามสกุลผู้รับบิล</label><div class="search-row"><input id="wname" name="wname" value="${escapeHTML(verifiedName)}" placeholder="เช่น สมชาย ใจบุญ" autocomplete="name"></div><label for="query">บ้านเลขที่และหมู่ หรือเบอร์โทร</label><div class="search-row"><input id="query" name="query" value="${escapeHTML(draftQuery)}" placeholder="เช่น 18 หมู่ 2 · 081-000-0014"><button type="submit">ค้นหา</button></div><p class="help">ชื่อต้องตรงกับที่ลงทะเบียนไว้ จึงจะเห็นยอดค้าง</p></form>`;

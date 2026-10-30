@@ -118,7 +118,7 @@ export class MarketController {
   @ApiOperation({ summary: 'ตั้งค่ารับเงิน/ราคาค่าแผง-ค่าขยะ ของ อบต.' })
   @RequirePermissions({ module: 'market', action: 'read', subject: 'MarketBill' })
   getConfig(@CurrentUser('organizationId') orgId: string) {
-    return this.config.get(orgId);
+    return this.config.getForStaff(orgId);
   }
 
   @Put('config')

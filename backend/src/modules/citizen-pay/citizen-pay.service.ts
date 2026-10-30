@@ -1,6 +1,6 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository, FindOptionsWhere } from 'typeorm';
+import { In, Repository, FindOptionsWhere, DataSource } from 'typeorm';
 import { MarketStall } from '../../database/entities/market-stall.entity';
 import { MarketBill } from '../../database/entities/market-bill.entity';
 import { WasteBill } from '../../database/entities/waste-bill.entity';
@@ -9,6 +9,9 @@ import { MarketOutsideLocation } from '../../database/entities/market-outside.en
 import { StorageService } from '../storage/storage.service';
 import { OrganizationsService } from '../organizations/organizations.service';
 import { PayConfigService } from '../market/pay-config.service';
+import { PayConfig } from '../market/pay-config';
+import { nextReceiptNo } from '../market/receipt';
+import { verifySlip } from '../water/slip-verify';
 
 /** แปลงเลขไทยเป็นอารบิก แล้วตัดช่องว่างซ้ำ (ตรรกะเดียวกับ WasteService.search) */
 const normalize = (s: string) => s.replace(/[๐-๙]/g, (d) => String('๐๑๒๓๔๕๖๗๘๙'.indexOf(d))).replace(/\s+/g, ' ').trim();
@@ -18,6 +21,13 @@ export const maskName = (n: string | null) => {
   if (!n) return null;
   const [first, ...rest] = n.trim().split(/\s+/);
   return rest.length ? `${first} ${rest.join(' ').slice(0, 1)}***` : first;
+};
+/** ชื่อผู้รับในสลิปตรงกับชื่อบัญชี อบต. ไหม (ไม่สนคำนำหน้า/ช่องว่าง/เครื่องหมาย; ยอมให้ชื่อใดชื่อหนึ่งเป็นส่วนของอีกชื่อ) */
+const payeeLike = (payee: string, receiver: string) => {
+  const k = (v: string) => String(v || '').replace(/^(นางสาว|น\.ส\.|นาย|นาง|บริษัท|องค์การบริหารส่วนตำบล|อบต\.?)/g, '').replace(/[\s.()\-]/g, '').toLowerCase();
+  const a = k(payee), b = k(receiver);
+  if (!a || !b) return false;
+  return a === b || (a.length >= 4 && b.includes(a)) || (b.length >= 4 && a.includes(b));
 };
 const maskPhone = (p: string | null) => (p && p.length >= 9 ? `${p.slice(0, 3)}-xxx-${p.slice(-4)}` : null);
 
@@ -51,6 +61,7 @@ export class CitizenPayService {
     private readonly storage: StorageService,
     private readonly orgs: OrganizationsService,
     private readonly config: PayConfigService,
+    private readonly ds: DataSource,
   ) {}
 
   /** org จากโดเมน (1 อบต. = 1 โดเมน) → รหัสที่ส่งมา → ถ้ามี อบต. เดียวใช้อันนั้น */
@@ -68,7 +79,9 @@ export class CitizenPayService {
 
   async publicConfig(orgId: string) {
     const [org, cfg] = await Promise.all([this.orgRepo.findOne({ where: { id: orgId } }), this.config.get(orgId)]);
-    return { orgName: org?.nameTh ?? '', ...cfg };
+    // ไม่ส่งโทเคนตรวจสลิปออกไปหน้าประชาชน
+    const { slipToken, slipProvider, ...pub } = cfg;
+    return { orgName: org?.nameTh ?? '', ...pub };
   }
 
   /** ค้นบิลค่าขยะบ้านที่ยังไม่จ่าย — ต้องกรอก "ชื่อ" คู่กับ (บ้านเลขที่+หมู่ หรือ เบอร์โทร) และต้องตรงกัน · ค้นด้วยชื่ออย่างเดียวไม่ได้ */
@@ -120,21 +133,72 @@ export class CitizenPayService {
    * ประชาชนแจ้งชำระ: transfer = แนบสลิป (บังคับ) · cash = แจ้งว่าจะไปจ่ายเงินสดที่ อบต. (ไม่มีสลิป)
    * สถานะเป็น pending รอเจ้าหน้าที่ยืนยันเสมอ — ประชาชนทำให้เป็น paid เองไม่ได้
    */
-  async submit(orgId: string, type: 'market' | 'waste', id: string, method: string, name: string, file?: Express.Multer.File) {
+  /**
+   * ประชาชนแจ้งชำระหลายบิลในครั้งเดียว (ชื่อผู้รับบิลต้องตรงทุกใบ)
+   * - โอน: ตรวจสลิปอัตโนมัติ (ถ้าเจ้าหน้าที่เปิดไว้) ยอดตรง + บัญชีผู้รับเป็นของ อบต. + เลขอ้างอิงไม่ซ้ำ → ชำระให้ทันที
+   *   ไม่ผ่านเงื่อนไขใด → เข้าคิวรอเจ้าหน้าที่ตรวจพร้อมเหตุผล
+   * - เงินสด: เข้าคิวรอรับเงินที่ อบต. (ไม่มีสลิป)
+   */
+  async submitBills(orgId: string, type: 'market' | 'waste', ids: string[], method: string, name: string, file?: Express.Multer.File) {
     if (method !== 'transfer' && method !== 'cash') throw new BadRequestException('วิธีชำระไม่ถูกต้อง');
+    if (!ids.length) throw new BadRequestException('ไม่พบบิลที่เลือก');
+    if (ids.length > 24) throw new BadRequestException('แจ้งชำระได้ครั้งละไม่เกิน 24 บิล');
     if (method === 'transfer' && !file) throw new BadRequestException('กรุณาแนบรูปสลิปโอนเงิน');
     const repo = (type === 'market' ? this.marketBills : this.wasteBills) as Repository<MarketBill | WasteBill>;
-    const bill = await repo.findOne({ where: { id, organizationId: orgId } as FindOptionsWhere<MarketBill | WasteBill> });
-    const owner = type === 'market' ? (bill as MarketBill | null)?.payerName : (bill as WasteBill | null)?.holderName;
-    if (!bill || !nameMatches(owner ?? null, name)) throw new NotFoundException(NO_MATCH);
-    if (bill.status === 'paid') throw new ConflictException('บิลนี้ชำระแล้ว');
-    bill.slipUrl = file ? await this.storage.storeCitizenAttachment(file.buffer, file.mimetype, file.originalname, 'pay-slips') : null;
-    bill.submittedMethod = method;
-    bill.submittedAt = new Date();
-    bill.reviewNote = null;
-    bill.status = 'pending';
-    await repo.save(bill);
-    return { ok: true, status: bill.status };
+    const bills = (await repo.find({ where: ids.map((id) => ({ id, organizationId: orgId })) as FindOptionsWhere<MarketBill | WasteBill>[] })) as (MarketBill | WasteBill)[];
+    if (bills.length !== new Set(ids).size) throw new NotFoundException(NO_MATCH);
+    const ownerOf = (b: MarketBill | WasteBill) => (type === 'market' ? (b as MarketBill).payerName : (b as WasteBill).holderName);
+    if (bills.some((b) => !nameMatches(ownerOf(b), name))) throw new NotFoundException(NO_MATCH);
+    if (bills.some((b) => b.status === 'paid')) throw new ConflictException('มีบิลที่ชำระแล้วในรายการ');
+    const total = bills.reduce((s, b) => s + Number(b.amount), 0);
+    const slipUrl = file ? await this.storage.storeCitizenAttachment(file.buffer, file.mimetype, file.originalname, 'pay-slips') : null;
+    const now = new Date();
+
+    if (method === 'transfer') {
+      const cfg = await this.config.get(orgId);
+      const check = await this.checkSlip(cfg, file as Express.Multer.File, total);
+      if (check.ok) {
+        try {
+          await this.ds.transaction(async (em) => {
+            for (const b of bills) {
+              b.status = 'paid'; b.paidMethod = 'transfer'; b.paidAt = now; b.reviewNote = null;
+              b.slipUrl = slipUrl; b.submittedMethod = 'transfer'; b.submittedAt = now;
+              b.receiptNo = await nextReceiptNo(em, orgId, type === 'market' ? 'MK' : 'WS');
+            }
+            // เลขอ้างอิงสลิปเก็บที่บิลแรกใบเดียว (unique index กันสลิปเดิมถูกใช้ซ้ำ)
+            bills[0].slipTransRef = check.transRef;
+            await em.save(bills);
+          });
+          return { ok: true, status: 'paid' as const, count: bills.length };
+        } catch (e: any) {
+          if (String(e?.code) !== '23505') throw e;
+          return this.holdForReview(repo, bills, method, slipUrl, now, 'สลิปนี้ถูกใช้ชำระไปแล้ว');
+        }
+      }
+      return this.holdForReview(repo, bills, method, slipUrl, now, check.reason);
+    }
+    return this.holdForReview(repo, bills, method, null, now, null);
+  }
+
+  /** ตรวจสลิปกับผู้ให้บริการ + เทียบยอด/ผู้รับ/เลขอ้างอิง — คืน ok=false พร้อมเหตุผลถ้าไม่ผ่าน */
+  private async checkSlip(cfg: PayConfig, file: Express.Multer.File, total: number): Promise<{ ok: boolean; reason: string; transRef: string | null }> {
+    if (!cfg.slipProvider || !cfg.slipToken) return { ok: false, reason: 'ยังไม่ได้เปิดตรวจสลิปอัตโนมัติ เจ้าหน้าที่จะตรวจให้', transRef: null };
+    const r = await verifySlip(cfg.slipProvider, cfg.slipToken, file.buffer, file.mimetype);
+    if (!r.ok) return { ok: false, reason: `ตรวจสลิปไม่ผ่าน: ${r.error || 'อ่านสลิปไม่ได้'}`, transRef: null };
+    if (Math.abs((r.amount ?? 0) - total) > 0.009) return { ok: false, reason: `ยอดในสลิป ${r.amount ?? '-'} บาท ไม่ตรงกับยอดที่ต้องชำระ ${total} บาท`, transRef: null };
+    if (cfg.payeeName && !(r.receiverName && payeeLike(cfg.payeeName, r.receiverName))) return { ok: false, reason: 'บัญชีผู้รับในสลิปไม่ใช่บัญชีของ อบต.', transRef: null };
+    if (!r.transRef) return { ok: false, reason: 'ไม่พบเลขอ้างอิงในสลิป', transRef: null };
+    return { ok: true, reason: '', transRef: r.transRef };
+  }
+
+  /** เข้าคิวให้เจ้าหน้าที่ตรวจ (สลิปโอนที่ตรวจไม่ผ่าน หรือแจ้งเงินสด) */
+  private async holdForReview(repo: Repository<MarketBill | WasteBill>, bills: (MarketBill | WasteBill)[], method: string, slipUrl: string | null, now: Date, reason: string | null) {
+    for (const b of bills) {
+      b.status = 'pending'; b.submittedMethod = method; b.submittedAt = now; b.slipUrl = slipUrl;
+      b.reviewNote = reason ? reason.slice(0, 300) : null;
+    }
+    await repo.save(bills);
+    return { ok: true, status: 'pending' as const, count: bills.length, reason };
   }
 
   /** จองแผงว่างจากหน้าประชาชน → สถานะ "จอง" รอเจ้าหน้าที่ยืนยัน (กันแย่งกันจองด้วยอัปเดตแบบมีเงื่อนไข status='available') */

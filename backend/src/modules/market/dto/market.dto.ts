@@ -48,6 +48,9 @@ export class GenerateBillsDto {
 export class PayConfigDto {
   @IsOptional() @IsString() @MaxLength(20) promptpayId?: string;
   @IsOptional() @IsIn(['mobile', 'natid', 'ewallet']) promptpayType?: 'mobile' | 'natid' | 'ewallet';
+  @IsOptional() @IsIn(['', 'slip2go', 'easyslip', 'slipok']) slipProvider?: string;
+  /** โทเคนตรวจสลิป: ไม่ส่ง = คงเดิม · ส่งค่าว่าง = ลบ */
+  @IsOptional() @IsString() @MaxLength(300) slipToken?: string;
   @IsOptional() @IsString() @MaxLength(120) payeeName?: string;
   @IsOptional() @IsString() @MaxLength(60) accountBank?: string;
   @IsOptional() @IsString() @MaxLength(30) accountNo?: string;

@@ -9,6 +9,7 @@ import { Field, Panel, inputCls } from './pay-ui';
 export type PayConfig = {
   promptpayId: string; promptpayType: 'mobile' | 'natid' | 'ewallet'; payeeName: string; accountBank: string; accountNo: string;
   cashPlace: string; cashHours: string; wasteStallFee: number; householdFee: number;
+  slipProvider: string; slipTokenSet: boolean;
 };
 
 /**
@@ -21,9 +22,15 @@ export function PaySettings({ kind, canManage }: { kind: 'market' | 'waste'; can
   // ค่าที่แก้ค้างไว้ก่อนบันทึก (ยังไม่แก้ = ใช้ค่าจากเซิร์ฟเวอร์)
   const [draft, setDraft] = useState<PayConfig | null>(null);
   const f = draft ?? data ?? null;
+  // โทเคนตรวจสลิป: กรอกเฉพาะตอนจะตั้งใหม่ (ไม่ส่ง = คงของเดิม)
+  const [token, setToken] = useState('');
 
   const save = useMutation({
-    mutationFn: (body: PayConfig) => api.put(`/${kind}/config`, body),
+    mutationFn: (body: PayConfig) => {
+      const { slipTokenSet, ...rest } = body;
+      void slipTokenSet;
+      return api.put(`/${kind}/config`, token.trim() ? { ...rest, slipToken: token.trim() } : rest);
+    },
     onSuccess: () => { toast.success('บันทึกการตั้งค่าแล้ว'); qc.invalidateQueries({ queryKey: ['pay-config'] }); },
     onError: (e) => toast.error(getErrorMessage(e)),
   });
@@ -63,6 +70,21 @@ export function PaySettings({ kind, canManage }: { kind: 'market' | 'waste'; can
           <Field label="ธนาคาร"><input className={inputCls} disabled={dis} value={f.accountBank} onChange={(e) => set('accountBank', e.target.value)} /></Field>
           <Field label="เลขบัญชี"><input className={inputCls} disabled={dis} value={f.accountNo} onChange={(e) => set('accountNo', e.target.value)} /></Field>
         </div>
+      </Panel>
+
+      <Panel title="ตรวจสลิปโอนเงินอัตโนมัติ">
+        <div className="grid gap-4 p-4 sm:grid-cols-2">
+          <Field label="ผู้ให้บริการตรวจสลิป" hint="ไม่เลือก = เจ้าหน้าที่ตรวจสลิปเอง · ผ่านเมื่อยอดตรง บัญชีผู้รับเป็นของ อบต. และสลิปไม่ซ้ำ">
+            <select className={inputCls} disabled={dis} value={f.slipProvider} onChange={(e) => set('slipProvider', e.target.value)}>
+              <option value="">ไม่ใช้ (ตรวจเอง)</option>
+              <option value="slip2go">Slip2Go</option>
+            </select>
+          </Field>
+          <Field label="โทเคน Slip2Go" hint={f.slipTokenSet ? 'ตั้งค่าแล้ว · กรอกใหม่เพื่อเปลี่ยน' : 'ยังไม่ได้ตั้งค่า'}>
+            <input type="password" autoComplete="off" className={inputCls} disabled={dis} value={token} onChange={(e) => setToken(e.target.value)} placeholder={f.slipTokenSet ? '••••••••' : 'วางโทเคนที่นี่'} />
+          </Field>
+        </div>
+        <p className="border-t border-gray-100 px-4 py-3 text-xs text-gray-500">โทเคนเก็บเป็นความลับ ไม่แสดงให้ประชาชน · ชื่อบัญชีด้านบนใช้ตรวจว่าเงินเข้า อบต. จริง</p>
       </Panel>
 
       <Panel title="จ่ายเงินสดที่ อบต.">
