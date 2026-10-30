@@ -677,3 +677,5 @@
 .home-back{display:inline-block;margin:4px 2px 8px;font-size:14px;font-weight:600;color:var(--forest,#1f6b4a);text-decoration:none;min-height:36px;line-height:36px}.home-back:hover{text-decoration:underline}
 
 .staff-manage-links{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 14px}.staff-manage-btn{display:inline-flex;align-items:center;min-height:40px;padding:0 16px;border-radius:12px;background:#0b6b4f;color:#fff;font-weight:600;text-decoration:none}.staff-manage-btn:hover{filter:brightness(1.08)}
+
+.choice-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:start}.choice-grid .choice-card{margin-bottom:0;padding:6px;border-radius:14px}.choice-grid .choice-card img{width:100%;border-radius:9px}
