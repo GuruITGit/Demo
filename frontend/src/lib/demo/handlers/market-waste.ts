@@ -103,6 +103,14 @@ function syncCitizenOutside(db: Ctx['db']) {
     localStorage.setItem(CITIZEN_OUTSIDE_KEY, JSON.stringify(rows));
   } catch { /* เบราว์เซอร์ไม่ให้เขียน = ข้าม */ }
 }
+/** เดโม่: สถานะแผงทั้งหมดให้หน้าประชาชน (origin เดียวกัน) อ่านชุดเดียวกับเจ้าหน้าที่ — เรียกทุกครั้งที่หน้าเจ้าหน้าที่โหลดรายการแผง */
+function syncCitizenStalls(db: Ctx['db']) {
+  try {
+    const rows = db.marketStalls.filter((s) => s.active && s.organizationId === ORG_ID)
+      .map((s) => ({ stallCode: s.stallCode, zone: s.zone, status: s.status, monthlyRate: Number(s.monthlyRate) || 0 }));
+    localStorage.setItem('lamplaimat:demo-stalls', JSON.stringify(rows));
+  } catch { /* เขียนไม่ได้ = ข้าม */ }
+}
 const cfg = (c: Ctx) => c.db.payConfig[0] as Row;
 const one = (list: Row[], pred: (r: Row) => boolean, msg: string): Row => { const r = list.find(pred); if (!r) throw notFound(msg); return r; };
 const byIdOrThrow = (list: Row[], id: string, msg: string) => one(list, (r) => r.id === id && r.organizationId === ORG_ID, msg);
@@ -221,7 +229,7 @@ function absorbCitizen(db: Ctx['db']) {
     notify(db, staff, { type: 'market:outside_applied', title: 'มีใบสมัครแผงลอยใหม่', body: `${a.appCode} · ${loc.name} · ${a.name} · โทร ${a.phone}`, actionUrl: '/market' });
     changed = true;
   }
-  if (changed) persist();
+  if (changed) { persist(); syncCitizenStalls(db); }
 }
 const reservations = (db: Ctx['db']) => db.marketStalls
   .filter((s) => s.active && s.organizationId === ORG_ID && s.status === 'reserved')
@@ -287,6 +295,7 @@ post('/market/outside/applications/:id/reject', (c) => {
 get('/market/stalls', (c) => {
   needPerm(c, 'market:read:MarketStall');
   absorbCitizen(c.db);
+  syncCitizenStalls(c.db);
   return c.db.marketStalls.filter((s) => s.active && s.organizationId === ORG_ID).sort((a, b) => a.stallCode.localeCompare(b.stallCode));
 });
 
@@ -341,6 +350,7 @@ patch('/market/stalls/:id', (c) => {
   if (b.tenantName !== undefined) s.tenantName = b.tenantName || null;
   if (b.monthlyRate !== undefined) s.monthlyRate = String(Number(b.monthlyRate) || 0);
   if (s.status === 'available') { s.tenantName = null; s.contactPhone = null; s.reservedAt = null; }
+  syncCitizenStalls(c.db); // ยืนยัน/ปฏิเสธ/คืนว่าง → หน้าประชาชนเห็นสถานะใหม่
   return s;
 });
 
@@ -418,6 +428,7 @@ get('/market/bills/:id/receipt', (c) => {
 
 get('/market/summary', (c) => {
   absorbPayments(c.db);
+  absorbCitizen(c.db); // ภาพรวมต้องนับการจองใหม่จากหน้าประชาชนด้วย
   needPerm(c, 'market:read:MarketBill');
   const per = c.query.period || null;
   const bills = c.db.marketBills.filter((b) => !per || b.period === per);
