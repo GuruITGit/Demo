@@ -16,7 +16,7 @@ import { MarketOutside } from './market-outside';
 
 type Stall = {
   id: string; stallCode: string; zone: string; status: 'available' | 'reserved' | 'occupied';
-  tenantName: string | null; contactPhone: string | null; reservedAt: string | null; monthlyRate: string;
+  tenantName: string | null; contactPhone: string | null; reservedAt: string | null; monthlyRate: string; reserveCardUrl?: string | null;
 };
 type Summary = {
   byStatus: { status: string; count: number; total: number }[];
@@ -210,7 +210,7 @@ function Plan({ canManage, onBills }: { canManage: boolean; onBills: (code: stri
               <li key={s.id} className="flex flex-wrap items-center gap-3 border-t border-gray-100 px-4 py-3 first:border-t-0">
                 <div className="min-w-0 flex-1">
                   <p className="font-semibold">แผง {s.stallCode} <span className="font-normal text-gray-500">· {s.tenantName}</span></p>
-                  <p className="text-sm text-gray-500">โทร {s.contactPhone || '—'}{s.reservedAt ? ` · จองเมื่อ ${new Date(s.reservedAt).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' })}` : ''}</p>
+                  <p className="text-sm text-gray-500">โทร {s.contactPhone || '—'}{s.reserveCardUrl ? <> · <a href={s.reserveCardUrl} target="_blank" rel="noreferrer" className="text-sky-700 underline">ดูรูปบัตรประชาชน</a></> : ' · ไม่ได้แนบบัตร'}{s.reservedAt ? ` · จองเมื่อ ${new Date(s.reservedAt).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' })}` : ''}</p>
                 </div>
                 {canManage && (
                   <div className="flex gap-2">

@@ -916,12 +916,82 @@ function pickIdCard(input) { const f = input.files?.[0]; input.value = ''; if (!
     return; if (!f.type.startsWith('image/'))
     return toast('แนบได้เฉพาะรูปภาพ'); if (f.size > 10 * 1024 * 1024)
     return toast('รูปใหญ่เกิน 10 MB'); clearIdCard(); idCardFile = f; idCardUrl = URL.createObjectURL(f); refreshIdCardField(); }
+// สถานะแผงจากระบบจริง (ว่าง/จอง/มีผู้เช่า) — รีเฟรชทุก 2 วินาที และวาดใหม่เฉพาะตอนมีการเปลี่ยนแปลง
+let stallSig = '';
+let apiOnline = false;
+async function refreshStalls(force = false) {
+    try {
+        const r = await fetch('/v1/citizen/pay/market/stalls', { cache: 'no-store' });
+        if (!r.ok) {
+            apiOnline = false;
+            return;
+        }
+        const j = await r.json();
+        if (!Array.isArray(j?.data)) {
+            apiOnline = false;
+            return;
+        }
+        apiOnline = true;
+        const rows = j.data;
+        const sig = JSON.stringify(rows);
+        if (sig === stallSig && !force)
+            return;
+        const ae = document.activeElement;
+        if (!force && ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName))
+            return;
+        stallSig = sig;
+        DEMO.stalls = rows.map(x => ({ id: x.stallCode, row: x.zone, active: true, status: x.status, rentRate: Number(x.monthlyRate) || 0 }));
+        const zones = [...new Set(rows.map(x => x.zone))];
+        DEMO.planRows = zones.map(z => ({ id: z, count: rows.filter(x => x.zone === z).length, monthlyRate: Number(rows.find(x => x.zone === z)?.monthlyRate) || 0 }));
+        render();
+    }
+    catch {
+        apiOnline = false;
+    }
+}
+/** จองแผงว่างผ่านระบบจริง: ส่งชื่อ เบอร์ และรูปบัตร → เจ้าหน้าที่ได้แจ้งเตือน */
+async function reserveStallOnline(form, stall) {
+    const fd = new FormData();
+    fd.append('name', form.querySelector('[name=name]')?.value || '');
+    fd.append('phone', form.querySelector('[name=phone]')?.value || '');
+    if (idCardFile)
+        fd.append('idCard', idCardFile, idCardFile.name);
+    try {
+        const r = await fetch(`/v1/citizen/pay/market/stalls/${encodeURIComponent(stall.id)}/reserve`, { method: 'POST', body: fd });
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok || j.success === false) {
+            toast(j?.error?.message || 'จองแผงไม่สำเร็จ');
+            if (r.status === 409) {
+                signupStallId = null;
+                setPage('stalls');
+            }
+            await refreshStalls(true);
+            return;
+        }
+        form.reset();
+        clearIdCard();
+        signupDraft.name = '';
+        signupDraft.phone = '';
+        signupStallId = null;
+        signupLocationId = null;
+        selectedStall = null;
+        toast(`จองแผง ${stall.id} แล้ว · รอเจ้าหน้าที่ยืนยัน`);
+        await refreshStalls(true);
+        setPage('stalls');
+    }
+    catch {
+        toast('เชื่อมต่อระบบไม่ได้ ลองใหม่อีกครั้ง');
+    }
+}
 function submitRegistration(event) { event.preventDefault(); const form = event.currentTarget; if (!form.reportValidity())
     return; if (!idCardFile) {
     toast('แนบรูปบัตรประชาชนก่อนส่งใบสมัครค่ะ');
     document.getElementById('idCardPreview')?.scrollIntoView({ block: 'center' });
     return;
-} const stallId = signupStallId; const stall = stallId && findStall(stallId); if (stallId && (!stall || stall.active === false || stall.status !== 'available' || (stall.outside && !outsideLocationIsOpen(stall.locationId)))) {
+} const stallId = signupStallId; const stall = stallId && findStall(stallId); if (stall && !stall.outside && apiOnline) {
+    void reserveStallOnline(form, stall);
+    return;
+} if (stallId && (!stall || stall.active === false || stall.status !== 'available' || (stall.outside && !outsideLocationIsOpen(stall.locationId)))) {
     signupStallId = null;
     toast('ล็อกนี้มีผู้จองแล้ว กรุณาเลือกแผงใหม่');
     setPage('stalls');
@@ -971,10 +1041,13 @@ async function refreshOutside() { try {
 catch { } }
 window.addEventListener('storage', (e) => { if (e.key === OUTSIDE_KEY)
     void refreshOutside(); });
-setInterval(() => { if (document.visibilityState === 'visible')
-    void refreshOutside(); }, 2000);
+setInterval(() => { if (document.visibilityState === 'visible') {
+    void refreshOutside();
+    void refreshStalls();
+} }, 2000);
 render();
 void refreshOutside();
+void refreshStalls();
 // ถ้าเข้าถึงระบบจริงได้: ใช้ช่องทางรับเงินจริงและส่งการแจ้งชำระเข้าระบบ
 (async () => { const c = await payApi("/config").catch(() => null); if (c) {
     applyPayConfig(c);

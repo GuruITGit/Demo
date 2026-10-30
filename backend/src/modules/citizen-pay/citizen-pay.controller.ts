@@ -23,7 +23,8 @@ class SubmitDto {
 // rate-limit ในหน่วยความจำต่อ IP — ค้นบิลของคนอื่นต้องไม่ถูกไล่เดาถี่ ๆ (เหมือนหน้า checkbill/แจ้งเรื่อง)
 const HITS = new Map<string, number[]>();
 const WINDOW_MS = 60_000;
-const MAX_HITS = 40;
+// หน้าประชาชนดึงสถานะแผง/จุดแผงลอยทุก 2 วินาที (ต่อ IP) จึงตั้งโควตาทั่วไปไว้สูง — การยืนยันชื่อ (strict) ยังจำกัดเข้มงวดแยก
+const MAX_HITS = 300;
 function rateLimit(ip: string, max = MAX_HITS, bucket = '') {
   const now = Date.now();
   const key = bucket + ip;
@@ -66,6 +67,17 @@ export class CitizenPayController {
     return this.service.wasteBillsFor(await this.org(req, org, true), q, name);
   }
 
+  @Post('market/stalls/:code/reserve')
+  @ApiOperation({ summary: 'จองแผงว่าง (แนบรูปบัตรประชาชนได้) — รอเจ้าหน้าที่ยืนยัน และแจ้งเจ้าหน้าที่' })
+  @UseInterceptors(FileInterceptor('idCard', {
+    storage: memoryStorage(),
+    limits: { fileSize: 5 * 1024 * 1024, files: 1 },
+    fileFilter: (_req, file, cb) => /^image\//.test(file.mimetype) ? cb(null, true) : cb(new BadRequestException('แนบได้เฉพาะรูปภาพ') as any, false),
+  }))
+  async reserve(@Req() req: Request, @Param('code') code: string, @UploadedFile() card: Express.Multer.File | undefined, @Body() dto: ReserveDto) {
+    return this.service.reserve(await this.org(req, dto.org, true), code, dto.name, dto.phone, card);
+  }
+
   @Get('market/outside')
   @ApiOperation({ summary: 'จุดแผงลอยที่เปิดให้เช่า (สาธารณะ)' })
   async outside(@Req() req: Request, @Query('org') org?: string) {
@@ -84,11 +96,6 @@ export class CitizenPayController {
     return this.service.marketBillsFor(await this.org(req, org, true), stall, name);
   }
 
-  @Post('market/stalls/:code/reserve')
-  @ApiOperation({ summary: 'จองแผงว่าง (รอเจ้าหน้าที่ยืนยัน)' })
-  async reserve(@Req() req: Request, @Param('code') code: string, @Body() dto: ReserveDto) {
-    return this.service.reserve(await this.org(req, dto.org), code, dto.name, dto.phone);
-  }
 
   @Post(':type/submit')
   @ApiOperation({ summary: 'แจ้งชำระหลายบิลพร้อมกัน: โอน (แนบสลิป → ตรวจอัตโนมัติ) หรือเงินสด (รอรับที่ อบต.)' })

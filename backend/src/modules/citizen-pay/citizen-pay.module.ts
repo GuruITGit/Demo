@@ -8,11 +8,12 @@ import { MarketOutsideLocation } from '../../database/entities/market-outside.en
 import { StorageModule } from '../storage/storage.module';
 import { OrganizationsModule } from '../organizations/organizations.module';
 import { MarketModule } from '../market/market.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { CitizenPayService } from './citizen-pay.service';
 import { CitizenPayController } from './citizen-pay.controller';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([MarketStall, MarketBill, WasteBill, Organization, MarketOutsideLocation]), StorageModule, OrganizationsModule, MarketModule],
+  imports: [TypeOrmModule.forFeature([MarketStall, MarketBill, WasteBill, Organization, MarketOutsideLocation]), StorageModule, OrganizationsModule, MarketModule, NotificationsModule],
   controllers: [CitizenPayController],
   providers: [CitizenPayService],
 })

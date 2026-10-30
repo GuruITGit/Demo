@@ -12,6 +12,8 @@ import { PayConfigService } from '../market/pay-config.service';
 import { PayConfig } from '../market/pay-config';
 import { nextReceiptNo } from '../market/receipt';
 import { verifySlip } from '../water/slip-verify';
+import { NotificationsService } from '../notifications/notifications.service';
+import { notifyUsersWithPermission } from '../../common/notify-permission';
 
 /** แปลงเลขไทยเป็นอารบิก แล้วตัดช่องว่างซ้ำ (ตรรกะเดียวกับ WasteService.search) */
 const normalize = (s: string) => s.replace(/[๐-๙]/g, (d) => String('๐๑๒๓๔๕๖๗๘๙'.indexOf(d))).replace(/\s+/g, ' ').trim();
@@ -62,6 +64,7 @@ export class CitizenPayService {
     private readonly orgs: OrganizationsService,
     private readonly config: PayConfigService,
     private readonly ds: DataSource,
+    private readonly notifications: NotificationsService,
   ) {}
 
   /** org จากโดเมน (1 อบต. = 1 โดเมน) → รหัสที่ส่งมา → ถ้ามี อบต. เดียวใช้อันนั้น */
@@ -169,6 +172,7 @@ export class CitizenPayService {
             bills[0].slipTransRef = check.transRef;
             await em.save(bills);
           });
+          await this.notifyPayment(bills, 'paid', null);
           return { ok: true, status: 'paid' as const, count: bills.length };
         } catch (e: any) {
           if (String(e?.code) !== '23505') throw e;
@@ -198,20 +202,46 @@ export class CitizenPayService {
       b.reviewNote = reason ? reason.slice(0, 300) : null;
     }
     await repo.save(bills);
+    await this.notifyPayment(bills, 'pending', reason);
     return { ok: true, status: 'pending' as const, count: bills.length, reason };
   }
 
-  /** จองแผงว่างจากหน้าประชาชน → สถานะ "จอง" รอเจ้าหน้าที่ยืนยัน (กันแย่งกันจองด้วยอัปเดตแบบมีเงื่อนไข status='available') */
-  async reserve(orgId: string, stallCode: string, name: string, phone: string) {
+  /** จองแผงว่างจากหน้าประชาชน → สถานะ "จอง" รอเจ้าหน้าที่ยืนยัน (อัปเดตแบบมีเงื่อนไข กันแย่งกันจอง) + แจ้งเจ้าหน้าที่ */
+  async reserve(orgId: string, stallCode: string, name: string, phone: string, card?: Express.Multer.File) {
     const n = (name || '').trim();
     const p = (phone || '').replace(/[\s-]/g, '');
     if (n.length < 2 || n.length > 200) throw new BadRequestException('กรุณากรอกชื่อ-นามสกุล');
     if (!/^0\d{8,9}$/.test(p)) throw new BadRequestException('เบอร์โทรไม่ถูกต้อง');
+    const code = (stallCode || '').trim().toUpperCase();
+    const stall = await this.stalls.findOne({ where: { organizationId: orgId, stallCode: code, active: true } });
+    if (!stall) throw new NotFoundException('ไม่พบแผงนี้');
+    if (stall.status !== 'available') throw new ConflictException('แผงนี้ไม่ว่างแล้ว กรุณาเลือกแผงอื่น');
+    const cardUrl = card ? await this.storage.storeCitizenAttachment(card.buffer, card.mimetype, card.originalname, 'stall-cards') : null;
     const r = await this.stalls.update(
-      { organizationId: orgId, stallCode: (stallCode || '').trim().toUpperCase(), status: 'available', active: true },
-      { status: 'reserved', tenantName: n, contactPhone: p, reservedAt: new Date() },
+      { organizationId: orgId, stallCode: code, status: 'available', active: true },
+      { status: 'reserved', tenantName: n, contactPhone: p, reservedAt: new Date(), reserveCardUrl: cardUrl },
     );
     if (!r.affected) throw new ConflictException('แผงนี้ไม่ว่างแล้ว กรุณาเลือกแผงอื่น');
-    return { ok: true };
+    await notifyUsersWithPermission(this.ds, this.notifications, orgId, { module: 'market', action: 'manage', subject: 'MarketStall' }, {
+      type: 'market:reserved', title: 'มีการจองแผงใหม่', body: `แผง ${code} · ${n} · โทร ${p} — รอยืนยัน`,
+      actionUrl: '/market', refType: 'market_stall', refId: stall.id,
+    });
+    return { ok: true, stallCode: code };
+  }
+
+  /** แจ้งเจ้าหน้าที่ที่มีสิทธิ์ตรวจ เมื่อประชาชนแจ้งชำระ (ชำระแล้วอัตโนมัติ หรือรอตรวจ) */
+  private async notifyPayment(bills: (MarketBill | WasteBill)[], status: 'paid' | 'pending', reason: string | null) {
+    if (!bills.length) return;
+    const first = bills[0];
+    const isMarket = 'stallCode' in first;
+    const who = isMarket ? `แผง ${(first as MarketBill).stallCode}` : `บ้านเลขที่ ${(first as WasteBill).houseNo} หมู่ ${Number((first as WasteBill).moo)}`;
+    const total = bills.reduce((s, b) => s + Number(b.amount), 0);
+    const perm = isMarket ? { module: 'market', action: 'manage', subject: 'MarketBill' } : { module: 'waste', action: 'manage', subject: 'WasteBill' };
+    const notice = status === 'paid'
+      ? { type: isMarket ? 'market:paid' : 'waste:paid', title: 'ตรวจสลิปผ่านและชำระแล้ว', body: `${who} · ${bills.length} รายการ · ${total} บาท` }
+      : { type: isMarket ? 'market:pending' : 'waste:pending', title: 'มีการแจ้งชำระรอตรวจ', body: `${who} · ${bills.length} รายการ · ${total} บาท${reason ? ' — ' + reason : ''}` };
+    await notifyUsersWithPermission(this.ds, this.notifications, first.organizationId, perm, {
+      ...notice, actionUrl: isMarket ? '/market' : '/waste', refType: isMarket ? 'market_bill' : 'waste_bill', refId: first.id,
+    });
   }
 }

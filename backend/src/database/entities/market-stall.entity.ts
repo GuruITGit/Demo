@@ -46,6 +46,10 @@ export class MarketStall {
   @Column({ name: 'reserved_at', type: 'timestamptz', nullable: true })
   reservedAt: Date | null;
 
+  /** รูปบัตรประชาชนที่ผู้จองแนบ (ใช้ตรวจก่อนยืนยัน) */
+  @Column({ name: 'reserve_card_url', type: 'text', nullable: true })
+  reserveCardUrl: string | null;
+
   @Column({ type: 'boolean', default: true })
   active: boolean;
 
