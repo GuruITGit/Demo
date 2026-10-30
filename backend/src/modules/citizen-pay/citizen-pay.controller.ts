@@ -64,6 +64,12 @@ export class CitizenPayController {
     return this.service.wasteBillsFor(await this.org(req, org, true), q, name);
   }
 
+  @Get('market/outside')
+  @ApiOperation({ summary: 'จุดแผงลอยที่เปิดให้เช่า (สาธารณะ)' })
+  async outside(@Req() req: Request, @Query('org') org?: string) {
+    return this.service.outsideLocations(await this.org(req, org));
+  }
+
   @Get('market/stalls')
   @ApiOperation({ summary: 'ผังแผงตลาด (ไม่มีชื่อผู้เช่า)' })
   async stalls(@Req() req: Request, @Query('org') org?: string) {

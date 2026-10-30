@@ -5,6 +5,7 @@ import { MarketStall } from '../../database/entities/market-stall.entity';
 import { MarketBill } from '../../database/entities/market-bill.entity';
 import { WasteBill } from '../../database/entities/waste-bill.entity';
 import { Organization } from '../../database/entities/organization.entity';
+import { MarketOutsideLocation } from '../../database/entities/market-outside.entity';
 import { StorageService } from '../storage/storage.service';
 import { OrganizationsService } from '../organizations/organizations.service';
 import { PayConfigService } from '../market/pay-config.service';
@@ -46,6 +47,7 @@ export class CitizenPayService {
     @InjectRepository(MarketBill) private readonly marketBills: Repository<MarketBill>,
     @InjectRepository(WasteBill) private readonly wasteBills: Repository<WasteBill>,
     @InjectRepository(Organization) private readonly orgRepo: Repository<Organization>,
+    @InjectRepository(MarketOutsideLocation) private readonly outsideLocs: Repository<MarketOutsideLocation>,
     private readonly storage: StorageService,
     private readonly orgs: OrganizationsService,
     private readonly config: PayConfigService,
@@ -89,6 +91,12 @@ export class CitizenPayService {
   }
 
   /** ผังแผงสาธารณะ: รหัส/โซน/สถานะ/ค่าเช่า เท่านั้น — ไม่มีชื่อผู้เช่า */
+  /** จุดแผงลอยที่เปิดให้เช่าอยู่ (เฉพาะที่เจ้าหน้าที่เปิดไว้และยังไม่ถูกลบ) */
+  async outsideLocations(orgId: string) {
+    const rows = await this.outsideLocs.find({ where: { organizationId: orgId, active: true, enabled: true }, order: { createdAt: 'ASC' } });
+    return rows.map((l) => ({ id: l.id, name: l.name, rentRate: Number(l.rentRate), rentPeriod: l.rentPeriod === 'monthly' ? 'monthly' : 'daily' }));
+  }
+
   async marketStalls(orgId: string) {
     const rows = await this.stalls.find({ where: { organizationId: orgId, active: true }, order: { zone: 'ASC', stallCode: 'ASC' } });
     return rows.map((s) => ({ stallCode: s.stallCode, zone: s.zone, status: s.status, monthlyRate: Number(s.monthlyRate) }));
