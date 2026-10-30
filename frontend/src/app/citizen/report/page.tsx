@@ -86,33 +86,46 @@ function ReportForm() {
     } catch { /* เดาไม่ได้ก็ไม่เป็นไร ยังมีพิกัดอยู่ดี */ }
   };
 
+  // กด GPS แล้วเปิดแผนที่เสมอ: ถ้าอ่านตำแหน่งไม่ได้/ค้าง (สิทธิ์ไม่ให้, เบราว์เซอร์ไม่รองรับ, ไม่ตอบ) ใช้จุดเดิมหรือจุดกลางตำบลแทน
   const openMap = () => {
     setMapOpen(true);
     setGpsBusy(true);
+    let started = false;
+    let watchdog: ReturnType<typeof setTimeout> | undefined;
     const start = (center: [number, number]) => {
+      if (started) return;
+      started = true;
+      clearTimeout(watchdog);
       setGpsBusy(false);
       // สร้างแผนที่หลัง div เรนเดอร์แล้ว (mapOpen เปลี่ยนเป็น true ก่อนหน้านี้ 1 tick)
       requestAnimationFrame(async () => {
         if (!mapEl.current) return;
-        const L = (await import('leaflet')).default;
-        if (mapRef.current) mapRef.current.remove();
-        const map = L.map(mapEl.current, { preferCanvas: true }).setView(center, 17);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(map);
-        mapRef.current = map;
-        // ขนาด container อาจยังคำนวณไม่นิ่งตอนเพิ่งโผล่ (โดยเฉพาะมือถือ) — บังคับคำนวณใหม่กันแผนที่เพี้ยน/ลากไม่ลื่น
-        setTimeout(() => map.invalidateSize(), 150);
-        // หยุดลาก/ซูมเมื่อไหร่ก็บันทึกจุดกึ่งกลางทันที (จุดเริ่มต้นก็บันทึกไว้ก่อนเลยด้วย)
-        map.on('moveend', () => { const c = map.getCenter(); saveCenter(c.lat, c.lng); });
-        saveCenter(center[0], center[1]);
+        try {
+          const L = (await import('leaflet')).default;
+          if (mapRef.current) mapRef.current.remove();
+          const map = L.map(mapEl.current, { preferCanvas: true }).setView(center, 17);
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(map);
+          mapRef.current = map;
+          // ขนาด container อาจยังคำนวณไม่นิ่งตอนเพิ่งโผล่ (โดยเฉพาะมือถือ) — บังคับคำนวณใหม่กันแผนที่เพี้ยน
+          setTimeout(() => map.invalidateSize(), 150);
+          // หยุดลาก/ซูมเมื่อไหร่ก็บันทึกจุดกึ่งกลางทันที (จุดเริ่มต้นก็บันทึกไว้ก่อนเลยด้วย)
+          map.on('moveend', () => { const c = map.getCenter(); saveCenter(c.lat, c.lng); });
+          saveCenter(center[0], center[1]);
+        } catch {
+          setMapOpen(false);
+          toast.error('เปิดแผนที่ไม่ได้ ลองใหม่อีกครั้ง หรือพิมพ์ที่อยู่เอง');
+        }
       });
     };
     const fallback: [number, number] = geo ? [geo.lat, geo.lng] : DEFAULT_CENTER;
+    // เผื่อกรณี callback ของตำแหน่งไม่เคยถูกเรียก (บางเบราว์เซอร์มือถือค้างเงียบ) — ไม่ให้ปุ่มค้างสถานะกำลังหา
+    watchdog = setTimeout(() => start(fallback), 12000);
     if (!navigator.geolocation) { start(fallback); return; }
     navigator.geolocation.getCurrentPosition(
       (pos) => start([pos.coords.latitude, pos.coords.longitude]),
       () => start(fallback),
-      { enableHighAccuracy: true, timeout: 10000 },
-    );                                          
+      { enableHighAccuracy: false, timeout: 9000, maximumAge: 60000 },
+    );
   };
 
   const field = 'w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-base outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100';
