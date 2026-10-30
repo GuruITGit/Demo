@@ -455,7 +455,11 @@ function saveConfig(c: Ctx) {
 }
 
 // ───────────────────────────── แผงลอย
-get('/market/outside/locations', (c) => { needPerm(c, 'market:read:MarketStall'); return c.db.marketOutsideLocations.filter((l) => l.active && l.organizationId === ORG_ID); });
+get('/market/outside/locations', (c) => {
+  needPerm(c, 'market:read:MarketStall');
+  syncCitizenOutside(c.db); // เปิดดูรายการเมื่อไร หน้าประชาชนก็ได้ชุดเดียวกัน (ไม่ต้องรอให้มีการแก้ไข)
+  return c.db.marketOutsideLocations.filter((l) => l.active && l.organizationId === ORG_ID);
+});
 post('/market/outside/locations', (c) => {
   needPerm(c, 'market:manage:MarketStall');
   const name = String(c.body?.name ?? '').trim();
