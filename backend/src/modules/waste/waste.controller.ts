@@ -72,7 +72,7 @@ export class WasteController {
   @ApiOperation({ summary: 'ตั้งค่ารับเงิน/ราคา (ชุดเดียวกับค่าแผง — แก้ที่ไหนก็เห็นทั้งสองหน้า)' })
   @RequirePermissions({ module: 'waste', action: 'read', subject: 'WasteBill' })
   getConfig(@CurrentUser('organizationId') orgId: string) {
-    return this.config.get(orgId);
+    return this.config.getForStaff(orgId);
   }
 
   @Put('config')

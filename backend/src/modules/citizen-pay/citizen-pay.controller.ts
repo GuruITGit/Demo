@@ -12,6 +12,8 @@ class ReserveDto {
   @IsOptional() @IsString() org?: string;
 }
 class SubmitDto {
+  /** รหัสบิลคั่นด้วยจุลภาค */
+  @IsString() @MaxLength(2000) billIds: string;
   @IsString() method: string;
   /** ชื่อผู้เช่า/ผู้รับบิล — ต้องตรงกับบิล */
   @IsString() @MaxLength(200) name: string;
@@ -88,16 +90,18 @@ export class CitizenPayController {
     return this.service.reserve(await this.org(req, dto.org), code, dto.name, dto.phone);
   }
 
-  @Post(':type/bills/:id/submit')
-  @ApiOperation({ summary: 'แจ้งชำระ: แนบสลิปโอน หรือแจ้งว่าจะจ่ายเงินสด — รอเจ้าหน้าที่ยืนยัน' })
+  @Post(':type/submit')
+  @ApiOperation({ summary: 'แจ้งชำระหลายบิลพร้อมกัน: โอน (แนบสลิป → ตรวจอัตโนมัติ) หรือเงินสด (รอรับที่ อบต.)' })
   @UseInterceptors(FileInterceptor('slip', {
     storage: memoryStorage(),
     limits: { fileSize: 5 * 1024 * 1024, files: 1 },
     fileFilter: (_req, file, cb) => /^image\//.test(file.mimetype) ? cb(null, true) : cb(new BadRequestException('แนบได้เฉพาะรูปภาพ') as any, false),
   }))
-  async submit(@Req() req: Request, @Param('type') type: string, @Param('id', ParseUUIDPipe) id: string,
+  async submit(@Req() req: Request, @Param('type') type: string,
     @UploadedFile() file: Express.Multer.File | undefined, @Body() dto: SubmitDto) {
     if (type !== 'market' && type !== 'waste') throw new BadRequestException('ประเภทบิลไม่ถูกต้อง');
-    return this.service.submit(await this.org(req, dto.org, true), type, id, dto.method, dto.name, file);
+    const ids = String(dto.billIds || '').split(',').map((x) => x.trim()).filter(Boolean);
+    if (ids.some((x) => !/^[0-9a-f-]{36}$/i.test(x))) throw new BadRequestException('รหัสบิลไม่ถูกต้อง');
+    return this.service.submitBills(await this.org(req, dto.org, true), type, ids, dto.method, dto.name, file);
   }
 }

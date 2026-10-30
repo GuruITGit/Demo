@@ -178,8 +178,9 @@ function pickSlip(input: HTMLInputElement) {
   clearSlip(); slipFile = f; slipPreviewUrl = URL.createObjectURL(f); renderPaymentModal();
 }
 
-/** หน้าที่ต่อ API จริงตั้งค่านี้: ส่งการแจ้งชำระของบิลที่เลือก (คืน true เมื่อสำเร็จ) · ไม่ตั้ง = ใช้ข้อมูลตัวอย่างในเครื่อง */
-let billSubmitter: ((ids: string[], method: 'transfer' | 'cash', slip: File | null) => Promise<boolean>) | null = null;
+/** หน้าที่ต่อ API จริงตั้งค่านี้: ส่งการแจ้งชำระของบิลที่เลือก · คืน null = ไม่สำเร็จ · ไม่ตั้ง = ใช้ข้อมูลตัวอย่างในเครื่อง */
+type SubmitResult = { status: 'paid' | 'pending'; reason?: string | null };
+let billSubmitter: ((ids: string[], method: 'transfer' | 'cash', slip: File | null) => Promise<SubmitResult | null>) | null = null;
 function recordPayment(status: 'pending' | 'cash', ref: string) {
   const all = loadPaymentRecords(); const at = new Date().toISOString(); const amount = payTotal();
   for (const id of payBillIds) {
@@ -190,12 +191,18 @@ function recordPayment(status: 'pending' | 'cash', ref: string) {
 }
 async function submitTransferPayment() {
   if (!slipFile) return toast('แนบรูปสลิปก่อนส่งค่ะ');
-  if (billSubmitter) { if (await billSubmitter(payBillIds, 'transfer', slipFile)) { clearSlip(); resetSelection(); modal.close(); toast('ส่งสลิปแล้ว · รอเจ้าหน้าที่ตรวจสอบ'); render(); } return; }
+  if (billSubmitter) {
+    const res = await billSubmitter(payBillIds, 'transfer', slipFile);
+    if (!res) return;
+    clearSlip(); resetSelection(); modal.close();
+    toast(res.status === 'paid' ? 'ตรวจสลิปผ่านแล้ว · ชำระเรียบร้อย' : res.reason ? `ส่งสลิปแล้ว · ${res.reason}` : 'ส่งสลิปแล้ว · รอเจ้าหน้าที่ตรวจสอบ');
+    render(); return;
+  }
   recordPayment('pending', newPaymentRef('TRF'));
   clearSlip(); resetSelection(); modal.close(); toast('ส่งสลิปแล้ว · รอเจ้าหน้าที่ตรวจสอบ'); render();
 }
 async function submitCashPayment() {
-  if (billSubmitter) { const total = payTotal(); if (!(await billSubmitter(payBillIds, 'cash', null))) return; clearSlip(); resetSelection(); render(); showCashTicket(newPaymentRef('CSH'), total); return; }
+  if (billSubmitter) { const total = payTotal(); const res = await billSubmitter(payBillIds, 'cash', null); if (!res) return; clearSlip(); resetSelection(); render(); showCashTicket(newPaymentRef('CSH'), total); return; }
   payRef = newPaymentRef('CSH'); const total = payTotal();
   recordPayment('cash', payRef); clearSlip(); resetSelection(); render();
   showCashTicket(payRef, total);

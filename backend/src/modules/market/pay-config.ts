@@ -14,6 +14,10 @@ export interface PayConfig {
   wasteStallFee: number;
   /** ค่าเก็บขยะบ้านต่อเดือน (บาท) */
   householdFee: number;
+  /** ผู้ให้บริการตรวจสลิปอัตโนมัติ: "" = ไม่ใช้ (เจ้าหน้าที่ตรวจเอง) · slip2go · easyslip · slipok */
+  slipProvider: string;
+  /** โทเคนของผู้ให้บริการ (ความลับ — ห้ามส่งกลับไปหน้าประชาชน) */
+  slipToken: string;
 }
 
 export const DEFAULT_PAY_CONFIG: PayConfig = {
@@ -26,6 +30,8 @@ export const DEFAULT_PAY_CONFIG: PayConfig = {
   cashHours: 'จันทร์–ศุกร์ 08:30–16:30 น. (เว้นวันหยุดราชการ)',
   wasteStallFee: 30,
   householdFee: 40,
+  slipProvider: '',
+  slipToken: '',
 };
 
 const str = (v: unknown, max: number, fallback: string) => (typeof v === 'string' ? v.trim().slice(0, max) : fallback);
@@ -45,5 +51,7 @@ export function readPayConfig(meta: any): PayConfig {
     cashHours: str(p.cashHours, 120, d.cashHours),
     wasteStallFee: fee(p.wasteStallFee, d.wasteStallFee),
     householdFee: fee(p.householdFee, d.householdFee),
+    slipProvider: ['', 'slip2go', 'easyslip', 'slipok'].includes(p.slipProvider) ? p.slipProvider : d.slipProvider,
+    slipToken: str(p.slipToken, 300, d.slipToken),
   };
 }

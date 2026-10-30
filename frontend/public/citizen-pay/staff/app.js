@@ -320,7 +320,6 @@ function pickSlip(input) {
     slipPreviewUrl = URL.createObjectURL(f);
     renderPaymentModal();
 }
-/** หน้าที่ต่อ API จริงตั้งค่านี้: ส่งการแจ้งชำระของบิลที่เลือก (คืน true เมื่อสำเร็จ) · ไม่ตั้ง = ใช้ข้อมูลตัวอย่างในเครื่อง */
 let billSubmitter = null;
 function recordPayment(status, ref) {
     const all = loadPaymentRecords();
@@ -339,13 +338,14 @@ async function submitTransferPayment() {
     if (!slipFile)
         return toast('แนบรูปสลิปก่อนส่งค่ะ');
     if (billSubmitter) {
-        if (await billSubmitter(payBillIds, 'transfer', slipFile)) {
-            clearSlip();
-            resetSelection();
-            modal.close();
-            toast('ส่งสลิปแล้ว · รอเจ้าหน้าที่ตรวจสอบ');
-            render();
-        }
+        const res = await billSubmitter(payBillIds, 'transfer', slipFile);
+        if (!res)
+            return;
+        clearSlip();
+        resetSelection();
+        modal.close();
+        toast(res.status === 'paid' ? 'ตรวจสลิปผ่านแล้ว · ชำระเรียบร้อย' : res.reason ? `ส่งสลิปแล้ว · ${res.reason}` : 'ส่งสลิปแล้ว · รอเจ้าหน้าที่ตรวจสอบ');
+        render();
         return;
     }
     recordPayment('pending', newPaymentRef('TRF'));
@@ -358,7 +358,8 @@ async function submitTransferPayment() {
 async function submitCashPayment() {
     if (billSubmitter) {
         const total = payTotal();
-        if (!(await billSubmitter(payBillIds, 'cash', null)))
+        const res = await billSubmitter(payBillIds, 'cash', null);
+        if (!res)
             return;
         clearSlip();
         resetSelection();

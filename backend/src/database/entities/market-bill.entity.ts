@@ -74,6 +74,10 @@ export class MarketBill {
   @Column({ name: 'review_note', type: 'varchar', length: 300, nullable: true })
   reviewNote: string | null;
 
+  /** เลขอ้างอิงธุรกรรมของสลิปที่ตรวจผ่าน (กันสลิปซ้ำ) */
+  @Column({ name: 'slip_trans_ref', type: 'varchar', length: 60, nullable: true })
+  slipTransRef: string | null;
+
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
 }

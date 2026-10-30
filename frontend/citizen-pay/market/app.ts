@@ -64,19 +64,18 @@ function searchStallFromForm() {
   void searchStallBills(name, stall);
 }
 /** ส่งการแจ้งชำระของบิลค่าแผงทีละใบ (แนบสลิปเฉพาะโอน) แล้วโหลดรายการใหม่ */
-async function submitStallBills(ids: string[], method: 'transfer' | 'cash', slip: File | null): Promise<boolean> {
+async function submitStallBills(ids: string[], method: 'transfer' | 'cash', slip: File | null): Promise<{ status: 'paid' | 'pending'; reason?: string | null } | null> {
   try {
-    for (const id of ids) {
-      const fd = new FormData();
-      fd.append('method', method);
-      fd.append('name', verifiedName);
-      if (slip) fd.append('slip', slip, slip.name);
-      const r = await payApi<unknown>(`/market/bills/${id}/submit`, { method: 'POST', body: fd });
-      if (r === null) throw new Error('ส่งข้อมูลไม่ได้ ตรวจการเชื่อมต่อแล้วลองใหม่');
-    }
+    const fd = new FormData();
+    fd.append('billIds', ids.join(','));
+    fd.append('method', method);
+    fd.append('name', verifiedName);
+    if (slip) fd.append('slip', slip, slip.name);
+    const r = await payApi<{ status: 'paid' | 'pending'; reason?: string | null }>('/market/submit', { method: 'POST', body: fd });
+    if (r === null) throw new Error('ส่งข้อมูลไม่ได้ ตรวจการเชื่อมต่อแล้วลองใหม่');
     await searchStallBills(verifiedName, searchTerm);
-    return true;
-  } catch (e) { toast((e as Error).message); return false; }
+    return r;
+  } catch (e) { toast((e as Error).message); return null; }
 }
 function searchPage(){
  const matches=searchTerm?DEMO.bills.filter(b=>b.payerType==='stall'&&(PAYABLE.includes(b.status)||b.status==='pending'||b.status==='cash')).sort((a,b)=>b.id.localeCompare(a.id)):[];
@@ -115,7 +114,7 @@ applySavedPayments();
 // render ใหม่เฉพาะตอนรายการเปลี่ยนจริง เพื่อไม่ให้หน้ากระพริบ
 const OUTSIDE_KEY='lamplaimat:outside-locations';
 let outsideSig='';
-async function refreshOutside(){try{let list:OutsideLocation[]|null=null;try{const r=await fetch('/v1/citizen/pay/market/outside',{cache:'no-store'});if(r.ok){const j=await r.json();if(Array.isArray(j?.data))list=j.data.slice(0,50).map((x:any,i:number)=>({id:'LOC-'+(i+1),name:String(x.name).slice(0,60),rentRate:Number(x.rentRate)||0,rentPeriod:x.rentPeriod==='monthly'?'monthly':'daily',enabled:true,deleted:false,tenants:[]}))}}catch{}if(!list){const stored=JSON.parse(localStorage.getItem(OUTSIDE_KEY)||'null');if(validOutsideLocations(stored))list=stored.filter(l=>l.enabled&&!l.deleted)}if(!list)return;const sig=JSON.stringify(list);if(sig===outsideSig)return;outsideSig=sig;DEMO.outsideLocations=list;if(!list.some(l=>l.id===selectedOutsideLocationId))selectedOutsideLocationId=list[0]?.id??'';render()}catch{}}
+async function refreshOutside(){try{let list:OutsideLocation[]|null=null;try{const r=await fetch('/v1/citizen/pay/market/outside',{cache:'no-store'});if(r.ok){const j=await r.json();if(Array.isArray(j?.data))list=j.data.slice(0,50).map((x:any,i:number)=>({id:'LOC-'+(i+1),name:String(x.name).slice(0,60),rentRate:Number(x.rentRate)||0,rentPeriod:x.rentPeriod==='monthly'?'monthly':'daily',enabled:true,deleted:false,tenants:[]}))}}catch{}if(!list){const stored=JSON.parse(localStorage.getItem(OUTSIDE_KEY)||'null');if(validOutsideLocations(stored))list=stored.filter(l=>l.enabled&&!l.deleted)}if(!list)return;const sig=JSON.stringify(list);if(sig===outsideSig)return;const ae=document.activeElement;if(ae&&/^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName))return;outsideSig=sig;DEMO.outsideLocations=list;if(!list.some(l=>l.id===selectedOutsideLocationId))selectedOutsideLocationId=list[0]?.id??'';render()}catch{}}
 window.addEventListener('storage',(e)=>{if(e.key===OUTSIDE_KEY)void refreshOutside()});
 setInterval(()=>{if(document.visibilityState==='visible')void refreshOutside()},2000);
 render();
