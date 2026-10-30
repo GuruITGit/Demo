@@ -99,7 +99,7 @@ post('/citizen/report/submit', async (c) => {
 });
 get('/citizen/report/status', (c) => {
   const r = c.db.citizenReports.find((x) => x.refNo === String(c.query.refNo ?? '').trim());
-  if (!r) throw notFound('ไม่พบเลขอ้างอิงนี้');
+  if (!r) throw notFound('เลขอ้างอิงหรือเบอร์ไม่ถูกต้อง');
   if (r.reporterPhone && c.query.phone && digits(r.reporterPhone) !== digits(c.query.phone)) throw notFound('เลขอ้างอิงหรือเบอร์ไม่ถูกต้อง');
   return { refNo: r.refNo, category: r.category, status: r.status, staffNote: r.staffNote, createdAt: r.createdAt };
 });

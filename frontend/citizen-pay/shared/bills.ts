@@ -1,7 +1,7 @@
 // ส่วนกลางของหน้าชำระเงินประชาชน (ค่าแผง market/ · ค่าขยะ waste/) — ถูกรวมเข้า app.js ของแต่ละหน้าตอน build (tsc outFile)
 // ข้อตกลง: หน้าเว็บต้องประกาศ `DEMO` ที่มี `bills: Bill[]` และฟังก์ชัน `render()` เอง · HTML ต้องมี #modal #modalContent และ .toast
 type BillStatus = 'unpaid' | 'pending' | 'cash' | 'confirmed' | 'mismatch';
-interface Bill { id: string; payerType: 'stall' | 'household'; merchant: string; ref: string; stall?: string; location?: string; houseNo?: string; moo?: string; phone?: string; kind: string; month: string; due: string; amount: number; status: BillStatus }
+interface Bill { id: string; payerType: 'stall' | 'household'; merchant: string; ref: string; stall?: string; location?: string; houseNo?: string; moo?: string; phone?: string; kind: string; month: string; due: string; amount: number; status: BillStatus; note?: string }
 
 const modal = document.getElementById('modal') as HTMLDialogElement;
 const modalContent = document.getElementById('modalContent') as HTMLElement;
@@ -43,13 +43,13 @@ function billListHTML(o:BillListOptions){
   const side=payable.length?`<label class="month-select"><input type="checkbox" ${checked?'checked':''} onchange="toggleMonth('${ids.join('|')}',this.checked)"><span>จ่ายเดือนนี้</span></label>`
    :cashRef?`<button type="button" class="status pending cash-ref-btn" onclick="showCashTicket('${escapeHTML(cashRef)}')">รอจ่ายเงินสด · ดูเลขอ้างอิง</button>`
    :`<span class="status ${pending?'pending':'confirmed'}">${pending?'รอตรวจสอบ':'ชำระแล้ว'}</span>`;
-  return `<article class="bill-card month-card"><div class="month-card-head"><div class="month-card-info"><b>${escapeHTML(g.month)}</b><small>${escapeHTML(g.bills[0].merchant)} · ${escapeHTML(o.payerLabel(g.bills[0]))}</small></div>${side}</div><div class="charge-lines">${g.bills.map(b=>`<div class="charge-line"><span>${escapeHTML(o.chargeLabel(b))}</span><b>${money(b.amount)} บาท</b><em class="status ${statusClass(b.status)}">${statusText[b.status]}</em></div>`).join('')}</div>${payable.length?`<div class="month-due"><span>ยอดค้างเดือนนี้</span><b>${money(due)} บาท</b></div>`:''}</article>`;
+  return `<article class="bill-card month-card"><div class="month-card-head"><div class="month-card-info"><b>${escapeHTML(g.month)}</b><small>${escapeHTML(g.bills[0].merchant)} · ${escapeHTML(o.payerLabel(g.bills[0]))}</small></div>${side}</div>${(n=>n?`<p class="bill-note">หมายเหตุ: ${escapeHTML(n)}</p>`:'')(g.bills.find(b=>b.note)?.note)}<div class="charge-lines">${g.bills.map(b=>`<div class="charge-line"><span>${escapeHTML(o.chargeLabel(b))}</span><b>${money(b.amount)} บาท</b><em class="status ${statusClass(b.status)}">${statusText[b.status]}</em></div>`).join('')}</div>${payable.length?`<div class="month-due"><span>ยอดค้างเดือนนี้</span><b>${money(due)} บาท</b></div>`:''}</article>`;
  }).join('');
  const total=[...selectedBills].reduce((n,id)=>n+(DEMO.bills.find(b=>b.id===id)?.amount||0),0);
  const body=!searchTerm?`<div class="search-prompt"><span>⌕</span><b>${escapeHTML(o.promptText)}</b><small>ยอดค้างจะแสดงแยกตามเดือน</small></div>`
   :!grouped.length?'<div class="empty"><span>✅</span>ไม่พบรายการค้างชำระที่ตรงกับข้อมูลนี้</div>'
   :`<div class="panel"><div class="bill-title"><div><b>ยอด${escapeHTML(o.title)}</b><small>${escapeHTML(searchTerm)}</small></div></div>${rows}<div class="due-total-row"><span>ยอดค้างรวมทุกเดือน</span><b>${money(totalDue)} บาท</b></div></div>${selectedBills.size?`<div class="pay-summary"><div><span>ยอดที่เลือกจ่าย</span><br><b>${money(total)} บาท</b></div><div class="pay-method-actions"><button type="button" class="pay-now" onclick="openPayment()">จ่ายเงิน <span aria-hidden="true">›</span></button></div></div>`:''}`;
- return body+'<p class="help" style="text-align:center;padding:5px 12px">ระบบสาธิต · ยอดเงินเป็นตัวอย่าง</p>';
+ return body+(PAYMENT.demo?'<p class="help" style="text-align:center;padding:5px 12px">ระบบสาธิต · ยอดเงินเป็นตัวอย่าง</p>':'');
 }
 
 /** หัวหน้า + ช่องค้นหา (ใช้ทั้งสองหน้า) */

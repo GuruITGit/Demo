@@ -55,7 +55,8 @@ export class WasteService {
       where.push(base);
     }
     if (where.length === 0) return [];
-    return this.bills.find({ where, order: { period: 'DESC', houseNo: 'ASC' }, take: 200 });
+    const rows = await this.bills.find({ where, order: { period: 'DESC', houseNo: 'ASC' }, take: 200 });
+    return rows.map((b) => ({ ...b, slipUrl: this.storage.signUrlIfPrivate(b.slipUrl) })); // สลิปอยู่ใน private bucket
   }
 
   /** สรุปยอดตามสถานะ + ค้างรายครัวเรือน (หน้าภาพรวม/รายงาน) */
