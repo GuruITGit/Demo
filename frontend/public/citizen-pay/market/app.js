@@ -126,6 +126,39 @@ const PAYMENT = {
         { name: 'ออมสิน', short: 'GSB', color: '#EB198D', scheme: 'mymo://' },
     ],
 };
+// เชื่อมหน้าประชาชน (static) กับ API จริง: /v1/citizen/pay/* (สาธารณะ ไม่ต้องล็อกอิน)
+// ถ้าเข้าถึง API ไม่ได้ (เช่นเดโม่บน Vercel) payApi คืน null แล้วหน้าจะใช้ข้อมูลตัวอย่างเดิม
+const PAY_API = '/v1/citizen/pay';
+class PayApiError extends Error {
+    constructor(message, status) { super(message); this.status = status; }
+}
+const MONTH_TH = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+/** "2569-10" → "ตุลาคม 2569" */
+const periodToThai = (p) => { const [y, m] = String(p).split('-'); return `${MONTH_TH[Number(m) - 1] ?? m} ${y}`; };
+/** เรียก API สาธารณะ: คืนค่า data · null = เข้าถึงไม่ได้ (ไม่ใช่ JSON) · โยน PayApiError เมื่อ backend ตอบว่าผิดพลาด */
+async function payApi(path, init) {
+    let r;
+    try {
+        r = await fetch(PAY_API + path, init);
+    }
+    catch {
+        return null;
+    }
+    const j = await r.json().catch(() => null);
+    if (!j || typeof j !== 'object')
+        return null;
+    if (!r.ok || j.success === false)
+        throw new PayApiError(j?.error?.message || 'ทำรายการไม่สำเร็จ', r.status);
+    return j.data;
+}
+/** ใช้ค่าช่องทางรับเงิน/ราคาจากระบบจริง เขียนทับค่าตั้งต้นใน PAYMENT */
+function applyPayConfig(c) {
+    Object.assign(PAYMENT, {
+        promptpayId: c.promptpayId || '', promptpayType: c.promptpayType || 'mobile', payeeName: c.payeeName || '',
+        accountBank: c.accountBank || '', accountNo: c.accountNo || '', cashPlace: c.cashPlace || PAYMENT.cashPlace, cashHours: c.cashHours || PAYMENT.cashHours,
+        demo: false,
+    });
+}
 const PAY_STORE = 'market:payments';
 let payMethod = 'qr';
 let payBillIds = [];
@@ -369,6 +402,8 @@ function pickSlip(input) {
     slipPreviewUrl = URL.createObjectURL(f);
     renderPaymentModal();
 }
+/** หน้าที่ต่อ API จริงตั้งค่านี้: ส่งการแจ้งชำระของบิลที่เลือก (คืน true เมื่อสำเร็จ) · ไม่ตั้ง = ใช้ข้อมูลตัวอย่างในเครื่อง */
+let billSubmitter = null;
 function recordPayment(status, ref) {
     const all = loadPaymentRecords();
     const at = new Date().toISOString();
@@ -382,9 +417,19 @@ function recordPayment(status, ref) {
     }
     writePaymentRecords(all);
 }
-function submitTransferPayment() {
+async function submitTransferPayment() {
     if (!slipFile)
         return toast('แนบรูปสลิปก่อนส่งค่ะ');
+    if (billSubmitter) {
+        if (await billSubmitter(payBillIds, 'transfer', slipFile)) {
+            clearSlip();
+            resetSelection();
+            modal.close();
+            toast('ส่งสลิปแล้ว · รอเจ้าหน้าที่ตรวจสอบ');
+            render();
+        }
+        return;
+    }
     recordPayment('pending', newPaymentRef('TRF'));
     clearSlip();
     resetSelection();
@@ -392,7 +437,17 @@ function submitTransferPayment() {
     toast('ส่งสลิปแล้ว · รอเจ้าหน้าที่ตรวจสอบ');
     render();
 }
-function submitCashPayment() {
+async function submitCashPayment() {
+    if (billSubmitter) {
+        const total = payTotal();
+        if (!(await billSubmitter(payBillIds, 'cash', null)))
+            return;
+        clearSlip();
+        resetSelection();
+        render();
+        showCashTicket(newPaymentRef('CSH'), total);
+        return;
+    }
     payRef = newPaymentRef('CSH');
     const total = payTotal();
     recordPayment('cash', payRef);
@@ -752,11 +807,68 @@ const I = { "home": "<svg viewBox=\"0 0 24 24\" width=\"26\" height=\"26\" fill=
 function navItems() { return [['dues', I.pay, 'จ่ายเงิน'], ['stalls', I.stalls, 'ดูแผง'], ['signup', I.signup, 'สมัคร']]; }
 function renderNav() { nav.innerHTML = navItems().map(([id, ic, label]) => `<button class="nav-item ${view === id ? 'active' : ''}" aria-current="${view === id ? 'page' : 'false'}" onclick="setPage('${id}')">${iconNav(ic, label)}</button>`).join(''); }
 // หน้าจ่ายค่าแผง: ค่าเช่า + ค่าขยะแผง (ค่าขยะบ้านอยู่หน้า waste/)
+// ---------- ต่อ API จริง: เลขล็อก + ชื่อผู้เช่า ต้องตรงกันจึงเห็นยอด ----------
+let verifiedName = '';
+let draftStall = '';
+function toStallBill(x) {
+    const cash = x.status === 'pending' && x.submittedMethod === 'cash';
+    const status = x.status === 'pending' ? (cash ? 'cash' : 'pending') : x.status === 'mismatch' ? 'mismatch' : 'unpaid';
+    return { id: x.id, payerType: 'stall', merchant: verifiedName || x.payerName, ref: x.stallCode, stall: x.stallCode, kind: x.kind === 'waste' ? 'ค่าขยะ' : 'ค่าเช่า', month: periodToThai(x.period), due: x.dueDate || '', amount: Number(x.amount), status };
+}
+async function searchStallBills(name, stall) {
+    verifiedName = name.trim();
+    draftStall = stall.trim().toUpperCase();
+    searchTerm = draftStall;
+    resetSelection();
+    if (!searchTerm)
+        return render();
+    if (verifiedName.length < 4) {
+        toast('กรุณากรอกชื่อ-นามสกุลผู้เช่า');
+        return render();
+    }
+    try {
+        const r = await payApi(`/market/bills?stall=${encodeURIComponent(searchTerm)}&name=${encodeURIComponent(verifiedName)}`);
+        if (r === null)
+            return searchBills(searchTerm); // เดโม่: ไม่มี API ใช้ข้อมูลตัวอย่าง
+        DEMO.bills = (r.bills || []).map(toStallBill);
+    }
+    catch (e) {
+        DEMO.bills = [];
+        toast(e.message);
+    }
+    render();
+}
+function searchStallFromForm() {
+    const name = document.getElementById('sname')?.value || '';
+    const stall = document.getElementById('sstall')?.value || '';
+    void searchStallBills(name, stall);
+}
+/** ส่งการแจ้งชำระของบิลค่าแผงทีละใบ (แนบสลิปเฉพาะโอน) แล้วโหลดรายการใหม่ */
+async function submitStallBills(ids, method, slip) {
+    try {
+        for (const id of ids) {
+            const fd = new FormData();
+            fd.append('method', method);
+            fd.append('name', verifiedName);
+            if (slip)
+                fd.append('slip', slip, slip.name);
+            const r = await payApi(`/market/bills/${id}/submit`, { method: 'POST', body: fd });
+            if (r === null)
+                throw new Error('ส่งข้อมูลไม่ได้ ตรวจการเชื่อมต่อแล้วลองใหม่');
+        }
+        await searchStallBills(verifiedName, searchTerm);
+        return true;
+    }
+    catch (e) {
+        toast(e.message);
+        return false;
+    }
+}
 function searchPage() {
-    const tokens = searchTokens(searchTerm);
-    const matches = tokens.length ? DEMO.bills.filter(b => matchesAllTokens(`${b.merchant} ${b.ref} ${b.stall || ''} ${b.location || ''} ${b.id}`, tokens)).sort((a, b) => b.id.localeCompare(a.id)) : [];
+    const matches = searchTerm ? DEMO.bills.filter(b => b.payerType === 'stall' && (PAYABLE.includes(b.status) || b.status === 'pending' || b.status === 'cash')).sort((a, b) => b.id.localeCompare(a.id)) : [];
     const shortcuts = searchTerm ? '' : `<div class="payment-shortcuts" style="grid-template-columns:1fr"><button class="payment-shortcut" type="button" onclick="openQrScanner()">${SHORTCUT_QR_ART}<b>สแกน QR ที่แผง</b><small>เปิดกล้องส่องรหัสบนแผง</small></button></div>`;
-    return searchHeaderHTML('จ่ายค่าแผงตลาด', 'ชื่อ หรือเลขล็อก', 'เช่น สมใจ หรือ A06', 'ลองค้นหา “สมใจ” หรือ “A06”', ' with-photo') + shortcuts + billListHTML({ title: 'ค่าแผงตลาด', matches, promptText: 'พิมพ์ชื่อหรือเลขล็อก', payerLabel: b => 'ล็อก ' + (b.stall || b.ref), chargeLabel: b => b.kind === 'ค่าขยะ' ? 'ค่าขยะแผง' : 'ค่าเช่าแผง' });
+    const form = `<div class="page-heading with-photo"><h1>จ่ายค่าแผงตลาด</h1><p>ค้นหาด้วยเลขล็อกและชื่อผู้เช่า · ไม่ต้องเข้าสู่ระบบ</p></div><form class="search-card" onsubmit="event.preventDefault();searchStallFromForm()"><label for="sstall">เลขล็อก</label><div class="search-row"><input id="sstall" name="sstall" value="${escapeHTML(draftStall)}" placeholder="เช่น A06"></div><label for="sname">ชื่อ-นามสกุลผู้เช่า</label><div class="search-row"><input id="sname" name="sname" value="${escapeHTML(verifiedName)}" placeholder="เช่น สมใจ ใจดี" autocomplete="name"><button type="submit">ค้นหา</button></div><p class="help">ชื่อต้องตรงกับผู้เช่าของล็อกนั้น จึงจะเห็นยอดค้าง</p></form>`;
+    return form + shortcuts + billListHTML({ title: 'ค่าแผงตลาด', matches, promptText: 'กรอกเลขล็อกและชื่อผู้เช่า แล้วกดค้นหา', payerLabel: b => 'ล็อก ' + (b.stall || b.ref), chargeLabel: b => b.kind === 'ค่าขยะ' ? 'ค่าขยะแผง' : 'ค่าเช่าแผง' });
 }
 const SHORTCUT_QR_ART = '<img class="shortcut-art shortcut-art-photo" src="/citizen-pay/shared/img/scan-qr-market.webp" width="600" height="386" alt="" aria-hidden="true">';
 const SHORTCUT_MAP_ART = '<img class="shortcut-art shortcut-art-photo" src="/citizen-pay/shared/img/pick-stall-map.webp" width="600" height="386" alt="" aria-hidden="true">';
@@ -860,3 +972,9 @@ setInterval(() => { if (document.visibilityState === 'visible')
     void refreshOutside(); }, 2000);
 render();
 void refreshOutside();
+// ถ้าเข้าถึงระบบจริงได้: ใช้ช่องทางรับเงินจริงและส่งการแจ้งชำระเข้าระบบ
+(async () => { const c = await payApi("/config").catch(() => null); if (c) {
+    applyPayConfig(c);
+    billSubmitter = submitStallBills;
+    render();
+} })();

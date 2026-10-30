@@ -12,5 +12,5 @@
   },
   "files": [
     "../shared/text-size.ts",
-    "../shared/home-link.ts","../shared/bills.ts", "../shared/payment-config.ts", "../shared/payment.ts", "../shared/qr-scan.ts", "../shared/market-rates.ts", "data.ts", "finance.ts", "app.ts"]
+    "../shared/home-link.ts","../shared/bills.ts", "../shared/payment-config.ts", "../shared/api.ts", "../shared/payment.ts", "../shared/qr-scan.ts", "../shared/market-rates.ts", "data.ts", "finance.ts", "app.ts"]
 }
