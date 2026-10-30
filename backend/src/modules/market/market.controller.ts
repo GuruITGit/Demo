@@ -16,6 +16,20 @@ import { PayConfigService } from './pay-config.service';
 export class MarketController {
   constructor(private readonly service: MarketService, private readonly config: PayConfigService) {}
 
+  @Get('reservations')
+  @ApiOperation({ summary: 'รายการจองแผงที่รอยืนยัน (ชื่อ/เบอร์/วันเริ่มเช่า/รูปบัตร)' })
+  @RequirePermissions({ module: 'market', action: 'read', subject: 'MarketStall' })
+  reservations(@CurrentUser('organizationId') orgId: string) {
+    return this.service.listReservations(orgId);
+  }
+
+  @Post('reservations/notify')
+  @ApiOperation({ summary: 'แจ้งเตือนผู้จัดการตลาดให้ยืนยันการจองที่ค้างอยู่' })
+  @RequirePermissions({ module: 'market', action: 'manage', subject: 'MarketStall' })
+  notifyReservations(@CurrentUser('organizationId') orgId: string) {
+    return this.service.notifyReservations(orgId);
+  }
+
   @Get('stalls')
   @ApiOperation({ summary: 'ผังแผงประจำ พร้อมสถานะและผู้เช่า' })
   @RequirePermissions({ module: 'market', action: 'read', subject: 'MarketStall' })

@@ -6,6 +6,8 @@ import { MarketBill } from '../../database/entities/market-bill.entity';
 import { MarketBillQueryDto, UpdateStallDto, CreateStallDto, BulkStallsDto, CreateMarketBillDto } from './dto/market.dto';
 import { PayConfigService } from './pay-config.service';
 import { currentPeriod, nextReceiptNo, periodEndDate } from './receipt';
+import { NotificationsService } from '../notifications/notifications.service';
+import { notifyUsersWithPermission } from '../../common/notify-permission';
 
 @Injectable()
 export class MarketService {
@@ -14,7 +16,29 @@ export class MarketService {
     @InjectRepository(MarketBill) private readonly bills: Repository<MarketBill>,
     private readonly ds: DataSource,
     private readonly config: PayConfigService,
+    private readonly notifications: NotificationsService,
   ) {}
+
+  /** แผงที่ประชาชนจองไว้ รอเจ้าหน้าที่ยืนยัน — พร้อมชื่อ เบอร์ วันเริ่มเช่า และรูปบัตร */
+  async listReservations(orgId: string) {
+    const rows = await this.stalls.find({ where: { organizationId: orgId, active: true, status: 'reserved' }, order: { reservedAt: 'ASC' } });
+    return rows.map((s) => ({
+      id: s.id, stallCode: s.stallCode, zone: s.zone, tenantName: s.tenantName, contactPhone: s.contactPhone,
+      reservedAt: s.reservedAt, reserveStartDate: s.reserveStartDate, reserveDays: s.reserveDays, reserveCardUrl: s.reserveCardUrl,
+    }));
+  }
+
+  /** แจ้งเตือนผู้ที่มีสิทธิ์จัดการตลาดให้ไปยืนยันการจองที่ค้างอยู่ */
+  async notifyReservations(orgId: string) {
+    const rows = await this.listReservations(orgId);
+    if (!rows.length) throw new BadRequestException('ไม่มีการจองที่รอยืนยัน');
+    const codes = rows.slice(0, 8).map((r) => r.stallCode).join(', ') + (rows.length > 8 ? ' ...' : '');
+    await notifyUsersWithPermission(this.ds, this.notifications, orgId, { module: 'market', action: 'manage', subject: 'MarketStall' }, {
+      type: 'market:reserved_pending', title: `มีการจองรอยืนยัน ${rows.length} แผง`, body: `แผง ${codes}`,
+      actionUrl: '/market',
+    });
+    return { ok: true, count: rows.length };
+  }
 
   listStalls(orgId: string) {
     return this.stalls.find({ where: { organizationId: orgId, active: true }, order: { zone: 'ASC', stallCode: 'ASC' } });
