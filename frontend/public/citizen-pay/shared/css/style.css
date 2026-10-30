@@ -679,3 +679,16 @@
 .staff-manage-links{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 14px}.staff-manage-btn{display:inline-flex;align-items:center;min-height:40px;padding:0 16px;border-radius:12px;background:#0b6b4f;color:#fff;font-weight:600;text-decoration:none}.staff-manage-btn:hover{filter:brightness(1.08)}
 
 .choice-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:stretch}.choice-grid .choice-card{margin:0;padding:0;border:0;background:transparent;box-shadow:none;border-radius:12px;height:100%}.choice-grid .choice-card img{display:block;width:100%;height:auto;aspect-ratio:16/9;object-fit:contain;border-radius:12px}
+
+/* ───── ให้พอดีทุกอุปกรณ์: คอม/แท็บเล็ตไม่ขยายเต็มจอ ปุ่มปรับตัวอักษรไม่ทับเมนู ───── */
+@media (min-width:900px){
+  body:not(.staff-mode) #app{max-width:900px;margin:0 auto;justify-self:center;width:100%;padding-left:24px;padding-right:24px}
+  .choice-grid{max-width:760px;margin:0 auto;gap:18px}
+  .choice-grid .choice-card img{aspect-ratio:16/9}
+  .page-heading h1{font-size:26px}
+  .text-size-btn{position:static;margin-left:auto}
+}
+@media (min-width:650px) and (max-width:899px){
+  body:not(.staff-mode) #app{max-width:720px;margin:0 auto;width:100%}
+  .choice-grid{max-width:620px;margin:0 auto}
+}
