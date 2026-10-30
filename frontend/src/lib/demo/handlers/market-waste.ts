@@ -2,9 +2,9 @@
  * ค่าแผงตลาด + ค่าเก็บขยะบ้าน + ทะเบียนครัวเรือน + แผงลอย (ข้อมูลสมมติ)
  * ตอบ endpoint เดียวกับ backend (market/*, waste/*) ทุกตัว — ตรรกะและข้อความผิดพลาดตรงกับ service จริง
  */
-import { get, post, patch, put, del, registerSeed, uid, nowIso, badRequest, notFound, type Ctx, type Row } from '../core';
+import { get, post, patch, put, del, registerSeed, uid, nowIso, persist, badRequest, notFound, type Ctx, type Row } from '../core';
 import { ORG_ID } from '../seed-base';
-import { needPerm } from './base';
+import { needPerm, notify } from './base';
 
 const pad2 = (n: number) => String(n).padStart(2, '0');
 const ymd = (d: Date) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
@@ -74,6 +74,7 @@ registerSeed((db) => {
     { id: 'outside-2', organizationId: ORG_ID, name: 'ลานจอดรถ (รายเดือน)', rentRate: '1500', rentPeriod: 'monthly', enabled: false, active: true, createdAt: nowIso() },
   ];
   db.marketOutsideCollections = [];
+  db.marketOutsideApps = [];
   db.wasteHouseholds = HOUSEHOLDS.map((h) => ({
     id: `hh-${h.ref}`, organizationId: ORG_ID, householdRef: h.ref, holderName: h.name, houseNo: h.houseNo, moo: h.moo, phone: h.phone,
     monthlyFee: null, active: true, createdAt: nowIso(),
@@ -135,9 +136,109 @@ function rejectBill(c: Ctx, list: Row[], notFoundMsg: string, status: string) {
 
 const sortBills = (a: Row, b: Row) => b.period.localeCompare(a.period) || a.stallCode?.localeCompare(b.stallCode ?? '') || String(a.kind ?? '').localeCompare(String(b.kind ?? ''));
 
+// ───────────────────────────── เดโม่: รับการจอง/สมัครแผงลอยที่ประชาชนส่งมา (หน้าประชาชนอยู่ origin เดียวกัน เขียนลง localStorage)
+const CITIZEN_RES_KEY = 'lamplaimat:demo-reservations';
+const CITIZEN_APP_KEY = 'lamplaimat:demo-outside-apps';
+function takeCitizen(key: string): Row[] {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return [];
+    localStorage.removeItem(key);
+    const v = JSON.parse(raw);
+    return Array.isArray(v) ? v : [];
+  } catch { return []; }
+}
+/** ดึงรายการที่ประชาชนส่งมาเข้าฐานข้อมูลเดโม่ + แจ้งเตือนเจ้าหน้าที่ — เรียกทุกครั้งที่หน้าเจ้าหน้าที่โหลดข้อมูลแผง */
+function absorbCitizen(db: Ctx['db']) {
+  const staff = db.users.map((u: Row) => u.id);
+  let changed = false;
+  for (const r of takeCitizen(CITIZEN_RES_KEY)) {
+    const s = db.marketStalls.find((x) => x.stallCode === r.stallCode && x.active && x.status === 'available');
+    if (!s) continue;
+    Object.assign(s, {
+      status: 'reserved', tenantName: String(r.name ?? '').slice(0, 200), contactPhone: String(r.phone ?? '').slice(0, 20),
+      reservedAt: r.reservedAt || nowIso(), reserveStartDate: r.startDate || null, reserveDays: r.days || null, reserveCardUrl: null,
+    });
+    notify(db, staff, { type: 'market:reserved', title: 'มีการจองแผงใหม่', body: `แผง ${s.stallCode} · ${s.tenantName} · โทร ${s.contactPhone} — รอยืนยัน`, actionUrl: '/market' });
+    changed = true;
+  }
+  for (const a of takeCitizen(CITIZEN_APP_KEY)) {
+    const locs = db.marketOutsideLocations.filter((l) => l.active && l.organizationId === ORG_ID);
+    const loc = locs[Number(String(a.locationId).replace(/\D/g, '')) - 1];
+    if (!loc || db.marketOutsideApps.some((x) => x.appCode === a.appCode)) continue;
+    db.marketOutsideApps.push({
+      id: uid(), organizationId: ORG_ID, locationId: loc.id, appCode: a.appCode, applicantName: String(a.name ?? '').slice(0, 200), phone: String(a.phone ?? '').slice(0, 20),
+      idCardUrl: null, startDate: a.startDate || null, days: Number(a.days) || 1, status: 'pending', reviewNote: null, billId: null, createdAt: a.createdAt || nowIso(),
+    });
+    notify(db, staff, { type: 'market:outside_applied', title: 'มีใบสมัครแผงลอยใหม่', body: `${a.appCode} · ${loc.name} · ${a.name} · โทร ${a.phone}`, actionUrl: '/market' });
+    changed = true;
+  }
+  if (changed) persist();
+}
+const reservations = (db: Ctx['db']) => db.marketStalls
+  .filter((s) => s.active && s.organizationId === ORG_ID && s.status === 'reserved')
+  .sort((a, b) => String(a.reservedAt ?? '').localeCompare(String(b.reservedAt ?? '')))
+  .map((s) => ({
+    id: s.id, stallCode: s.stallCode, zone: s.zone, tenantName: s.tenantName, contactPhone: s.contactPhone, reservedAt: s.reservedAt,
+    reserveStartDate: s.reserveStartDate ?? null, reserveDays: s.reserveDays ?? null, reserveCardUrl: s.reserveCardUrl ?? null,
+  }));
+
+get('/market/reservations', (c) => {
+  needPerm(c, 'market:read:MarketStall');
+  absorbCitizen(c.db);
+  return reservations(c.db);
+});
+
+post('/market/reservations/notify', (c) => {
+  needPerm(c, 'market:manage:MarketStall');
+  absorbCitizen(c.db);
+  const rows = reservations(c.db);
+  if (!rows.length) throw badRequest('ไม่มีการจองที่รอยืนยัน');
+  const codes = rows.slice(0, 8).map((r) => r.stallCode).join(', ') + (rows.length > 8 ? ' ...' : '');
+  notify(c.db, c.db.users.map((u: Row) => u.id), { type: 'market:reserved_pending', title: `มีการจองรอยืนยัน ${rows.length} แผง`, body: `แผง ${codes}`, actionUrl: '/market' });
+  return { ok: true, count: rows.length };
+});
+
+// ───────────────────────────── ใบสมัครแผงลอย (เดโม่)
+const withLocation = (db: Ctx['db'], a: Row) => ({ ...a, location: db.marketOutsideLocations.find((l) => l.id === a.locationId) });
+
+get('/market/outside/applications', (c) => {
+  needPerm(c, 'market:read:MarketBill');
+  absorbCitizen(c.db);
+  const st = c.query?.status;
+  return c.db.marketOutsideApps
+    .filter((a) => a.organizationId === ORG_ID && (!st || a.status === st))
+    .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)))
+    .map((a) => withLocation(c.db, a));
+});
+
+post('/market/outside/applications/:id/approve', (c) => {
+  needPerm(c, 'market:manage:MarketBill');
+  const app = byIdOrThrow(c.db.marketOutsideApps, c.params.id, 'ไม่พบใบสมัครนี้');
+  if (app.status !== 'pending') throw badRequest('ใบสมัครนี้ดำเนินการไปแล้ว');
+  const loc = c.db.marketOutsideLocations.find((l) => l.id === app.locationId);
+  if (!loc) throw notFound('ไม่พบจุดแผงลอยนี้');
+  const rate = Number(loc.rentRate);
+  const amount = loc.rentPeriod === 'monthly' ? rate : rate * app.days;
+  const per = app.startDate ? `${Number(app.startDate.slice(0, 4)) + 543}-${app.startDate.slice(5, 7)}` : period();
+  const bill = { id: uid(), organizationId: ORG_ID, stallId: null, stallCode: app.appCode, payerName: app.applicantName, kind: 'rent', period: per, amount: amount.toFixed(2), dueDate: periodEnd(per), status: 'unpaid', paidMethod: null, paidAt: null, receiptNo: null, submittedMethod: null, submittedAt: null, slipUrl: null, reviewNote: null };
+  c.db.marketBills.push(bill);
+  Object.assign(app, { status: 'approved', billId: bill.id, reviewNote: null });
+  return { ok: true, billId: bill.id, appCode: app.appCode, amount };
+});
+
+post('/market/outside/applications/:id/reject', (c) => {
+  needPerm(c, 'market:manage:MarketBill');
+  const app = byIdOrThrow(c.db.marketOutsideApps, c.params.id, 'ไม่พบใบสมัครนี้');
+  if (app.status !== 'pending') throw badRequest('ใบสมัครนี้ดำเนินการไปแล้ว');
+  Object.assign(app, { status: 'rejected', reviewNote: String(c.body?.note ?? '').trim().slice(0, 300) || null });
+  return { ok: true };
+});
+
 // ───────────────────────────── ค่าแผงตลาด: ผังแผง
 get('/market/stalls', (c) => {
   needPerm(c, 'market:read:MarketStall');
+  absorbCitizen(c.db);
   return c.db.marketStalls.filter((s) => s.active && s.organizationId === ORG_ID).sort((a, b) => a.stallCode.localeCompare(b.stallCode));
 });
 
