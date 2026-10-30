@@ -229,7 +229,7 @@ export class CitizenPayService {
     if (!r.affected) throw new ConflictException('แผงนี้ไม่ว่างแล้ว กรุณาเลือกแผงอื่น');
     await notifyUsersWithPermission(this.ds, this.notifications, orgId, { module: 'market', action: 'manage', subject: 'MarketStall' }, {
       type: 'market:reserved', title: 'มีการจองแผงใหม่', body: `แผง ${code} · ${n} · โทร ${p}${sd ? ` · เริ่ม ${sd} ${rd} วัน` : ''} — รอยืนยัน`,
-      actionUrl: '/market', refType: 'market_stall', refId: stall.id,
+      actionUrl: '/market?tab=reserve', refType: 'market_stall', refId: stall.id,
     });
     return { ok: true, stallCode: code };
   }

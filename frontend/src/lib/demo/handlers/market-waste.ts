@@ -207,7 +207,7 @@ function absorbCitizen(db: Ctx['db']) {
       status: 'reserved', tenantName: String(r.name ?? '').slice(0, 200), contactPhone: String(r.phone ?? '').slice(0, 20),
       reservedAt: r.reservedAt || nowIso(), reserveStartDate: r.startDate || null, reserveDays: r.days || null, reserveCardUrl: null,
     });
-    notify(db, staff, { type: 'market:reserved', title: 'มีการจองแผงใหม่', body: `แผง ${s.stallCode} · ${s.tenantName} · โทร ${s.contactPhone} — รอยืนยัน`, actionUrl: '/market' });
+    notify(db, staff, { type: 'market:reserved', title: 'มีการจองแผงใหม่', body: `แผง ${s.stallCode} · ${s.tenantName} · โทร ${s.contactPhone} — รอยืนยัน`, actionUrl: '/market?tab=reserve' });
     changed = true;
   }
   for (const a of takeCitizen(CITIZEN_APP_KEY)) {
@@ -243,7 +243,7 @@ post('/market/reservations/notify', (c) => {
   const rows = reservations(c.db);
   if (!rows.length) throw badRequest('ไม่มีการจองที่รอยืนยัน');
   const codes = rows.slice(0, 8).map((r) => r.stallCode).join(', ') + (rows.length > 8 ? ' ...' : '');
-  notify(c.db, c.db.users.map((u: Row) => u.id), { type: 'market:reserved_pending', title: `มีการจองรอยืนยัน ${rows.length} แผง`, body: `แผง ${codes}`, actionUrl: '/market' });
+  notify(c.db, c.db.users.map((u: Row) => u.id), { type: 'market:reserved_pending', title: `มีการจองรอยืนยัน ${rows.length} แผง`, body: `แผง ${codes}`, actionUrl: '/market?tab=reserve' });
   return { ok: true, count: rows.length };
 });
 
