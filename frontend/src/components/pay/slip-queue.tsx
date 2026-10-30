@@ -20,11 +20,20 @@ const fmtTime = (iso: string | null) =>
   iso ? new Date(iso).toLocaleString('th-TH', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—';
 
 /** คิวรอตรวจ: บิลที่ประชาชนแจ้งชำระ (แนบสลิป หรือแจ้งจะจ่ายเงินสด) — เจ้าหน้าที่ยืนยันรับเงินหรือตีกลับพร้อมเหตุผล */
+type SlipResult = { label: string; count: number; amount: number; ok: boolean; reason: string; receiptNos: string[] };
+
 export function SlipQueue({ kind, canManage }: { kind: 'market' | 'waste'; canManage: boolean }) {
   const qc = useQueryClient();
   const [rejecting, setRejecting] = useState<QueueBill | null>(null);
   const [note, setNote] = useState('');
   const [zoom, setZoom] = useState<string | null>(null);
+  const [batch, setBatch] = useState<{ results: SlipResult[]; remaining: number } | null>(null);
+  // ปุ่มตรวจอัตโนมัติใช้ได้เมื่อ อบต. ผูกโทเคนผู้ให้บริการตรวจสลิปไว้แล้ว
+  const { data: tokenSet = false } = useQuery<boolean>({
+    queryKey: [kind, 'slip-token'],
+    queryFn: async () => !!(await api.get(`/${kind}/config`)).data.data?.slipTokenSet,
+    staleTime: 60_000,
+  });
 
   const { data, isLoading } = useQuery<QueueBill[]>({
     queryKey: [kind, 'queue'],
@@ -33,6 +42,11 @@ export function SlipQueue({ kind, canManage }: { kind: 'market' | 'waste'; canMa
   });
   const refresh = () => { qc.invalidateQueries({ queryKey: [kind] }); };
 
+  const verifyAll = useMutation({
+    mutationFn: async () => (await api.post(`/${kind}/bills/verify-slips`)).data.data as { results: SlipResult[]; remaining: number },
+    onSuccess: (d) => { setBatch(d); refresh(); },
+    onError: (e) => toast.error(getErrorMessage(e)),
+  });
   const confirm = useMutation({
     mutationFn: (b: QueueBill) => api.post(`/${kind}/bills/${b.id}/pay`, { method: b.submittedMethod === 'cash' ? 'cash' : 'transfer' }),
     onSuccess: () => { toast.success('บันทึกการรับเงินแล้ว'); refresh(); },
@@ -81,7 +95,36 @@ export function SlipQueue({ kind, canManage }: { kind: 'market' | 'waste'; canMa
 
   return (
     <div className="space-y-5">
-      <Panel title={<>สลิปโอนรอตรวจ <span className="text-sm font-normal text-gray-500">({slips.length})</span></>}>
+      {batch && (
+        <Panel
+          title={<>ผลตรวจสลิป <span className="text-sm font-normal text-gray-500">ผ่าน {batch.results.filter((r) => r.ok).length} · ไม่ผ่าน {batch.results.filter((r) => !r.ok).length}</span></>}
+          actions={<Button size="sm" variant="outline" onClick={() => setBatch(null)}>ปิด</Button>}
+        >
+          <ul>
+            {batch.results.map((r, i) => (
+              <li key={i} className="flex flex-wrap items-start gap-3 border-t border-gray-100 px-4 py-3 first:border-t-0">
+                <span className={r.ok ? 'rounded-full bg-green-100 px-2.5 py-0.5 text-sm font-semibold text-green-700' : 'rounded-full bg-red-100 px-2.5 py-0.5 text-sm font-semibold text-red-700'}>{r.ok ? 'ผ่าน' : 'ไม่ผ่าน'}</span>
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium">{r.label} <span className="font-normal text-gray-500">· {money(r.amount)} บาท</span></p>
+                  <p className="text-sm text-gray-500">{r.ok ? `ชำระแล้ว · ใบเสร็จ ${r.receiptNos.join(', ')}` : `${r.reason} — ยังอยู่ในคิว ให้ดูรูปสลิปแล้วกดยืนยันหรือตีกลับเอง`}</p>
+                </div>
+              </li>
+            ))}
+            {!batch.results.length && <li><Empty>ไม่มีสลิปให้ตรวจ</Empty></li>}
+          </ul>
+          {batch.remaining > 0 && <p className="border-t border-gray-100 px-4 py-3 text-sm text-amber-700">ตรวจรอบนี้ {batch.results.length} รายการ เหลืออีก {batch.remaining} รายการ — กดตรวจอีกครั้งเพื่อตรวจต่อ</p>}
+        </Panel>
+      )}
+      <Panel
+        title={<>สลิปโอนรอตรวจ <span className="text-sm font-normal text-gray-500">({slips.length})</span></>}
+        actions={canManage && slips.length > 0 && (
+          <Button size="sm" disabled={!tokenSet} loading={verifyAll.isPending} onClick={() => verifyAll.mutate()}
+            title={tokenSet ? 'ส่งสลิปทั้งหมดไปตรวจกับผู้ให้บริการ' : 'ผูกโทเคนตรวจสลิปที่แท็บ "ตั้งค่า" ก่อน'}>
+            ตรวจสลิปทั้งหมด ({slips.length})
+          </Button>
+        )}
+      >
+        {canManage && slips.length > 0 && !tokenSet && <p className="border-b border-gray-100 px-4 py-2 text-sm text-gray-500">อยากให้ระบบตรวจสลิปให้ทั้งหมดในคลิกเดียว? ผูกโทเคน Slip2Go ที่แท็บ “ตั้งค่า” ก่อน</p>}
         {isLoading ? <Empty>กำลังโหลด…</Empty> : slips.length ? slips.map(card) : <Empty>ไม่มีสลิปรอตรวจ</Empty>}
       </Panel>
       <Panel title={<>แจ้งจ่ายเงินสด รอรับที่ อบต. <span className="text-sm font-normal text-gray-500">({cash.length})</span></>}>

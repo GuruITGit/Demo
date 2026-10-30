@@ -8,6 +8,8 @@ import { PayConfigService } from './pay-config.service';
 import { currentPeriod, nextReceiptNo, periodEndDate } from './receipt';
 import { NotificationsService } from '../notifications/notifications.service';
 import { notifyUsersWithPermission } from '../../common/notify-permission';
+import { StorageService } from '../storage/storage.service';
+import { verifyPendingSlips } from './slip-check';
 
 @Injectable()
 export class MarketService {
@@ -17,7 +19,13 @@ export class MarketService {
     private readonly ds: DataSource,
     private readonly config: PayConfigService,
     private readonly notifications: NotificationsService,
+    private readonly storage: StorageService,
   ) {}
+
+  /** ตรวจสลิปโอนที่รอตรวจทั้งหมดในคลิกเดียว (ต้องผูกโทเคนตรวจสลิปไว้) */
+  async verifySlips(orgId: string) {
+    return verifyPendingSlips(this.ds, this.storage, await this.config.get(orgId), orgId, MarketBill, 'MK', (b: MarketBill) => `แผง ${b.stallCode}`);
+  }
 
   /** แผงที่ประชาชนจองไว้ รอเจ้าหน้าที่ยืนยัน — พร้อมชื่อ เบอร์ วันเริ่มเช่า และรูปบัตร */
   async listReservations(orgId: string) {
