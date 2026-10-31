@@ -3,7 +3,7 @@ type StallStatus = 'available' | 'reserved' | 'occupied';
 interface PlanRow { id: string; count: number; monthlyRate?: number }
 interface Stall { id: string; row?: string; locationId?: string; outside?: boolean; active?: boolean; deleted?: boolean; rentRate?: number; rentPeriod?: 'daily' | 'monthly'; tenantName?: string; status: StallStatus }
 interface OutsideTenant { name: string; paid: boolean }
-interface OutsideLocation { id: string; name: string; rentRate: number; rentPeriod: 'daily' | 'monthly'; enabled: boolean; deleted: boolean; tenants: OutsideTenant[]; openFrom?: string | null; openUntil?: string | null }
+interface OutsideLocation { id: string; name: string; rentRate: number; rentPeriod: 'daily' | 'monthly'; enabled: boolean; deleted: boolean; tenants: OutsideTenant[]; openFrom?: string | null; openUntil?: string | null; capacity?: number | null; full?: boolean }
 interface MarketEvent { id: string; title: string; date: string; month: string; place: string; slots: number; booked: number; fee: number }
 interface DemoData {
   rates: { regularRent: number; stallWaste: number };

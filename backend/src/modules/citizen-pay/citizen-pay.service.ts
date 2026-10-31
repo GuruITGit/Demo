@@ -109,7 +109,10 @@ export class CitizenPayService {
   /** จุดแผงลอยที่เปิดให้เช่าอยู่ (เฉพาะที่เจ้าหน้าที่เปิดไว้และยังไม่ถูกลบ) */
   async outsideLocations(orgId: string) {
     const rows = await this.outsideLocs.find({ where: { organizationId: orgId, active: true, enabled: true }, order: { createdAt: 'ASC' } });
-    return rows.map((l) => ({ id: l.id, name: l.name, rentRate: Number(l.rentRate), rentPeriod: l.rentPeriod === 'monthly' ? 'monthly' : 'daily', openFrom: l.openFrom, openUntil: l.openUntil, openNow: inWindow(l.openFrom, l.openUntil) }));
+    return Promise.all(rows.map(async (l) => {
+      const taken = await this.outsideApps.count({ where: { organizationId: orgId, locationId: l.id, status: In(['pending', 'approved']) } });
+      return { id: l.id, name: l.name, rentRate: Number(l.rentRate), rentPeriod: l.rentPeriod === 'monthly' ? 'monthly' : 'daily', openFrom: l.openFrom, openUntil: l.openUntil, openNow: inWindow(l.openFrom, l.openUntil), capacity: l.capacity ?? null, full: !!l.capacity && taken >= l.capacity };
+    }));
   }
 
   async marketStalls(orgId: string) {
@@ -246,6 +249,10 @@ export class CitizenPayService {
     if (!card) throw new BadRequestException('กรุณาแนบรูปบัตรประชาชน');
     const loc = await this.outsideLocs.findOne({ where: { id: locId, organizationId: orgId, active: true, enabled: true } });
     if (!loc) throw new NotFoundException('ไม่พบจุดแผงลอยนี้หรือปิดให้เช่าแล้ว');
+    if (loc.capacity) {
+      const taken = await this.outsideApps.count({ where: { organizationId: orgId, locationId: loc.id, status: In(['pending', 'approved']) } });
+      if (taken >= loc.capacity) throw new BadRequestException('จุดนี้จองเต็มแล้ว');
+    }
     if (!inWindow(loc.openFrom, loc.openUntil)) throw new BadRequestException(`จุดนี้เปิดให้เช่าเฉพาะช่วง ${loc.openFrom ?? '…'} ถึง ${loc.openUntil ?? '…'}`);
     const d = Math.min(Math.max(Number(days) || 1, 1), 365);
     const sd = startDate && /^\d{4}-\d{2}-\d{2}$/.test(startDate) ? startDate : null;
