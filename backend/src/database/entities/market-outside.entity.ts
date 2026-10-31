@@ -23,6 +23,13 @@ export class MarketOutsideLocation {
   @Column({ type: 'boolean', default: true })
   enabled: boolean;
 
+  /** ช่วงเปิดให้เช่า (ว่าง = ไม่จำกัด) */
+  @Column({ name: 'open_from', type: 'date', nullable: true })
+  openFrom: string | null;
+
+  @Column({ name: 'open_until', type: 'date', nullable: true })
+  openUntil: string | null;
+
   /** false = ลบแล้ว (เก็บประวัติรายการเก็บเงินไว้) */
   @Column({ type: 'boolean', default: true })
   active: boolean;
