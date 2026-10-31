@@ -111,7 +111,7 @@ export class CitizenPayService {
     const rows = await this.outsideLocs.find({ where: { organizationId: orgId, active: true, enabled: true }, order: { createdAt: 'ASC' } });
     return Promise.all(rows.map(async (l) => {
       const taken = await this.outsideApps.count({ where: { organizationId: orgId, locationId: l.id, status: In(['pending', 'approved']) } });
-      return { id: l.id, name: l.name, rentRate: Number(l.rentRate), rentPeriod: l.rentPeriod === 'monthly' ? 'monthly' : 'daily', openFrom: l.openFrom, openUntil: l.openUntil, openNow: inWindow(l.openFrom, l.openUntil), capacity: l.capacity ?? null, full: !!l.capacity && taken >= l.capacity };
+      return { id: l.id, name: l.name, rentRate: Number(l.rentRate), rentPeriod: l.rentPeriod === 'monthly' ? 'monthly' : 'daily', openFrom: l.openFrom, openUntil: l.openUntil, openNow: inWindow(l.openFrom, l.openUntil), capacity: l.capacity ?? null, taken, full: !!l.capacity && taken >= l.capacity };
     }));
   }
 

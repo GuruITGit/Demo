@@ -851,6 +851,8 @@ catch {
 let view = savedPageState.view, zone = 'A', stallArea = savedPageState.stallArea, selectedStall = savedPageState.selectedStall, signupStallId = null, selectedOutsideLocationId = 'LOC-01';
 let paymentMapMode = savedPageState.paymentMap;
 let signupLocationId = null;
+function locWindowLine(l) { return l.openFrom || l.openUntil ? `<span class="loc-rent">เปิดให้เช่า${l.openFrom ? ' ตั้งแต่ ' + thaiDateLabel(l.openFrom) : ''}${l.openUntil ? ' ถึง ' + thaiDateLabel(l.openUntil) : ''}</span>` : ''; }
+function locSeatsLine(l) { return l.capacity ? `<span class="loc-rent">${l.full ? 'จองเต็มแล้ว' : 'ผู้เช่า ' + (l.taken || 0) + '/' + l.capacity + ' · เหลือ ' + (l.capacity - (l.taken || 0)) + ' ที่'}</span>` : ''; }
 function locationOpenNow(l) { const t = localISODate(); return (!l.openFrom || t >= String(l.openFrom)) && (!l.openUntil || t <= String(l.openUntil)); }
 function openOutsideLocations() { return DEMO.outsideLocations.filter(location => location.enabled && !location.deleted && locationOpenNow(location)); }
 function outsideLocationIsOpen(id) { return openOutsideLocations().some(location => location.id === id); }
@@ -1071,7 +1073,7 @@ function outsideStallPage() { const locations = openOutsideLocations(); if (!loc
     stallArea = 'regular';
     return regularStallPage();
 } if (!locations.some(x => x.id === selectedOutsideLocationId))
-    selectedOutsideLocationId = locations[0].id; const location = locations.find(x => x.id === selectedOutsideLocationId); return `<div class="page-heading"><h1>ผังตลาด อบต.</h1><p>พื้นที่ที่เปิดให้เช่า</p></div><div class="area-switch"><button onclick="chooseStallArea('regular')">แผงประจำ</button><button class="active" onclick="chooseStallArea('outside')">แผงลอยนอกผัง</button></div><div class="loc-list" role="radiogroup" aria-label="เลือกพื้นที่แผงลอย">${locations.map(l => `<button type="button" class="loc-card ${l.id === location.id ? 'active' : ''}" role="radio" aria-checked="${l.id === location.id}" ${l.full ? 'disabled' : `onclick="chooseOutsideLocation('${l.id}')"`}><span class="loc-name">${escapeHTML(l.name)}</span>${l.full ? '<span class="outside-full-tag">จองเต็มแล้ว</span>' : ''}<span class="loc-rent">${money(l.rentRate)} บาท/${rentPeriodUnit(l.rentPeriod)}</span></button>`).join('')}</div><div class="outside-actions"><button type="button" class="primary-btn" onclick="openOutsideSignup()">เช่าแผงลอยนี้</button><button type="button" class="primary-btn alt" onclick="payOutsideLocation()">ชำระค่าเช่า</button></div>`; }
+    selectedOutsideLocationId = locations[0].id; const location = locations.find(x => x.id === selectedOutsideLocationId); return `<div class="page-heading"><h1>ผังตลาด อบต.</h1><p>พื้นที่ที่เปิดให้เช่า</p></div><div class="area-switch"><button onclick="chooseStallArea('regular')">แผงประจำ</button><button class="active" onclick="chooseStallArea('outside')">แผงลอยนอกผัง</button></div><div class="loc-list" role="radiogroup" aria-label="เลือกพื้นที่แผงลอย">${locations.map(l => `<button type="button" class="loc-card ${l.id === location.id ? 'active' : ''}" role="radio" aria-checked="${l.id === location.id}" ${l.full ? 'disabled' : `onclick="chooseOutsideLocation('${l.id}')"`}><span class="loc-name">${escapeHTML(l.name)}</span>${l.full ? '<span class="outside-full-tag">จองเต็มแล้ว</span>' : ''}<span class="loc-rent">${money(l.rentRate)} บาท/${rentPeriodUnit(l.rentPeriod)}</span>${locWindowLine(l)}${locSeatsLine(l)}</button>`).join('')}</div><div class="outside-actions"><button type="button" class="primary-btn" onclick="openOutsideSignup()">เช่าแผงลอยนี้</button><button type="button" class="primary-btn alt" onclick="payOutsideLocation()">ชำระค่าเช่า</button></div>`; }
 function openSignupForStall(id) { const s = findStall(id); if (!s || s.active === false || s.status !== 'available' || (s.outside && !outsideLocationIsOpen(s.locationId)))
     return toast('ช่องนี้ไม่พร้อมให้จองแล้ว'); selectedStall = id; signupStallId = id; setPage('signup'); }
 /** ฟิลด์วันเริ่มเช่า/จำนวนวันของแผงลอย (รายวันต้องระบุจำนวนวัน) */
@@ -1265,7 +1267,7 @@ async function refreshOutside() { try {
         if (r.ok) {
             const j = await r.json();
             if (Array.isArray(j?.data))
-                list = j.data.slice(0, 50).map((x) => ({ id: String(x.id), name: String(x.name).slice(0, 60), rentRate: Number(x.rentRate) || 0, rentPeriod: x.rentPeriod === 'monthly' ? 'monthly' : 'daily', enabled: true, deleted: false, tenants: [], openFrom: x.openFrom || null, openUntil: x.openUntil || null, capacity: x.capacity || null, full: !!x.full }));
+                list = j.data.slice(0, 50).map((x) => ({ id: String(x.id), name: String(x.name).slice(0, 60), rentRate: Number(x.rentRate) || 0, rentPeriod: x.rentPeriod === 'monthly' ? 'monthly' : 'daily', enabled: true, deleted: false, tenants: [], openFrom: x.openFrom || null, openUntil: x.openUntil || null, capacity: x.capacity || null, taken: Number(x.taken) || 0, full: !!x.full }));
         }
     }
     catch { }
