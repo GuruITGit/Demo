@@ -958,7 +958,10 @@ async function searchStallBills(name, stall) {
         if (r === null) { // เดโม่: ไม่มี API → กรองข้อมูลตัวอย่างให้ตรงทั้งรหัสแผงและชื่อ
             demoBillsAll ?? (demoBillsAll = DEMO.bills);
             const nk = demoNameKey(verifiedName);
-            if (searchTerm) {
+            if (searchTerm.startsWith('OUT-')) {
+                DEMO.bills = readOutsideBills().filter((x) => String(x.stallCode).toUpperCase() === searchTerm && demoNameKey(x.payerName) === nk).map(toStallBill);
+            }
+            else if (searchTerm) {
                 DEMO.bills = demoBillsAll.filter((b) => b.payerType === 'stall' && b.stall?.toUpperCase() === searchTerm && demoNameKey(b.merchant) === nk);
             }
             else { // แผงลอย: ชื่ออย่างเดียว — ชื่อซ้ำหลายรายต้องพิมพ์รหัสผู้เช่าด้วย
