@@ -441,3 +441,6 @@ html { transition: font-size 0.15s ease; }
   src: url('/fonts/THSarabunNew-Bold.ttf') format('truetype');
   font-weight: 700; font-style: normal; font-display: swap;
 }
+
+/* รายการในเมนูดรอปดาวน์ของ select: อ่านออกทุกโหมด (ไม่ขึ้นตัวอักษรขาวบนพื้นขาว) */
+select option { background-color: #ffffff; color: #111827; }
