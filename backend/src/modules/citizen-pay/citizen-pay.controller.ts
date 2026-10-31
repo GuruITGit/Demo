@@ -19,6 +19,7 @@ class ApplyOutsideDto {
   @IsString() @MaxLength(20) phone: string;
   @IsOptional() @IsString() @MaxLength(10) startDate?: string;
   @IsOptional() @IsString() @MaxLength(4) days?: string;
+  @IsOptional() @IsString() @MaxLength(10) tenancyType?: string;
   @IsOptional() @IsString() org?: string;
 }
 class SubmitDto {
@@ -96,7 +97,7 @@ export class CitizenPayController {
     fileFilter: (_req, file, cb) => /^image\//.test(file.mimetype) ? cb(null, true) : cb(new BadRequestException('แนบได้เฉพาะรูปภาพ') as any, false),
   }))
   async applyOutside(@Req() req: Request, @Param('id', ParseUUIDPipe) id: string, @UploadedFile() card: Express.Multer.File | undefined, @Body() dto: ApplyOutsideDto) {
-    return this.service.applyOutside(await this.org(req, dto.org, true), id, dto.name, dto.phone, card, dto.startDate, Number(dto.days) || undefined);
+    return this.service.applyOutside(await this.org(req, dto.org, true), id, dto.name, dto.phone, card, dto.startDate, Number(dto.days) || undefined, dto.tenancyType === 'temporary' ? 'temporary' : 'regular');
   }
 
   @Get('market/outside')

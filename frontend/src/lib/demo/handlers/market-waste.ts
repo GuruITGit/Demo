@@ -93,13 +93,13 @@ registerSeed((db) => {
   // ผู้เช่าแผงลอยตัวอย่าง: รายวัน (ลานหน้าตลาด) และรายเดือน (ลานจอดรถ) — ค้างบ้าง ชำระครบบ้าง
   const isoDaysAgo = (n: number) => { const d = new Date(); d.setDate(d.getDate() - n); return d.toISOString().slice(0, 10); };
   const OUT = [
-    { code: 'OUT-0001', name: 'สมศรี ค้าดี', phone: '0871110001', loc: 'outside-1', days: 10, start: isoDaysAgo(12), dues: [-2, -1, 0] },
-    { code: 'OUT-0002', name: 'วิชัย ตลาดเช้า', phone: '0871110002', loc: 'outside-1', days: 30, start: isoDaysAgo(30), dues: [] },
-    { code: 'OUT-0003', name: 'ประนอม แสงจันทร์', phone: '0871110003', loc: 'outside-2', days: 1, start: isoDaysAgo(40), dues: [-1, 0] },
-    { code: 'OUT-0004', name: 'อรุณี ใจดี', phone: '0871110004', loc: 'outside-1', days: 5, start: isoDaysAgo(5), dues: [0] },
+    { code: 'OUT-0001', name: 'สมศรี ค้าดี', phone: '0871110001', loc: 'outside-1', days: 10, start: isoDaysAgo(12), dues: [-2, -1, 0], tenancy: 'regular' as const },
+    { code: 'OUT-0002', name: 'วิชัย ตลาดเช้า', phone: '0871110002', loc: 'outside-1', days: 30, start: isoDaysAgo(30), dues: [], tenancy: 'temporary' as const },
+    { code: 'OUT-0003', name: 'ประนอม แสงจันทร์', phone: '0871110003', loc: 'outside-2', days: 1, start: isoDaysAgo(40), dues: [-1, 0], tenancy: 'regular' as const },
+    { code: 'OUT-0004', name: 'อรุณี ใจดี', phone: '0871110004', loc: 'outside-1', days: 5, start: isoDaysAgo(5), dues: [0], tenancy: 'temporary' as const },
   ];
   db.marketOutsideApps = OUT.map((o, i) => ({
-    id: 'app-out-' + (i + 1), organizationId: ORG_ID, locationId: o.loc, appCode: o.code, applicantName: o.name, name: o.name, phone: o.phone,
+    id: 'app-out-' + (i + 1), organizationId: ORG_ID, locationId: o.loc, appCode: o.code, applicantName: o.name, name: o.name, phone: o.phone, tenancyType: o.tenancy,
     idCardUrl: null, startDate: o.start, days: o.days, status: 'approved', reviewNote: null, billId: null, createdAt: nowIso(),
   }));
   const outBills: Row[] = [];
@@ -275,7 +275,7 @@ function absorbCitizen(db: Ctx['db']) {
     if (!loc || db.marketOutsideApps.some((x) => x.appCode === a.appCode)) continue;
     db.marketOutsideApps.push({
       id: uid(), organizationId: ORG_ID, locationId: loc.id, appCode: a.appCode, applicantName: String(a.name ?? '').slice(0, 200), phone: String(a.phone ?? '').slice(0, 20),
-      idCardUrl: null, startDate: a.startDate || null, days: Number(a.days) || 1, status: 'pending', reviewNote: null, billId: null, createdAt: a.createdAt || nowIso(),
+      idCardUrl: null, startDate: a.startDate || null, days: Number(a.days) || 1, status: 'pending', reviewNote: null, billId: null, createdAt: a.createdAt || nowIso(), tenancyType: a.tenancyType === 'temporary' ? 'temporary' : 'regular',
     });
     notify(db, staff, { type: 'market:outside_applied', title: 'มีใบสมัครแผงลอยใหม่', body: `${a.appCode} · ${loc.name} · ${a.name} · โทร ${a.phone}`, actionUrl: '/market' });
     changed = true;
@@ -344,7 +344,7 @@ post('/market/outside/applications/:id/approve', (c) => {
   const rate = Number(loc.rentRate);
   const amount = loc.rentPeriod === 'monthly' ? rate : rate * app.days;
   const per = app.startDate ? `${Number(app.startDate.slice(0, 4)) + 543}-${app.startDate.slice(5, 7)}` : period();
-  const bill = { id: uid(), organizationId: ORG_ID, stallId: null, stallCode: app.appCode, payerName: app.applicantName, kind: 'rent', period: per, amount: amount.toFixed(2), dueDate: periodEnd(per), status: 'unpaid', paidMethod: null, paidAt: null, receiptNo: null, submittedMethod: null, submittedAt: null, slipUrl: null, reviewNote: null };
+  const bill = { id: uid(), organizationId: ORG_ID, stallId: null, stallCode: app.appCode, payerName: app.applicantName, kind: 'rent', period: per, amount: amount.toFixed(2), dueDate: app.tenancyType === 'temporary' ? ymd(new Date()) : periodEnd(per), status: 'unpaid', paidMethod: null, paidAt: null, receiptNo: null, submittedMethod: null, submittedAt: null, slipUrl: null, reviewNote: null };
   c.db.marketBills.push(bill);
   Object.assign(app, { status: 'approved', billId: bill.id, reviewNote: null });
   syncCitizenOutsideBills(c.db);
