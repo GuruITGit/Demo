@@ -431,6 +431,12 @@ function TenantsStalls({ sum }: { sum?: Summary }) {
   const qc = useQueryClient();
   const { data: stalls = [] } = useQuery<Stall[]>({ queryKey: ['market', 'stalls'], queryFn: async () => (await api.get('/market/stalls')).data.data });
   const [editing, setEditing] = useState<Stall | null>(null);
+  const [cancelling, setCancelling] = useState<Stall | null>(null);
+  const cancelStall = useMutation({
+    mutationFn: (s: Stall) => api.patch(`/market/stalls/${s.id}`, { status: 'available' }),
+    onSuccess: () => { toast.success('ยกเลิกผู้เช่าแล้ว แผงกลับเป็นว่าง'); setCancelling(null); qc.invalidateQueries({ queryKey: ['market'] }); },
+    onError: (e) => { toast.error(getErrorMessage(e)); setCancelling(null); },
+  });
   const saveStall = useMutation({
     mutationFn: ({ id, body }: { id: string; body: object }) => api.patch(`/market/stalls/${id}`, body),
     onSuccess: () => { toast.success('บันทึกผู้เช่าแล้ว'); setEditing(null); qc.invalidateQueries({ queryKey: ['market'] }); },
@@ -447,6 +453,15 @@ function TenantsStalls({ sum }: { sum?: Summary }) {
       title={<>ผู้เช่าทั้งหมด <span className="text-sm font-normal text-gray-500">{rows.length} แผง</span></>}
       actions={<Button size="sm" variant="outline" onClick={() => window.print()}>พิมพ์รายงาน</Button>}
     >
+      <ConfirmDialog
+        open={!!cancelling}
+        onOpenChange={(o) => { if (!o) setCancelling(null); }}
+        loading={cancelStall.isPending}
+        onConfirm={() => cancelling && cancelStall.mutate(cancelling)}
+        title={`ยกเลิกผู้เช่าแผง ${cancelling?.stallCode ?? ''}?`}
+        description={`ผู้เช่า ${cancelling?.tenantName ?? ''} จะถูกลบออกและแผงกลับเป็นว่าง บิลเดิมยังเก็บไว้`}
+        confirmText="ยกเลิกผู้เช่า"
+      />
       {editing && (
         <div className="mb-4">
           <StallEditor
@@ -490,7 +505,14 @@ function TenantsStalls({ sum }: { sum?: Summary }) {
                   <td className="px-4 py-2 text-right">{money(Number(s.monthlyRate))}</td>
                   <td className="px-4 py-2 text-gray-600">{s.reserveStartDate ? `${fmtDate(s.reserveStartDate)}${s.reserveDays ? ` · ${s.reserveDays} วัน` : ''}` : '—'}</td>
                   <td className="px-4 py-2 text-right">{a ? <span className={dueTone(a.months)}>{a.months} เดือน · {money(a.total)} บาท</span> : '—'}</td>
-                  <td className="px-4 py-2 text-right"><Button size="sm" variant="outline" onClick={() => setEditing(s)}>จัดการ</Button></td>
+                  <td className="px-4 py-2 text-right">
+                    <div className="flex justify-end gap-2">
+                      <Button size="sm" variant="outline" onClick={() => setEditing(s)}>จัดการ</Button>
+                      {s.status !== 'available' && (
+                        <Button size="sm" variant="outline" className="text-red-600" disabled={!!a} title={a ? 'ต้องชำระยอดค้างให้ครบก่อน' : undefined} onClick={() => setCancelling(s)}>ยกเลิกผู้เช่า</Button>
+                      )}
+                    </div>
+                  </td>
                 </tr>
               );
             })}

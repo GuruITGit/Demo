@@ -58,6 +58,10 @@ export class MarketService {
   async updateStall(orgId: string, id: string, dto: UpdateStallDto) {
     const stall = await this.stalls.findOne({ where: { id, organizationId: orgId } });
     if (!stall) throw new NotFoundException('ไม่พบแผงนี้');
+    if (dto.status === 'available' && stall.status !== 'available') {
+      const open = await this.bills.count({ where: { organizationId: orgId, stallCode: stall.stallCode, status: In(['unpaid', 'pending', 'mismatch']) } });
+      if (open > 0) throw new BadRequestException(`ยังมียอดค้างชำระ ${open} รายการ ต้องชำระให้ครบก่อนจึงยกเลิกผู้เช่าได้`);
+    }
     if (dto.status !== undefined) stall.status = dto.status;
     if (dto.tenantName !== undefined) stall.tenantName = dto.tenantName || null;
     if (dto.monthlyRate !== undefined) stall.monthlyRate = String(dto.monthlyRate);

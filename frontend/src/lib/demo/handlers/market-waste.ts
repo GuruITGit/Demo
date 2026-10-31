@@ -377,6 +377,10 @@ patch('/market/stalls/:id', (c) => {
   needPerm(c, 'market:manage:MarketStall');
   const s = byIdOrThrow(c.db.marketStalls, c.params.id, 'ไม่พบแผงนี้');
   const b = c.body ?? {};
+  if (b.status === 'available' && s.status !== 'available') {
+    const open = c.db.marketBills.filter((x) => x.organizationId === ORG_ID && x.stallCode === s.stallCode && ['unpaid', 'pending', 'mismatch'].includes(x.status)).length;
+    if (open > 0) throw badRequest(`ยังมียอดค้างชำระ ${open} รายการ ต้องชำระให้ครบก่อนจึงยกเลิกผู้เช่าได้`);
+  }
   if (b.status !== undefined) s.status = b.status;
   if (b.tenantName !== undefined) s.tenantName = b.tenantName || null;
   if (b.monthlyRate !== undefined) s.monthlyRate = String(Number(b.monthlyRate) || 0);
