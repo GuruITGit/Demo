@@ -47,6 +47,7 @@ export function MarketAdmin() {
   const sp = useSearchParams();
   const [tab, setTab] = useState<Tab>(sp.get('tab') === 'reserve' ? 'reserve' : 'overview');
   const [billFilter, setBillFilter] = useState<{ stall?: string; status?: string; n: number }>({ n: 0 });
+  const [reserveFilter, setReserveFilter] = useState<'pending' | 'approved' | 'rejected' | 'cancelled' | 'all'>('pending');
 
   const { data: sum } = useQuery<Summary>({ queryKey: ['market', 'summary'], queryFn: async () => (await api.get('/market/summary')).data.data, refetchInterval: 60_000 });
   const pendingCount = sum?.byStatus.find((s) => s.status === 'pending')?.count ?? 0;
@@ -76,9 +77,16 @@ export function MarketAdmin() {
       {tab === 'overview' && <Overview sum={sum} onGo={setTab} />}
       {tab === 'queue' && <SlipQueue kind="market" canManage={canBill} />}
       {tab === 'reserve' && (
-        <div className="grid items-start gap-5 lg:grid-cols-2">
-          <ReservationCheck canManage={canStall} />
-          <OutsideApplications canManage={canBill} />
+        <div className="space-y-4">
+          <div className="flex flex-wrap justify-center gap-2">
+            {([['pending', 'รอตรวจ'], ['approved', 'ผู้เช่า'], ['rejected', 'ไม่อนุมัติ'], ['cancelled', 'ลบแล้ว'], ['all', 'ทั้งหมด']] as const).map(([k, label]) => (
+              <Button key={k} size="sm" variant={reserveFilter === k ? 'default' : 'outline'} onClick={() => setReserveFilter(k)}>{label}</Button>
+            ))}
+          </div>
+          <div className="grid items-start gap-5 lg:grid-cols-2">
+            <ReservationCheck canManage={canStall} filter={reserveFilter} />
+            <OutsideApplications canManage={canBill} filter={reserveFilter} />
+          </div>
         </div>
       )}
       {tab === 'plan' && <Plan canManage={canStall} onBills={(code) => goBills(code)} />}
