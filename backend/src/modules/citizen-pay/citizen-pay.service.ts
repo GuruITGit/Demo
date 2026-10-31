@@ -26,6 +26,7 @@ export const maskName = (n: string | null) => {
 };
 const maskPhone = (p: string | null) => (p && p.length >= 9 ? `${p.slice(0, 3)}-xxx-${p.slice(-4)}` : null);
 
+const NAME_NOT_FOUND = 'ไม่พบชื่อผู้เช่านี้ในระบบ กรุณาตรวจสอบชื่อ-นามสกุลให้ตรงกับที่สมัคร';
 const NO_MATCH = 'ไม่พบข้อมูลที่ตรงกัน กรุณาตรวจสอบชื่อและเลขล็อก/บ้านเลขที่ให้ตรงกับที่ลงทะเบียนไว้';
 const TITLES = /^(นางสาว|น\.ส\.|นาย|นาง|เด็กชาย|เด็กหญิง|ด\.ช\.|ด\.ญ\.|คุณ)\s*/;
 /** ตัดคำนำหน้า/ช่องว่าง/เลขไทย → ใช้เทียบชื่อ */
@@ -125,7 +126,14 @@ export class CitizenPayService {
     const rows = await this.marketBills.find({ where: { organizationId: orgId, status: In(OPEN_STATUSES), stallCode: Like('OUT-%') }, order: { period: 'DESC', kind: 'ASC' }, take: 500 });
     const hits = rows.filter((b) => nameMatches(b.payerName, nameRaw));
     const codes = [...new Set(hits.map((b) => b.stallCode))];
-    if (!codes.length) throw new NotFoundException(NO_MATCH);
+    if (!codes.length) { // ไม่มียอดค้าง: ถ้ามีชื่อเป็นผู้เช่าที่อนุมัติแล้ว → แจ้งว่าไม่มียอดค้าง · ไม่มีชื่อ → ไม่พบ
+      const reg = await this.outsideApps.find({ where: { organizationId: orgId, status: 'approved' } });
+      const mine = reg.filter((a) => nameMatches(a.applicantName, nameRaw));
+      if (!mine.length) throw new NotFoundException(NAME_NOT_FOUND);
+      const regCodes = [...new Set(mine.map((a) => a.appCode))];
+      if (regCodes.length > 1) throw new BadRequestException('ชื่อนี้มีผู้เช่าแผงลอยมากกว่าหนึ่งราย กรุณาพิมพ์รหัสผู้เช่า (OUT-xxxx) ต่อท้ายชื่อ');
+      return { stall: { stallCode: regCodes[0], zone: 'แผงลอย', status: 'outside', monthlyRate: 0 }, bills: [] };
+    }
     if (codes.length > 1) throw new BadRequestException('ชื่อนี้มีผู้เช่าแผงลอยมากกว่าหนึ่งราย กรุณาพิมพ์รหัสผู้เช่า (OUT-xxxx) ต่อท้ายชื่อ');
     return { stall: { stallCode: codes[0], zone: 'แผงลอย', status: 'occupied', monthlyRate: 0 }, bills: hits.slice(0, 60).map(publicMarketBill) };
   }
@@ -271,7 +279,7 @@ export class CitizenPayService {
   /** ค้นบิลแผงลอยด้วยรหัสใบสมัคร (OUT-xxxx) — ใบต้องอนุมัติแล้ว และชื่อผู้สมัครต้องตรงกัน */
   private async outsideBillsFor(orgId: string, code: string, nameRaw: string) {
     const app = await this.outsideApps.findOne({ where: { organizationId: orgId, appCode: code, status: 'approved' }, relations: ['location'] });
-    if (!app || !nameMatches(app.applicantName, nameRaw)) throw new NotFoundException(NO_MATCH);
+    if (!app || !nameMatches(app.applicantName, nameRaw)) throw new NotFoundException(NAME_NOT_FOUND);
     const rows = await this.marketBills.find({ where: { organizationId: orgId, stallCode: code, status: In(OPEN_STATUSES) }, order: { period: 'DESC', kind: 'ASC' }, take: 60 });
     return {
       stall: { stallCode: code, zone: `แผงลอย · ${app.location?.name ?? ''}`, status: 'outside', monthlyRate: Number(app.location?.rentRate ?? 0) },

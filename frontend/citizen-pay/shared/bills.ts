@@ -25,7 +25,7 @@ function groupBillsByPayerMonth(items:Bill[]){const keys=[...new Set(items.map(b
 function toggleMonth(ids:string,on:boolean){for(const id of ids.split('|')){const bill=DEMO.bills.find(b=>b.id===id);if(!bill||!PAYABLE.includes(bill.status))continue;on?selectedBills.add(id):selectedBills.delete(id)}render()}
 function searchBills(q:string){searchTerm=q.trim();resetSelection();render()}
 
-interface BillListOptions { title: string; matches: Bill[]; promptText: string; chargeLabel(b:Bill): string; payerLabel(b:Bill): string }
+interface BillListOptions { title: string; matches: Bill[]; promptText: string; chargeLabel(b:Bill): string; payerLabel(b:Bill): string; emptyText?: string }
 /** รายการบิลแยกเดือน + ยอดรวม + ปุ่มจ่าย (หรือข้อความ "ไม่พบ"/"พิมพ์เพื่อค้นหา") */
 function billListHTML(o:BillListOptions){
  const {matches}=o;
@@ -47,7 +47,7 @@ function billListHTML(o:BillListOptions){
  }).join('');
  const total=[...selectedBills].reduce((n,id)=>n+(DEMO.bills.find(b=>b.id===id)?.amount||0),0);
  const body=!searchTerm?`<div class="search-prompt"><span>⌕</span><b>${escapeHTML(o.promptText)}</b><small>ยอดค้างจะแสดงแยกตามเดือน</small></div>`
-  :!grouped.length?'<div class="empty"><span>✅</span>ไม่พบรายการค้างชำระที่ตรงกับข้อมูลนี้</div>'
+  :!grouped.length?`<div class="empty"><span>✅</span>${escapeHTML(o.emptyText||'ไม่พบรายการค้างชำระที่ตรงกับข้อมูลนี้')}</div>`
   :`<div class="panel"><div class="bill-title"><div><b>ยอด${escapeHTML(o.title)}</b><small>${escapeHTML(searchTerm)}</small></div></div>${rows}<div class="due-total-row"><span>ยอดค้างรวมทุกเดือน</span><b>${money(totalDue)} บาท</b></div></div>${selectedBills.size?`<div class="pay-summary"><div><span>ยอดที่เลือกจ่าย</span><br><b>${money(total)} บาท</b></div><div class="pay-method-actions"><button type="button" class="pay-now" onclick="openPayment()">จ่ายเงิน <span aria-hidden="true">›</span></button></div></div>`:''}`;
  return body+(PAYMENT.demo?'<p class="help" style="text-align:center;padding:5px 12px">ระบบสาธิต · ยอดเงินเป็นตัวอย่าง</p>':'');
 }
