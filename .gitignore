@@ -100,3 +100,6 @@ pdf-v*.png
 
 # ข้อมูลดิบที่ดึงจากระบบประปาเดิม (มีข้อมูลส่วนบุคคล) — npm run sync:prapa
 prapa-backup/
+
+# เดโม่: ค่า Supabase สำหรับหน้าประชาชน (สร้างตอน build)
+frontend/public/citizen-pay/shared/kv-config.js

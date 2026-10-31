@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "npm run build:pay && next build",
-    "build:pay": "tsc -p citizen-pay/market/tsconfig.json && tsc -p citizen-pay/waste/tsconfig.json && tsc -p citizen-pay/staff/tsconfig.json",
+    "build:pay": "node scripts/write-kv-config.cjs && tsc -p citizen-pay/market/tsconfig.json && tsc -p citizen-pay/waste/tsconfig.json && tsc -p citizen-pay/staff/tsconfig.json",
     "test:pay": "npm run build:pay && tsc -p citizen-pay/market/tsconfig.test.json && node --test citizen-pay/market/tests/finance.test.cjs",
     "start": "next start",
     "lint": "eslint"

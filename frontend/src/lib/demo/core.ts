@@ -6,7 +6,8 @@
  * `{ success, data, meta? }` เพิ่ม/แก้/ลบแล้วข้อมูลค้างอยู่จริง (รีเฟรชหน้าก็ยังอยู่) ปุ่ม "รีเซ็ต" ล้างกลับค่าตั้งต้น
  */
 
-import { remoteEnabled, remoteLoad, remoteSave } from './remote';
+import { remoteEnabled, remoteLoad, remoteSave, kvConfig } from './remote';
+import { initKv } from '../../../citizen-pay/shared/kv-sync';
 
 export type Row = Record<string, any>;
 export type Db = Record<string, Row[]> & { _meta: Row[] };
@@ -76,6 +77,7 @@ export function ensureLoaded(): Promise<void> {
     } catch { loadFailed = remoteEnabled; /* ใช้ข้อมูลตั้งต้น (เชื่อมฐานกลางไม่ได้ก็ไม่เขียนทับ) */ }
     if (!db) { db = fresh(); persist(true); }
     else if (remoteEnabled) lastSaved = JSON.stringify(db);
+    await initKv(kvConfig); // คีย์ฝั่งประชาชนต้องดึงก่อน ให้เจ้าหน้าที่เห็นการจองและการชำระล่าสุด
   })());
 }
 
