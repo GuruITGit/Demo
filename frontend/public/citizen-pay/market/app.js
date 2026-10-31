@@ -852,7 +852,7 @@ let view = savedPageState.view, zone = 'A', stallArea = savedPageState.stallArea
 let paymentMapMode = savedPageState.paymentMap;
 let signupLocationId = null;
 function locWindowLine(l) { return l.openFrom || l.openUntil ? `<span class="loc-rent">เปิดให้เช่า${l.openFrom ? ' ตั้งแต่ ' + thaiDateLabel(l.openFrom) : ''}${l.openUntil ? ' ถึง ' + thaiDateLabel(l.openUntil) : ''}</span>` : ''; }
-function locSeatsLine(l) { return l.capacity ? `<span class="loc-rent">${l.full ? 'จองเต็มแล้ว' : 'ผู้เช่า ' + (l.taken || 0) + '/' + l.capacity + ' · เหลือ ' + (l.capacity - (l.taken || 0)) + ' ที่'}</span>` : ''; }
+function locSeatsLine(l) { return l.capacity ? `<span class="loc-rent">ผู้เช่า ${l.taken || 0}/${l.capacity}${l.full ? ' · <b>จองเต็มแล้ว</b>' : ' · เหลือ ' + (l.capacity - (l.taken || 0)) + ' ที่'}</span>` : ''; }
 function locationOpenNow(l) { const t = localISODate(); return (!l.openFrom || t >= String(l.openFrom)) && (!l.openUntil || t <= String(l.openUntil)); }
 function openOutsideLocations() { return DEMO.outsideLocations.filter(location => location.enabled && !location.deleted && locationOpenNow(location)); }
 function outsideLocationIsOpen(id) { return openOutsideLocations().some(location => location.id === id); }
