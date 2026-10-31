@@ -107,7 +107,7 @@ function billListHTML(o) {
     }).join('');
     const total = [...selectedBills].reduce((n, id) => n + (DEMO.bills.find(b => b.id === id)?.amount || 0), 0);
     const body = !searchTerm ? `<div class="search-prompt"><span>⌕</span><b>${escapeHTML(o.promptText)}</b><small>ยอดค้างจะแสดงแยกตามเดือน</small></div>`
-        : !grouped.length ? `<div class="empty"><span>✅</span>${escapeHTML(o.emptyText || 'ไม่พบรายการค้างชำระที่ตรงกับข้อมูลนี้')}</div>`
+        : !grouped.length ? `<div class="empty"><span>${o.emptyIcon || '✅'}</span>${escapeHTML(o.emptyText || 'ไม่พบรายการค้างชำระที่ตรงกับข้อมูลนี้')}</div>`
             : `<div class="panel"><div class="bill-title"><div><b>ยอด${escapeHTML(o.title)}</b><small>${escapeHTML(searchTerm)}</small></div></div>${rows}<div class="due-total-row"><span>ยอดค้างรวมทุกเดือน</span><b>${money(totalDue)} บาท</b></div></div>${selectedBills.size ? `<div class="pay-summary"><div><span>ยอดที่เลือกจ่าย</span><br><b>${money(total)} บาท</b></div><div class="pay-method-actions"><button type="button" class="pay-now" onclick="openPayment()">จ่ายเงิน <span aria-hidden="true">›</span></button></div></div>` : ''}`;
     return body + (PAYMENT.demo ? '<p class="help" style="text-align:center;padding:5px 12px">ระบบสาธิต · ยอดเงินเป็นตัวอย่าง</p>' : '');
 }
@@ -1066,7 +1066,7 @@ function searchPage() {
     const matches = searchTerm ? DEMO.bills.filter(b => b.payerType === 'stall' && (PAYABLE.includes(b.status) || b.status === 'pending' || b.status === 'cash')).sort((a, b) => b.id.localeCompare(a.id)) : [];
     const shortcuts = searchTerm ? '' : `<div class="payment-shortcuts" style="grid-template-columns:1fr"><button class="payment-shortcut" type="button" onclick="openQrScanner()">${SHORTCUT_QR_ART}<b>สแกน QR ที่แผง</b><small>เปิดกล้องส่องรหัสบนแผง</small></button></div>`;
     const form = `<div class="page-heading with-photo"><h1>จ่ายค่าแผงตลาด</h1><p>ค้นหาด้วยชื่อผู้เช่าและรหัสแผงในช่องเดียว · ไม่ต้องเข้าสู่ระบบ</p></div><form class="search-card" onsubmit="event.preventDefault();searchStallFromForm()"><label for="sq">ชื่อ-นามสกุล แล้วต่อด้วยรหัสแผง</label><div class="search-row"><input id="sq" name="sq" value="${escapeHTML([verifiedName, draftStall].filter(Boolean).join(' '))}" placeholder="เช่น สมใจ ใจดี A06" autocomplete="name"><button type="submit">ค้นหา</button></div><p class="help">พิมพ์ชื่อผู้เช่าแล้วตามด้วยรหัสแผง · ผู้สมัครแผงลอยใช้รหัส OUT-xxxx ที่ได้รับ · ชื่อต้องตรงกับที่ลงทะเบียนไว้</p></form>`;
-    return form + shortcuts + billListHTML({ title: 'ค่าแผงตลาด', matches, promptText: 'พิมพ์ชื่อผู้เช่าตามด้วยรหัสแผง แล้วกดค้นหา', payerLabel: b => 'ล็อก ' + (b.stall || b.ref), chargeLabel: b => b.kind === 'ค่าขยะ' ? 'ค่าขยะแผง' : 'ค่าเช่าแผง', emptyText: emptyNote || undefined }) + contactFooterHTML();
+    return form + shortcuts + billListHTML({ title: 'ค่าแผงตลาด', matches, promptText: 'พิมพ์ชื่อผู้เช่าตามด้วยรหัสแผง แล้วกดค้นหา', payerLabel: b => 'ล็อก ' + (b.stall || b.ref), chargeLabel: b => b.kind === 'ค่าขยะ' ? 'ค่าขยะแผง' : 'ค่าเช่าแผง', emptyText: emptyNote || undefined, emptyIcon: emptyNote.startsWith('ไม่พบ') ? '<span style="color:#b42318;font-weight:700">✕</span>' : undefined }) + contactFooterHTML();
 }
 const SHORTCUT_QR_ART = '<img class="shortcut-art shortcut-art-photo" src="/citizen-pay/shared/img/scan-qr-market.webp" width="600" height="386" alt="" aria-hidden="true">';
 const SHORTCUT_MAP_ART = '<img class="shortcut-art shortcut-art-photo" src="/citizen-pay/shared/img/pick-stall-map.webp" width="600" height="386" alt="" aria-hidden="true">';
