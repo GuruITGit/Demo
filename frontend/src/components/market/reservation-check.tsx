@@ -5,6 +5,7 @@ import { toast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Empty, Panel } from '@/components/pay/pay-ui';
 
+type Stall = { id: string; stallCode: string; zone: string; status: string; tenantName: string | null; contactPhone: string | null; monthlyRate: string };
 type Reservation = {
   id: string; stallCode: string; zone: string; tenantName: string | null; contactPhone: string | null;
   reservedAt: string | null; reserveStartDate: string | null; reserveDays: number | null; reserveCardUrl: string | null;
@@ -13,8 +14,11 @@ type Reservation = {
 const thDate = (iso: string) => new Date(`${iso}T00:00:00`).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' });
 
 /** แท็บ "จองแผง": ใครจองแผงไหน (เบอร์/วันเริ่มเช่า/จำนวนวัน/รูปบัตร) + ยืนยัน/ปฏิเสธ + แจ้งเตือนผู้จัดการตลาด */
-export function ReservationCheck({ canManage }: { canManage: boolean }) {
+export function ReservationCheck({ canManage, filter = 'pending' }: { canManage: boolean; filter?: 'pending' | 'approved' | 'rejected' | 'cancelled' | 'all' }) {
   const qc = useQueryClient();
+  const showReserved = filter === 'pending' || filter === 'all';
+  const { data: stalls = [] } = useQuery<Stall[]>({ queryKey: ['market', 'stalls'], queryFn: async () => (await api.get('/market/stalls')).data.data, enabled: filter === 'approved' });
+  const occupied = stalls.filter((s) => s.status === 'occupied');
   const { data: rows = [], isLoading } = useQuery<Reservation[]>({
     queryKey: ['market', 'reservations'],
     queryFn: async () => (await api.get('/market/reservations')).data.data,
@@ -36,7 +40,20 @@ export function ReservationCheck({ canManage }: { canManage: boolean }) {
       title={<>การจองแผงที่รอยืนยัน <span className="text-sm font-normal text-gray-500">({rows.length})</span></>}
       actions={canManage && rows.length > 0 && <Button size="sm" variant="outline" loading={notify.isPending} onClick={() => notify.mutate()}>แจ้งเตือนผู้จัดการตลาด</Button>}
     >
-      {isLoading ? null : rows.length === 0 ? (
+      {!showReserved ? (
+        occupied.length === 0 ? <Empty>ไม่มีแผงที่มีผู้เช่าในแผงประจำ</Empty> : (
+          <ul>
+            {occupied.map((s) => (
+              <li key={s.id} className="flex flex-wrap items-center gap-3 border-t border-gray-100 px-4 py-3 first:border-t-0">
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold">แผง {s.stallCode} <span className="font-normal text-gray-500">· โซน {s.zone} · {s.tenantName || '—'}</span></p>
+                  <p className="text-sm text-gray-500">โทร {s.contactPhone || '—'} · ค่าเช่า {Number(s.monthlyRate).toLocaleString('th-TH')} บาท/เดือน</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )
+      ) : isLoading ? null : rows.length === 0 ? (
         <Empty>ยังไม่มีการจองที่รอยืนยัน — เมื่อประชาชนจองแผง จะขึ้นที่นี่และมีแจ้งเตือน</Empty>
       ) : (
         <ul>

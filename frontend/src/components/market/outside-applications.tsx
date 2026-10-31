@@ -22,9 +22,13 @@ const FILTERS: { key: Status | 'all'; label: string }[] = [
 const thDate = (iso: string) => new Date(`${iso}T00:00:00`).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' });
 
 /** ใบสมัครแผงลอยจากประชาชน — อนุมัติแล้วระบบออกบิลค่าเช่าให้ทันที (ประชาชนค้นด้วยรหัส OUT-xxxx) */
-export function OutsideApplications({ canManage, locationId }: { canManage: boolean; locationId?: string }) {
+export type ApplicationFilter = Status | 'all';
+export function OutsideApplications({ canManage, locationId, filter: shared }: { canManage: boolean; locationId?: string; filter?: ApplicationFilter }) {
   const qc = useQueryClient();
-  const [filter, setFilter] = useState<Status | 'all'>('pending');
+  const [own, setOwn] = useState<ApplicationFilter>('pending');
+  const controlled = shared !== undefined;
+  const filter = shared ?? own;
+  const setFilter = setOwn;
   const [rejectTarget, setRejectTarget] = useState<Application | null>(null);
   const [cancelTarget, setCancelTarget] = useState<Application | null>(null);
   const { data: all = [] } = useQuery<Application[]>({
@@ -58,11 +62,13 @@ export function OutsideApplications({ canManage, locationId }: { canManage: bool
 
   return (
     <Panel title={<>ใบสมัครแผงลอย <span className="text-sm font-normal text-gray-500">({rows.length})</span></>}>
+      {!controlled && (
       <div className="flex flex-wrap gap-2 border-b border-gray-100 px-4 py-3">
         {FILTERS.map((f) => (
           <Button key={f.key} size="sm" variant={filter === f.key ? 'default' : 'outline'} onClick={() => setFilter(f.key)}>{f.label}</Button>
         ))}
       </div>
+      )}
       {rows.length === 0 ? (
         <Empty>ไม่มีใบสมัครในสถานะนี้</Empty>
       ) : (
