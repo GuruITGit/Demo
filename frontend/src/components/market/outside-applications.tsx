@@ -7,16 +7,17 @@ import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/shared/confirm-dialog';
 import { Empty, Panel } from '@/components/pay/pay-ui';
 
-type Status = 'pending' | 'approved' | 'rejected';
+type Status = 'pending' | 'approved' | 'rejected' | 'cancelled';
 type Application = {
   id: string; appCode: string; applicantName: string; phone: string; idCardUrl: string | null;
   startDate: string | null; days: number; status: Status; reviewNote: string | null; billId: string | null;
   location?: { name: string; rentRate: string; rentPeriod: 'daily' | 'monthly' };
+  openDues: { count: number; total: number };
 };
 
-const STATUS_LABEL: Record<Status, string> = { pending: 'รอตรวจ', approved: 'อนุมัติแล้ว · ออกบิลแล้ว', rejected: 'ไม่อนุมัติ' };
+const STATUS_LABEL: Record<Status, string> = { pending: 'รอตรวจ', approved: 'ผู้เช่า · ออกบิลแล้ว', rejected: 'ไม่อนุมัติ', cancelled: 'ลบออกจากผู้เช่าแล้ว' };
 const FILTERS: { key: Status | 'all'; label: string }[] = [
-  { key: 'pending', label: 'รอตรวจ' }, { key: 'approved', label: 'อนุมัติแล้ว' }, { key: 'rejected', label: 'ไม่อนุมัติ' }, { key: 'all', label: 'ทั้งหมด' },
+  { key: 'pending', label: 'รอตรวจ' }, { key: 'approved', label: 'ผู้เช่า' }, { key: 'rejected', label: 'ไม่อนุมัติ' }, { key: 'cancelled', label: 'ลบแล้ว' }, { key: 'all', label: 'ทั้งหมด' },
 ];
 const thDate = (iso: string) => new Date(`${iso}T00:00:00`).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' });
 
@@ -25,6 +26,7 @@ export function OutsideApplications({ canManage }: { canManage: boolean }) {
   const qc = useQueryClient();
   const [filter, setFilter] = useState<Status | 'all'>('pending');
   const [rejectTarget, setRejectTarget] = useState<Application | null>(null);
+  const [cancelTarget, setCancelTarget] = useState<Application | null>(null);
   const { data: rows = [] } = useQuery<Application[]>({
     queryKey: ['market', 'outside', 'apps', filter],
     queryFn: async () => (await api.get('/market/outside/applications', { params: filter === 'all' ? {} : { status: filter } })).data.data,
@@ -41,6 +43,11 @@ export function OutsideApplications({ canManage }: { canManage: boolean }) {
       qc.invalidateQueries({ queryKey: ['market', 'bills'] });
     },
     onError: (e) => toast.error(getErrorMessage(e)),
+  });
+  const cancel = useMutation({
+    mutationFn: (id: string) => api.post(`/market/outside/applications/${id}/cancel`, {}),
+    onSuccess: () => { toast.success('ลบผู้เช่าแล้ว (ประวัติยังเก็บไว้)'); setCancelTarget(null); refresh(); },
+    onError: (e) => { toast.error(getErrorMessage(e)); setCancelTarget(null); },
   });
   const reject = useMutation({
     mutationFn: (id: string) => api.post(`/market/outside/applications/${id}/reject`, {}),
@@ -68,6 +75,9 @@ export function OutsideApplications({ canManage }: { canManage: boolean }) {
                 </p>
                 <p className="text-sm text-gray-500">
                   {STATUS_LABEL[a.status]}
+                  {a.status === 'approved' && (a.openDues.count > 0
+                    ? <span className="font-medium text-amber-700"> · ค้าง {a.openDues.count} รายการ {Number(a.openDues.total).toLocaleString('th-TH', { minimumFractionDigits: 2 })} บาท</span>
+                    : <span className="text-green-700"> · ไม่มียอดค้าง</span>)}
                   {a.reviewNote && ` · ${a.reviewNote}`}
                   {' · '}
                   {a.idCardUrl
@@ -81,6 +91,9 @@ export function OutsideApplications({ canManage }: { canManage: boolean }) {
                   <Button size="sm" variant="outline" onClick={() => setRejectTarget(a)}>ไม่อนุมัติ</Button>
                 </div>
               )}
+              {canManage && a.status === 'approved' && (
+                <Button size="sm" variant="outline" disabled={a.openDues.count > 0} title={a.openDues.count > 0 ? 'ต้องชำระยอดค้างให้ครบก่อน' : undefined} onClick={() => setCancelTarget(a)}>ลบผู้เช่า</Button>
+              )}
             </li>
           ))}
         </ul>
@@ -93,6 +106,15 @@ export function OutsideApplications({ canManage }: { canManage: boolean }) {
         title={`ไม่อนุมัติใบสมัคร ${rejectTarget?.appCode ?? ''}?`}
         description="ผู้สมัครจะไม่ได้รับบิลค่าเช่า ต้องสมัครใหม่หากต้องการเช่า"
         confirmText="ไม่อนุมัติ"
+      />
+      <ConfirmDialog
+        open={!!cancelTarget}
+        onOpenChange={(o) => { if (!o) setCancelTarget(null); }}
+        loading={cancel.isPending}
+        onConfirm={() => cancelTarget && cancel.mutate(cancelTarget.id)}
+        title={`ลบผู้เช่า ${cancelTarget?.appCode ?? ''}?`}
+        description="ผู้เช่าจะถูกลบออกจากรายชื่อ ประวัติการเช่าและบิลเดิมยังเก็บไว้ เลือกดูได้จากตัวกรอง 'ลบแล้ว'"
+        confirmText="ลบผู้เช่า"
       />
     </Panel>
   );
