@@ -89,7 +89,7 @@ function TrackForm() {
         <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-linear-to-br from-cyan-500 to-sky-600 text-white shadow-sm"><Search className="h-6 w-6" /></div>
         <div>
           <h1 className="text-xl font-bold text-slate-800">ติดตามสถานะคำร้อง</h1>
-          <p className="text-xs text-slate-400">ดูว่าเรื่องที่แจ้งไว้ดำเนินการถึงไหนแล้ว</p>
+          <p className="text-xs text-slate-500">ดูว่าเรื่องที่แจ้งไว้ดำเนินการถึงไหนแล้ว</p>
         </div>
       </div>
 
@@ -113,7 +113,7 @@ function TrackForm() {
 
       <div className="cz-anim-up rounded-3xl border border-cyan-100 bg-white p-6 shadow-sm">
         <form onSubmit={submitName} className="space-y-3">
-          <p className="text-xs text-slate-400">กรอกชื่อ-สกุลและเบอร์โทรให้ตรงกับที่แจ้งไว้ตอนยื่นเรื่อง จะแสดงทุกเรื่องที่ท่านเคยแจ้ง ไม่ต้องจำเลขอ้างอิง</p>
+          <p className="text-xs text-slate-500">กรอกชื่อ-สกุลและเบอร์โทรให้ตรงกับที่แจ้งไว้ตอนยื่นเรื่อง จะแสดงทุกเรื่องที่ท่านเคยแจ้ง ไม่ต้องจำเลขอ้างอิง</p>
           <label className="relative block">
             <span className="mb-1.5 block text-sm font-semibold text-slate-700">ชื่อ-สกุล</span>
             <input value={name}
