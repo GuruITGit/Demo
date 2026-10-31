@@ -1000,6 +1000,12 @@ async function searchStallBills(name, stall) {
 /** ช่องเดียว: "สมใจ ใจดี A06" → ชื่อ + รหัสแผงต่อท้าย · รองรับรหัสแผงลอย OUT-0001 (พิมพ์ OUT0001 ก็ได้) */
 function parseStallQuery(raw) {
     const text = raw.replace(/\s+/g, ' ').trim();
+    const out = text.match(/\b(OUT-?\d{1,4})\b/i);
+    if (out) {
+        let c = out[1].toUpperCase();
+        c = 'OUT-' + c.replace(/D/g, '').padStart(4, '0');
+        return { name: text.replace(out[0], ' ').replace(/\s+/g, ' ').trim(), code: c };
+    }
     const m = text.match(/^(.*?)\s*((?:OUT-?\d{1,4})|(?:[A-Za-z]{1,3}-?\d{1,3}))$/i);
     if (!m)
         return { name: text, code: '' };
