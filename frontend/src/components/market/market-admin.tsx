@@ -16,6 +16,7 @@ import { PaySettings } from '@/components/pay/pay-settings';
 import { MarketBills } from './market-bills';
 import { MarketOutside } from './market-outside';
 import { ReservationCheck } from './reservation-check';
+import { OutsideApplications } from './outside-applications';
 
 type Stall = {
   id: string; stallCode: string; zone: string; status: 'available' | 'reserved' | 'occupied';
@@ -49,6 +50,7 @@ export function MarketAdmin() {
 
   const { data: sum } = useQuery<Summary>({ queryKey: ['market', 'summary'], queryFn: async () => (await api.get('/market/summary')).data.data, refetchInterval: 60_000 });
   const pendingCount = sum?.byStatus.find((s) => s.status === 'pending')?.count ?? 0;
+  const { data: pendingOutside = [] } = useQuery<unknown[]>({ queryKey: ['market', 'outside', 'apps', 'pending'], queryFn: async () => (await api.get('/market/outside/applications', { params: { status: 'pending' } })).data.data, refetchInterval: 15_000 });
   const { data: reservations = [] } = useQuery<unknown[]>({ queryKey: ['market', 'reservations'], queryFn: async () => (await api.get('/market/reservations')).data.data, refetchInterval: 15_000 });
 
   const goBills = (stall?: string, status?: string) => { setBillFilter({ stall, status, n: billFilter.n + 1 }); setTab('bills'); };
@@ -61,7 +63,7 @@ export function MarketAdmin() {
         tabs={[
           { key: 'overview', label: 'ภาพรวม' },
           { key: 'queue', label: 'รอตรวจ', badge: pendingCount },
-          { key: 'reserve', label: 'จองแผง', badge: reservations.length },
+          { key: 'reserve', label: 'จองแผง', badge: reservations.length + pendingOutside.length },
           { key: 'plan', label: 'ผังแผง' },
           { key: 'tenants', label: 'ผู้เช่าทั้งหมด' },
           { key: 'bills', label: 'บิล' },
@@ -73,7 +75,12 @@ export function MarketAdmin() {
       />
       {tab === 'overview' && <Overview sum={sum} onGo={setTab} />}
       {tab === 'queue' && <SlipQueue kind="market" canManage={canBill} />}
-      {tab === 'reserve' && <ReservationCheck canManage={canStall} />}
+      {tab === 'reserve' && (
+        <div className="space-y-5">
+          <ReservationCheck canManage={canStall} />
+          <OutsideApplications canManage={canBill} />
+        </div>
+      )}
       {tab === 'plan' && <Plan canManage={canStall} onBills={(code) => goBills(code)} />}
       {tab === 'tenants' && <Tenants sum={sum} />}
       {tab === 'bills' && <MarketBills key={billFilter.n} canManage={canBill} orgName={orgName} initialStall={billFilter.stall} initialStatus={billFilter.status} />}
