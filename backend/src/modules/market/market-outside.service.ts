@@ -28,7 +28,27 @@ export class MarketOutsideService {
   /** ใบสมัครแผงลอยจากประชาชน (กรองตามสถานะได้: pending / approved / rejected) */
   async listApplications(orgId: string, status?: string) {
     const rows = await this.apps.find({ where: { organizationId: orgId, ...(status ? { status } : {}) }, relations: ['location'], order: { createdAt: 'DESC' }, take: 200 });
-    return rows.map((a) => ({ ...a, idCardUrl: this.storage.signUrlIfPrivate(a.idCardUrl) })); // รูปบัตรอยู่ใน private bucket
+    // ยอดค้างของผู้เช่าแต่ละราย (รหัสผู้เช่าคือรหัสบิล) — ลบผู้เช่าได้ก็ต่อเมื่อไม่ค้าง
+    const dues: { code: string; count: number; total: number }[] = rows.length ? await this.ds.query(
+      `SELECT stall_code AS "code", COUNT(*)::int AS count, COALESCE(SUM(amount),0)::float AS total FROM market_bills
+         WHERE organization_id = $1 AND stall_code = ANY($2) AND status IN ('unpaid','pending','mismatch') GROUP BY stall_code`,
+      [orgId, rows.map((a) => a.appCode)]) : [];
+    const byCode = new Map(dues.map((d) => [d.code, { count: d.count, total: d.total }]));
+    return rows.map((a) => ({ ...a, idCardUrl: this.storage.signUrlIfPrivate(a.idCardUrl), openDues: byCode.get(a.appCode) ?? { count: 0, total: 0 } })); // รูปบัตรอยู่ใน private bucket
+  }
+
+  /** ลบผู้เช่าแผงลอย (เช่น ยกเลิกการเช่า) — ต้องชำระยอดค้างให้ครบก่อน · เก็บประวัติไว้ (สถานะ cancelled) */
+  async cancelApplication(orgId: string, id: string) {
+    const app = await this.apps.findOne({ where: { id, organizationId: orgId } });
+    if (!app) throw new NotFoundException('ไม่พบผู้เช่ารายนี้');
+    if (app.status !== 'approved') throw new BadRequestException('ลบได้เฉพาะผู้เช่าที่อนุมัติแล้ว');
+    const [open] = await this.ds.query(
+      `SELECT COUNT(*)::int AS count FROM market_bills WHERE organization_id = $1 AND stall_code = $2 AND status IN ('unpaid','pending','mismatch')`,
+      [orgId, app.appCode]);
+    if (open.count > 0) throw new BadRequestException(`ยังมียอดค้างชำระ ${open.count} รายการ ต้องชำระให้ครบก่อนจึงลบผู้เช่าได้`);
+    app.status = 'cancelled';
+    await this.apps.save(app);
+    return { ok: true };
   }
 
   /** อนุมัติใบสมัคร → ออกบิลค่าเช่า: รายวัน = ค่าเช่า × จำนวนวัน · รายเดือน = ค่าเช่าต่อเดือน · งวดตามวันเริ่มเช่า */

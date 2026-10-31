@@ -273,6 +273,11 @@ post('/market/reservations/notify', (c) => {
 
 // ───────────────────────────── ใบสมัครแผงลอย (เดโม่)
 const withLocation = (db: Ctx['db'], a: Row) => ({ ...a, location: db.marketOutsideLocations.find((l) => l.id === a.locationId) });
+/** ยอดที่ยังไม่ชำระของผู้เช่าแผงลอย (รหัสผู้เช่า = รหัสบิล) */
+const openDuesOf = (db: Ctx['db'], code: string) => {
+  const open = db.marketBills.filter((b) => b.organizationId === ORG_ID && b.stallCode === code && ['unpaid', 'pending', 'mismatch'].includes(b.status));
+  return { count: open.length, total: open.reduce((s, b) => s + Number(b.amount), 0) };
+};
 
 get('/market/outside/applications', (c) => {
   needPerm(c, 'market:read:MarketBill');
@@ -281,7 +286,17 @@ get('/market/outside/applications', (c) => {
   return c.db.marketOutsideApps
     .filter((a) => a.organizationId === ORG_ID && (!st || a.status === st))
     .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)))
-    .map((a) => withLocation(c.db, a));
+    .map((a) => ({ ...withLocation(c.db, a), openDues: openDuesOf(c.db, a.appCode) }));
+});
+
+post('/market/outside/applications/:id/cancel', (c) => {
+  needPerm(c, 'market:manage:MarketBill');
+  const app = byIdOrThrow(c.db.marketOutsideApps, c.params.id, 'ไม่พบผู้เช่ารายนี้');
+  if (app.status !== 'approved') throw badRequest('ลบได้เฉพาะผู้เช่าที่อนุมัติแล้ว');
+  const open = openDuesOf(c.db, app.appCode);
+  if (open.count > 0) throw badRequest(`ยังมียอดค้างชำระ ${open.count} รายการ ต้องชำระให้ครบก่อนจึงลบผู้เช่าได้`);
+  Object.assign(app, { status: 'cancelled' });
+  return { ok: true };
 });
 
 post('/market/outside/applications/:id/approve', (c) => {

@@ -57,6 +57,13 @@ export class MarketOutsideController {
     return this.service.approveApplication(orgId, id);
   }
 
+  @Post('applications/:id/cancel')
+  @ApiOperation({ summary: 'ลบผู้เช่าแผงลอย (ต้องชำระยอดค้างให้ครบก่อน)' })
+  @RequirePermissions({ module: 'market', action: 'manage', subject: 'MarketBill' })
+  cancel(@CurrentUser('organizationId') orgId: string, @Param('id', ParseUUIDPipe) id: string) {
+    return this.service.cancelApplication(orgId, id);
+  }
+
   @Post('applications/:id/reject')
   @ApiOperation({ summary: 'ไม่อนุมัติใบสมัครแผงลอย' })
   @RequirePermissions({ module: 'market', action: 'manage', subject: 'MarketBill' })
