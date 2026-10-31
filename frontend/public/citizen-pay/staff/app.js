@@ -205,8 +205,11 @@ function applySavedPayments() {
     const all = loadPaymentRecords();
     for (const b of DEMO.bills) {
         const r = all[b.id];
-        if (r)
+        if (r) {
             b.status = r.status === 'rejected' ? 'unpaid' : r.status;
+            if (r.status === 'rejected' && r.note)
+                b.note = r.note;
+        }
     }
 }
 function paymentRecordFor(billId) { return loadPaymentRecords()[billId]; }

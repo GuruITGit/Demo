@@ -175,12 +175,12 @@ function absorbPayments(db: Ctx['db']) {
   if (changed) persist();
 }
 /** เจ้าหน้าที่ยืนยัน/ปฏิเสธบิลที่ประชาชนแจ้งมา → เขียนผลกลับให้หน้าประชาชนเห็น */
-function syncPayBack(db: Ctx['db'], billId: string, status: 'confirmed' | 'rejected') {
+function syncPayBack(db: Ctx['db'], billId: string, status: 'confirmed' | 'rejected', note?: string) {
   try {
     const links = (db.demoPayLinks ?? []).filter((l) => l.billId === billId);
     if (!links.length) return;
     const raw = JSON.parse(localStorage.getItem(CITIZEN_PAY_KEY) || '{}');
-    for (const l of links) if (raw[l.citizenId]?.at === l.at) raw[l.citizenId].status = status;
+    for (const l of links) if (raw[l.citizenId]?.at === l.at) { raw[l.citizenId].status = status; if (note) raw[l.citizenId].note = note; }
     localStorage.setItem(CITIZEN_PAY_KEY, JSON.stringify(raw));
     db.demoPayLinks = db.demoPayLinks.filter((l) => l.billId !== billId);
   } catch { /* เขียนไม่ได้ = ข้าม */ }
@@ -202,7 +202,7 @@ function rejectBill(c: Ctx, list: Row[], notFoundMsg: string, status: string) {
   if (bill.status === 'paid') throw badRequest('บิลนี้ชำระแล้ว ไม่สามารถปฏิเสธได้');
   bill.status = status;
   bill.reviewNote = String(c.body?.note ?? '').trim().slice(0, 300) || 'เจ้าหน้าที่ตรวจแล้วไม่ตรง กรุณาแจ้งชำระใหม่';
-  syncPayBack(c.db, bill.id, 'rejected');
+  syncPayBack(c.db, bill.id, 'rejected', bill.reviewNote);
   return bill;
 }
 
