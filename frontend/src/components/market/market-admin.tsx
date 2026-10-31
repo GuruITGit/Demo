@@ -428,7 +428,14 @@ type OutsideTenant = {
 };
 
 function TenantsStalls({ sum }: { sum?: Summary }) {
+  const qc = useQueryClient();
   const { data: stalls = [] } = useQuery<Stall[]>({ queryKey: ['market', 'stalls'], queryFn: async () => (await api.get('/market/stalls')).data.data });
+  const [editing, setEditing] = useState<Stall | null>(null);
+  const saveStall = useMutation({
+    mutationFn: ({ id, body }: { id: string; body: object }) => api.patch(`/market/stalls/${id}`, body),
+    onSuccess: () => { toast.success('บันทึกผู้เช่าแล้ว'); setEditing(null); qc.invalidateQueries({ queryKey: ['market'] }); },
+    onError: (e) => toast.error(getErrorMessage(e)),
+  });
   const [st, setSt] = useState<'all' | Stall['status']>('all');
   const [q, setQ] = useState('');
   const arrears = useMemo(() => new Map((sum?.arrears ?? []).map((a) => [a.stallCode, a])), [sum]);
@@ -440,12 +447,25 @@ function TenantsStalls({ sum }: { sum?: Summary }) {
       title={<>ผู้เช่าทั้งหมด <span className="text-sm font-normal text-gray-500">{rows.length} แผง</span></>}
       actions={<Button size="sm" variant="outline" onClick={() => window.print()}>พิมพ์รายงาน</Button>}
     >
+      {editing && (
+        <div className="mb-4">
+          <StallEditor
+            stall={editing}
+            canManage
+            saving={saveStall.isPending}
+            onClose={() => setEditing(null)}
+            onBills={() => setEditing(null)}
+            onDelete={() => toast.error('ลบแผงทำที่แท็บผังแผง')}
+            onSave={(body) => saveStall.mutate({ id: editing.id, body })}
+          />
+        </div>
+      )}
       <div className="mb-3 flex flex-wrap gap-2">
-        <select value={st} onChange={(e) => setSt(e.target.value as 'all' | Stall['status'])} className={inputCls} aria-label="กรองสถานะ">
-          <option value="all">ทุกสถานะ</option>
-          <option value="occupied">มีผู้เช่า</option>
-          <option value="reserved">จอง</option>
-          <option value="available">ว่าง</option>
+        <select value={st} onChange={(e) => setSt(e.target.value as 'all' | Stall['status'])} className={`${inputCls} bg-white text-gray-900`} aria-label="กรองสถานะ">
+          <option value="all" className="bg-white text-gray-900">ทุกสถานะ</option>
+          <option value="occupied" className="bg-white text-gray-900">มีผู้เช่า</option>
+          <option value="reserved" className="bg-white text-gray-900">จอง</option>
+          <option value="available" className="bg-white text-gray-900">ว่าง</option>
         </select>
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="ค้นหาแผง ชื่อ หรือเบอร์" className={cn(inputCls, 'min-w-[12rem] flex-1')} />
       </div>
@@ -454,7 +474,7 @@ function TenantsStalls({ sum }: { sum?: Summary }) {
           <thead className="bg-gray-50 text-left text-gray-600">
             <tr>
               <th className="px-4 py-2">แผง</th><th className="px-4 py-2">โซน</th><th className="px-4 py-2">สถานะ</th><th className="px-4 py-2">ผู้เช่า</th>
-              <th className="px-4 py-2">เบอร์ติดต่อ</th><th className="px-4 py-2 text-right">ค่าเช่า/เดือน</th><th className="px-4 py-2">ช่วงเช่า</th><th className="px-4 py-2 text-right">ค้างชำระ</th>
+              <th className="px-4 py-2">เบอร์ติดต่อ</th><th className="px-4 py-2 text-right">ค่าเช่า/เดือน</th><th className="px-4 py-2">ช่วงเช่า</th><th className="px-4 py-2 text-right">ค้างชำระ</th><th className="px-4 py-2" />
             </tr>
           </thead>
           <tbody>
@@ -470,6 +490,7 @@ function TenantsStalls({ sum }: { sum?: Summary }) {
                   <td className="px-4 py-2 text-right">{money(Number(s.monthlyRate))}</td>
                   <td className="px-4 py-2 text-gray-600">{s.reserveStartDate ? `${fmtDate(s.reserveStartDate)}${s.reserveDays ? ` · ${s.reserveDays} วัน` : ''}` : '—'}</td>
                   <td className="px-4 py-2 text-right">{a ? <span className={dueTone(a.months)}>{a.months} เดือน · {money(a.total)} บาท</span> : '—'}</td>
+                  <td className="px-4 py-2 text-right"><Button size="sm" variant="outline" onClick={() => setEditing(s)}>จัดการ</Button></td>
                 </tr>
               );
             })}
