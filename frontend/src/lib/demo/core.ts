@@ -7,7 +7,7 @@
  */
 
 import { remoteEnabled, remoteLoad, remoteSave, kvConfig } from './remote';
-import { initKv } from '../../../citizen-pay/shared/kv-sync';
+import '../../../citizen-pay/shared/kv-sync'; // ตั้ง window.smartKvInit (ซิงก์คีย์ฝั่งประชาชน)
 
 export type Row = Record<string, any>;
 export type Db = Record<string, Row[]> & { _meta: Row[] };
@@ -77,7 +77,7 @@ export function ensureLoaded(): Promise<void> {
     } catch { loadFailed = remoteEnabled; /* ใช้ข้อมูลตั้งต้น (เชื่อมฐานกลางไม่ได้ก็ไม่เขียนทับ) */ }
     if (!db) { db = fresh(); persist(true); }
     else if (remoteEnabled) lastSaved = JSON.stringify(db);
-    await initKv(kvConfig); // คีย์ฝั่งประชาชนต้องดึงก่อน ให้เจ้าหน้าที่เห็นการจองและการชำระล่าสุด
+    await (globalThis as unknown as { smartKvInit?: (c: unknown) => Promise<void> }).smartKvInit?.(kvConfig); // คีย์ฝั่งประชาชนต้องดึงก่อน ให้เจ้าหน้าที่เห็นการจองและการชำระล่าสุด
   })());
 }
 

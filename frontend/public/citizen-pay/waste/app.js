@@ -578,6 +578,100 @@ catch {
         modal.showModal();
 } }
 modal.addEventListener('close', stopQrCamera);
+// เดโม่: ซิงก์ข้อมูลฝั่งประชาชน (คีย์ localStorage ด้านล่าง) ข้ามเครื่องผ่านตาราง demo_kv ใน Supabase
+// ไม่มีค่า KV_CONFIG (ไม่ได้ตั้ง env / ระบบจริง) = ไม่ทำอะไรเลย · ดึงจากฐานกลางก่อน แล้วค่อยเขียนกลับเมื่อมีการเปลี่ยนแปลง
+// ไฟล์นี้เป็น script ไม่ใช่ module (หน้า static รวมด้วย outFile) จึงห่อใน IIFE และตั้ง window.smartKvInit ให้หน้า Next เรียกได้
+(function () {
+    const KV_KEYS = ['market:payments', 'lamplaimat:demo-reservations', 'lamplaimat:demo-outside-apps', 'lamplaimat:demo-stalls', 'lamplaimat:outside-locations', 'market:rates'];
+    const RELOAD_FLAG = 'kv:reloaded';
+    const rawSet = Storage.prototype.setItem;
+    const rawRemove = Storage.prototype.removeItem;
+    let cfg = null;
+    let pulling = false;
+    let ready = false; // ยังไม่ดึงข้อมูลกลาง = ยังไม่ส่งอะไรขึ้น (กันทับข้อมูลใหม่ด้วยค่าเก่า)
+    const timers = {};
+    const headersOf = (c) => ({ apikey: c.key, 'Content-Type': 'application/json' });
+    function localValue(k) {
+        const raw = localStorage.getItem(k);
+        if (raw === null)
+            return null;
+        try {
+            return JSON.parse(raw);
+        }
+        catch {
+            return null;
+        }
+    }
+    function push(k) {
+        if (!cfg)
+            return;
+        const body = JSON.stringify([{ key: k, value: localValue(k), updated_at: new Date().toISOString() }]);
+        fetch(`${cfg.url}/rest/v1/demo_kv`, { method: 'POST', headers: { ...headersOf(cfg), Prefer: 'resolution=merge-duplicates' }, body }).catch(() => { });
+    }
+    function schedule(k) {
+        if (pulling || !ready || !KV_KEYS.includes(k))
+            return;
+        clearTimeout(timers[k]);
+        timers[k] = setTimeout(() => push(k), 300);
+    }
+    function installShim() {
+        Storage.prototype.setItem = function (k, v) { rawSet.call(this, k, v); if (this === localStorage)
+            schedule(k); };
+        Storage.prototype.removeItem = function (k) { rawRemove.call(this, k); if (this === localStorage)
+            schedule(k); };
+    }
+    /** ดึงข้อมูลกลางลงเครื่อง · ถ้ามีค่าเปลี่ยน (หน้าเปิดค่าไว้ตั้งแต่ก่อนดึง) โหลดหน้าใหม่ 1 ครั้ง */
+    async function initKv(c) {
+        if (!c?.url || !c.key || typeof localStorage === 'undefined')
+            return;
+        cfg = c;
+        installShim();
+        try {
+            const list = encodeURIComponent(KV_KEYS.map((k) => `"${k}"`).join(','));
+            const r = await fetch(`${c.url}/rest/v1/demo_kv?select=key,value&key=in.(${list})`, { headers: headersOf(c), cache: 'no-store' });
+            if (!r.ok)
+                return;
+            const remote = new Map((await r.json()).map((x) => [x.key, x.value]));
+            let changed = false;
+            pulling = true;
+            try {
+                for (const k of KV_KEYS) {
+                    if (remote.has(k)) {
+                        const v = remote.get(k);
+                        const next = v === null ? null : JSON.stringify(v);
+                        if (next === localStorage.getItem(k))
+                            continue;
+                        changed = true;
+                        if (next === null)
+                            rawRemove.call(localStorage, k);
+                        else
+                            rawSet.call(localStorage, k, next);
+                    }
+                    else if (localStorage.getItem(k) !== null)
+                        push(k); // ฐานกลางยังไม่มีค่านี้ → ส่งของในเครื่องขึ้นไป
+                }
+            }
+            finally {
+                pulling = false;
+            }
+            ready = true;
+            try {
+                if (changed && !sessionStorage.getItem(RELOAD_FLAG)) {
+                    sessionStorage.setItem(RELOAD_FLAG, '1');
+                    location.reload();
+                    return;
+                }
+                sessionStorage.removeItem(RELOAD_FLAG);
+            }
+            catch { /* โหมดส่วนตัว: ไม่รีโหลดซ้ำ */ }
+        }
+        catch { /* เชื่อมฐานกลางไม่ได้ → ใช้ข้อมูลในเครื่อง ไม่ส่งขึ้น */ }
+    }
+    const w = window;
+    w.smartKvInit = initKv;
+    if (w.KV_CONFIG)
+        void initKv(w.KV_CONFIG);
+})();
 // ราคาที่เจ้าหน้าที่ตั้งไว้ (ค่าเช่าแผงประจำรายแถว + ค่าขยะแผง) เก็บในเครื่องนี้ (localStorage) · หน้าประชาชนอ่านตอนเปิดหน้า
 // ค่าที่ไม่ถูกต้องจะถูกข้าม แล้วใช้ค่าตั้งต้นแทน · ยังไม่มี backend
 const MARKET_RATES_KEY = 'market:rates';
