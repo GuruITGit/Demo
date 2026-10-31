@@ -66,11 +66,13 @@ async function searchStallBills(name: string, stall: string) {
       } else { // แผงลอย: ชื่ออย่างเดียว — ชื่อซ้ำหลายรายต้องพิมพ์รหัสผู้เช่าด้วย
         const hits = readOutsideBills().filter((x) => demoNameKey(x.payerName) === nk).map(toStallBill);
         if (new Set(hits.map((b) => b.stall)).size > 1) { toast('ชื่อนี้มีผู้เช่าแผงลอยมากกว่าหนึ่งราย กรุณาพิมพ์รหัสผู้เช่า (OUT-xxxx) ต่อท้ายชื่อ'); DEMO.bills = []; return render(); }
+        if (hits.length) searchTerm = hits[0].stall?.toUpperCase() ?? '';
         DEMO.bills = hits;
       }
       if (!DEMO.bills.length) toast('ไม่พบข้อมูลที่ตรงกัน กรุณาตรวจสอบชื่อและเลขล็อก/บ้านเลขที่ให้ตรงกับที่ลงทะเบียนไว้');
       return render();
     }
+    if (!searchTerm && r?.stall?.stallCode) searchTerm = String(r.stall.stallCode).toUpperCase();
     DEMO.bills = (r.bills || []).map(toStallBill);
   } catch (e) { DEMO.bills = []; toast((e as Error).message); }
   render();

@@ -968,12 +968,16 @@ async function searchStallBills(name, stall) {
                     DEMO.bills = [];
                     return render();
                 }
+                if (hits.length)
+                    searchTerm = hits[0].stall?.toUpperCase() ?? '';
                 DEMO.bills = hits;
             }
             if (!DEMO.bills.length)
                 toast('ไม่พบข้อมูลที่ตรงกัน กรุณาตรวจสอบชื่อและเลขล็อก/บ้านเลขที่ให้ตรงกับที่ลงทะเบียนไว้');
             return render();
         }
+        if (!searchTerm && r?.stall?.stallCode)
+            searchTerm = String(r.stall.stallCode).toUpperCase();
         DEMO.bills = (r.bills || []).map(toStallBill);
     }
     catch (e) {
