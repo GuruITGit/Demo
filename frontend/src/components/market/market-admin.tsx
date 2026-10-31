@@ -14,6 +14,7 @@ import { QrSvg, downloadQrPng, printQrSheet, stallQrUrl, type QrItem } from '@/c
 import { SlipQueue } from '@/components/pay/slip-queue';
 import { PaySettings } from '@/components/pay/pay-settings';
 import { MarketBills } from './market-bills';
+import { PlaceFilter, placeMatch, type PlaceKind } from './place-filter';
 import { MarketOutside } from './market-outside';
 import { ReservationCheck } from './reservation-check';
 import { OutsideApplications } from './outside-applications';
@@ -333,13 +334,15 @@ function StallEditor({ stall, canManage, saving, onClose, onBills, onDelete, onS
 function Dues({ sum, onBills }: { sum?: Summary; onBills: (code: string) => void }) {
   const [min, setMin] = useState(0);
   const [q, setQ] = useState('');
-  const rows = filterDues(sum?.arrears ?? [], min, q, (r) => `${r.stallCode} ${r.payerName}`);
+  const [place, setPlace] = useState<PlaceKind>('all');
+  const rows = filterDues((sum?.arrears ?? []).filter((r) => placeMatch(place, r.stallCode)), min, q, (r) => `${r.stallCode} ${r.payerName}`);
   const total = rows.reduce((s, r) => s + r.total, 0);
   return (
     <Panel
       title={<>ผู้ค้างชำระ <span className="text-sm font-normal text-gray-500">{rows.length} แผง · รวม {money(total)} บาท</span></>}
       actions={<Button size="sm" variant="outline" onClick={() => window.print()}>พิมพ์รายงาน</Button>}
     >
+      <div className="mb-2"><PlaceFilter value={place} onChange={setPlace} /></div>
       <DuesFilter min={min} setMin={setMin} q={q} setQ={setQ} placeholder="ค้นหาแผงหรือชื่อผู้เช่า" />
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
