@@ -1,6 +1,6 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository, FindOptionsWhere, DataSource } from 'typeorm';
+import { In, Like, Repository, FindOptionsWhere, DataSource } from 'typeorm';
 import { MarketStall } from '../../database/entities/market-stall.entity';
 import { MarketBill } from '../../database/entities/market-bill.entity';
 import { WasteBill } from '../../database/entities/waste-bill.entity';
@@ -112,11 +112,21 @@ export class CitizenPayService {
     return rows.map((s) => ({ stallCode: s.stallCode, zone: s.zone, status: s.status, monthlyRate: Number(s.monthlyRate) }));
   }
 
+  /** แผงลอย: ค้นด้วยชื่ออย่างเดียว — ถ้าชื่อตรงผู้เช่าแผงลอยมากกว่าหนึ่งราย ให้พิมพ์รหัสผู้เช่าด้วย */
+  async outsideBillsByName(orgId: string, nameRaw: string) {
+    const rows = await this.marketBills.find({ where: { organizationId: orgId, status: In(OPEN_STATUSES), stallCode: Like('OUT-%') }, order: { period: 'DESC', kind: 'ASC' }, take: 500 });
+    const hits = rows.filter((b) => nameMatches(b.payerName, nameRaw));
+    const codes = [...new Set(hits.map((b) => b.stallCode))];
+    if (!codes.length) throw new NotFoundException(NO_MATCH);
+    if (codes.length > 1) throw new BadRequestException('ชื่อนี้มีผู้เช่าแผงลอยมากกว่าหนึ่งราย กรุณาพิมพ์รหัสผู้เช่า (OUT-xxxx) ต่อท้ายชื่อ');
+    return { stall: { stallCode: codes[0], zone: 'แผงลอย', status: 'occupied', monthlyRate: 0 }, bills: hits.slice(0, 60).map(publicMarketBill) };
+  }
+
   /** บิลค่าแผง: ต้องกรอกเลขล็อก + ชื่อผู้เช่าให้ตรงกัน — ไม่ตรงตอบข้อความเดียวกันหมด (ไม่บอกว่าผิดที่ล็อกหรือชื่อ) */
   async marketBillsFor(orgId: string, stallCode: string, nameRaw: string) {
     const code = (stallCode || '').trim().toUpperCase();
-    if (!code) throw new BadRequestException('กรุณากรอกเลขล็อก');
     if (!nameMatchReady(nameRaw)) throw new BadRequestException('กรุณากรอกชื่อ-นามสกุลผู้เช่า');
+    if (!code) return this.outsideBillsByName(orgId, nameRaw); // แผงลอยไม่มีรหัสแผง พิมพ์ชื่ออย่างเดียวได้
     if (code.startsWith('OUT-')) return this.outsideBillsFor(orgId, code, nameRaw);
     const stall = await this.stalls.findOne({ where: { organizationId: orgId, stallCode: code, active: true } });
     if (!stall || !nameMatches(stall.tenantName, nameRaw)) throw new NotFoundException(NO_MATCH);

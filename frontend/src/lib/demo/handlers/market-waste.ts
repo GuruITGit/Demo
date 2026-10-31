@@ -107,6 +107,16 @@ registerSeed((db) => {
 // ───────────────────────────── ตัวช่วย
 /** เดโม่: จุดแผงลอยที่เปิดให้เช่า ซิงก์ไปคีย์ localStorage ที่หน้าประชาชน (same origin) อ่านอยู่ — รูปแบบต้องตรงกับ market/app.ts */
 const CITIZEN_OUTSIDE_KEY = 'lamplaimat:outside-locations';
+/** บิลแผงลอยที่ยังค้าง → หน้าประชาชน (ค้นด้วยชื่อ) */
+function syncCitizenOutsideBills(db: Ctx['db']) {
+  try {
+    const rows = db.marketBills
+      .filter((b) => b.organizationId === ORG_ID && String(b.stallCode).startsWith('OUT-') && ['unpaid', 'pending', 'mismatch'].includes(b.status))
+      .map((b) => ({ id: b.id, stallCode: b.stallCode, payerName: b.payerName, kind: b.kind, period: b.period, amount: b.amount, status: b.status, submittedMethod: b.submittedMethod ?? null, dueDate: b.dueDate ?? null, reviewNote: b.reviewNote ?? null }));
+    localStorage.setItem('lamplaimat:demo-outside-bills', JSON.stringify(rows));
+  } catch { /* เขียนไม่ได้ = ข้าม */ }
+}
+
 function syncCitizenOutside(db: Ctx['db']) {
   try {
     const rows = db.marketOutsideLocations
@@ -282,6 +292,7 @@ const openDuesOf = (db: Ctx['db'], code: string) => {
 get('/market/outside/applications', (c) => {
   needPerm(c, 'market:read:MarketBill');
   absorbCitizen(c.db);
+  syncCitizenOutsideBills(c.db);
   const st = c.query?.status;
   return c.db.marketOutsideApps
     .filter((a) => a.organizationId === ORG_ID && (!st || a.status === st))
@@ -311,6 +322,7 @@ post('/market/outside/applications/:id/approve', (c) => {
   const bill = { id: uid(), organizationId: ORG_ID, stallId: null, stallCode: app.appCode, payerName: app.applicantName, kind: 'rent', period: per, amount: amount.toFixed(2), dueDate: periodEnd(per), status: 'unpaid', paidMethod: null, paidAt: null, receiptNo: null, submittedMethod: null, submittedAt: null, slipUrl: null, reviewNote: null };
   c.db.marketBills.push(bill);
   Object.assign(app, { status: 'approved', billId: bill.id, reviewNote: null });
+  syncCitizenOutsideBills(c.db);
   return { ok: true, billId: bill.id, appCode: app.appCode, amount };
 });
 

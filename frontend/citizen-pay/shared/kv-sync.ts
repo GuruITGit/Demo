@@ -3,7 +3,7 @@
 // ไฟล์นี้เป็น script ไม่ใช่ module (หน้า static รวมด้วย outFile) จึงห่อใน IIFE และตั้ง window.smartKvInit ให้หน้า Next เรียกได้
 (function () {
   type KvConfig = { url: string; key: string };
-  const KV_KEYS = ['market:payments', 'lamplaimat:demo-reservations', 'lamplaimat:demo-outside-apps', 'lamplaimat:demo-stalls', 'lamplaimat:outside-locations', 'market:rates'];
+  const KV_KEYS = ['market:payments', 'lamplaimat:demo-reservations', 'lamplaimat:demo-outside-apps', 'lamplaimat:demo-stalls', 'lamplaimat:outside-locations', 'market:rates', 'lamplaimat:demo-outside-bills'];
   const RELOAD_FLAG = 'kv:reloaded';
 
   const rawSet = Storage.prototype.setItem;

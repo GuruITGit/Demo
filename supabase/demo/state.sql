@@ -27,8 +27,8 @@ create table if not exists demo_kv (
 alter table demo_kv enable row level security;
 
 drop policy if exists "demo kv read" on demo_kv;
-create policy "demo kv read" on demo_kv for select to anon, authenticated using (key in ('market:payments','lamplaimat:demo-reservations','lamplaimat:demo-outside-apps','lamplaimat:demo-stalls','lamplaimat:outside-locations','market:rates'));
+create policy "demo kv read" on demo_kv for select to anon, authenticated using (key in ('market:payments','lamplaimat:demo-reservations','lamplaimat:demo-outside-apps','lamplaimat:demo-stalls','lamplaimat:outside-locations','market:rates','lamplaimat:demo-outside-bills'));
 drop policy if exists "demo kv insert" on demo_kv;
-create policy "demo kv insert" on demo_kv for insert to anon, authenticated with check (key in ('market:payments','lamplaimat:demo-reservations','lamplaimat:demo-outside-apps','lamplaimat:demo-stalls','lamplaimat:outside-locations','market:rates'));
+create policy "demo kv insert" on demo_kv for insert to anon, authenticated with check (key in ('market:payments','lamplaimat:demo-reservations','lamplaimat:demo-outside-apps','lamplaimat:demo-stalls','lamplaimat:outside-locations','market:rates','lamplaimat:demo-outside-bills'));
 drop policy if exists "demo kv update" on demo_kv;
-create policy "demo kv update" on demo_kv for update to anon, authenticated using (key in ('market:payments','lamplaimat:demo-reservations','lamplaimat:demo-outside-apps','lamplaimat:demo-stalls','lamplaimat:outside-locations','market:rates')) with check (key in ('market:payments','lamplaimat:demo-reservations','lamplaimat:demo-outside-apps','lamplaimat:demo-stalls','lamplaimat:outside-locations','market:rates'));
+create policy "demo kv update" on demo_kv for update to anon, authenticated using (key in ('market:payments','lamplaimat:demo-reservations','lamplaimat:demo-outside-apps','lamplaimat:demo-stalls','lamplaimat:outside-locations','market:rates','lamplaimat:demo-outside-bills')) with check (key in ('market:payments','lamplaimat:demo-reservations','lamplaimat:demo-outside-apps','lamplaimat:demo-stalls','lamplaimat:outside-locations','market:rates','lamplaimat:demo-outside-bills'));
