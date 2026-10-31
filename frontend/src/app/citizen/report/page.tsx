@@ -196,7 +196,7 @@ function ReportForm() {
         </div>
         <div>
           <h1 className="text-xl font-bold text-slate-800">{lockedVehicle ? `ขอใช้${category.replace('ขอใช้บริการ', '')}` : 'แจ้งเรื่อง / ร้องเรียน'}</h1>
-          <p className="text-xs text-slate-400">{lockedVehicle ? 'กรอกข้อมูลผู้ขอและปักหมุดจุดที่ให้รถไป' : 'แจ้งเหตุถึง อบต. โดยตรง · เก็บเลขอ้างอิงไว้เช็กสถานะได้'}</p>
+          <p className="text-xs text-slate-500">{lockedVehicle ? 'กรอกข้อมูลผู้ขอและปักหมุดจุดที่ให้รถไป' : 'แจ้งเหตุถึง อบต. โดยตรง · เก็บเลขอ้างอิงไว้เช็กสถานะได้'}</p>
         </div>
       </div>
 

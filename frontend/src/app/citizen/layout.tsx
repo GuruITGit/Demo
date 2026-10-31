@@ -52,7 +52,7 @@ export default function CitizenLayout({ children }: { children: React.ReactNode 
       <footer className="border-t border-[#DCEBF8] bg-white text-[15px] text-[#475569]">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-6 py-6">
           <span>© {orgName} · ระบบบริการประชาชนออนไลน์</span>
-          <span className="text-[#94A3B8]">ข้อมูลที่ท่านกรอกใช้เพื่อดำเนินการตามเรื่องที่แจ้งเท่านั้น</span>
+          <span className="text-[#64748B]">ข้อมูลที่ท่านกรอกใช้เพื่อดำเนินการตามเรื่องที่แจ้งเท่านั้น</span>
         </div>
       </footer>
     </div>
