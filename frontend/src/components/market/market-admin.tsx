@@ -350,8 +350,84 @@ function Dues({ sum, onBills }: { sum?: Summary; onBills: (code: string) => void
   );
 }
 
-/** ตารางผู้เช่าทุกแผง (สถานะ ผู้เช่า เบอร์ ค่าเช่า ช่วงเช่า ค้างชำระ) — ค้นหา/กรองสถานะ แล้วพิมพ์ได้ */
+/** ผู้เช่าทั้งหมด: แผงประจำ (ตามผัง) กับ แผงลอย (ตามจุด) — แยกดูและค้นหาได้ */
 function Tenants({ sum }: { sum?: Summary }) {
+  const [kind, setKind] = useState<'stall' | 'outside'>('stall');
+  return (
+    <div className="space-y-4">
+      <div className="flex gap-2">
+        <Button size="sm" variant={kind === 'stall' ? 'default' : 'outline'} onClick={() => setKind('stall')}>แผงประจำ</Button>
+        <Button size="sm" variant={kind === 'outside' ? 'default' : 'outline'} onClick={() => setKind('outside')}>แผงลอย</Button>
+      </div>
+      {kind === 'stall' ? <TenantsStalls sum={sum} /> : <TenantsOutside />}
+    </div>
+  );
+}
+
+/** ผู้เช่าแผงลอยที่อนุมัติแล้ว — ค้นหาชื่อ/รหัส/เบอร์ได้ · ลบผู้เช่าได้เมื่อไม่มียอดค้าง */
+function TenantsOutside() {
+  const qc = useQueryClient();
+  const [q, setQ] = useState('');
+  const [del, setDel] = useState<OutsideTenant | null>(null);
+  const { data: rows = [], isLoading } = useQuery<OutsideTenant[]>({
+    queryKey: ['market', 'outside', 'apps', 'approved'],
+    queryFn: async () => (await api.get('/market/outside/applications', { params: { status: 'approved' } })).data.data,
+    refetchInterval: 15_000,
+  });
+  const key = q.trim().toLowerCase();
+  const list = rows.filter((r) => !key || `${r.appCode} ${r.applicantName} ${r.phone} ${r.location?.name ?? ''}`.toLowerCase().includes(key));
+  const cancel = useMutation({
+    mutationFn: (id: string) => api.post(`/market/outside/applications/${id}/cancel`, {}),
+    onSuccess: () => { toast.success('ลบผู้เช่าแล้ว (ประวัติยังเก็บไว้)'); setDel(null); qc.invalidateQueries({ queryKey: ['market', 'outside'] }); },
+    onError: (e) => { toast.error(getErrorMessage(e)); setDel(null); },
+  });
+  return (
+    <Panel title={<>ผู้เช่าแผงลอย <span className="text-sm font-normal text-gray-500">{list.length} ราย</span></>}>
+      <div className="mb-3">
+        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="ค้นหาชื่อ รหัสผู้เช่า เบอร์ หรือจุด" className={inputCls} aria-label="ค้นหาผู้เช่าแผงลอย" />
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="bg-gray-50 text-left text-gray-600">
+            <tr><th className="px-4 py-2">รหัสผู้เช่า</th><th className="px-4 py-2">ชื่อ</th><th className="px-4 py-2">เบอร์</th><th className="px-4 py-2">จุด</th><th className="px-4 py-2">เริ่มเช่า</th><th className="px-4 py-2">ค้างชำระ</th><th className="px-4 py-2" /></tr>
+          </thead>
+          <tbody>
+            {list.map((r) => (
+              <tr key={r.id} className="border-t border-gray-100">
+                <td className="px-4 py-2 font-medium">{r.appCode}</td>
+                <td className="px-4 py-2">{r.applicantName}</td>
+                <td className="px-4 py-2">{r.phone}</td>
+                <td className="px-4 py-2">{r.location?.name ?? '—'}</td>
+                <td className="px-4 py-2 text-gray-600">{r.startDate ? new Date(`${r.startDate}T00:00:00`).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' }) : '—'}</td>
+                <td className={cn('px-4 py-2', r.openDues.count > 0 && 'font-medium text-red-600')}>{r.openDues.count > 0 ? `${r.openDues.count} รายการ · ${money(r.openDues.total)} บาท` : 'ไม่มียอดค้าง'}</td>
+                <td className="px-4 py-2 text-right">
+                  <Button size="sm" variant="outline" disabled={r.openDues.count > 0} title={r.openDues.count > 0 ? 'ต้องชำระยอดค้างให้ครบก่อน' : undefined} onClick={() => setDel(r)}>ลบผู้เช่า</Button>
+                </td>
+              </tr>
+            ))}
+            {!list.length && <tr><td colSpan={7}><Empty>{isLoading ? 'กำลังโหลด…' : key ? 'ไม่พบผู้เช่าตามคำค้น' : 'ยังไม่มีผู้เช่าแผงลอย'}</Empty></td></tr>}
+          </tbody>
+        </table>
+      </div>
+      <ConfirmDialog
+        open={!!del}
+        onOpenChange={(o) => { if (!o) setDel(null); }}
+        loading={cancel.isPending}
+        onConfirm={() => del && cancel.mutate(del.id)}
+        title={`ลบผู้เช่า ${del?.appCode ?? ''}?`}
+        description="ผู้เช่าจะถูกลบออกจากรายชื่อ ประวัติการเช่าและบิลเดิมยังเก็บไว้"
+        confirmText="ลบผู้เช่า"
+      />
+    </Panel>
+  );
+}
+
+type OutsideTenant = {
+  id: string; appCode: string; applicantName: string; phone: string; startDate: string | null;
+  location?: { name: string }; openDues: { count: number; total: number };
+};
+
+function TenantsStalls({ sum }: { sum?: Summary }) {
   const { data: stalls = [] } = useQuery<Stall[]>({ queryKey: ['market', 'stalls'], queryFn: async () => (await api.get('/market/stalls')).data.data });
   const [st, setSt] = useState<'all' | Stall['status']>('all');
   const [q, setQ] = useState('');
