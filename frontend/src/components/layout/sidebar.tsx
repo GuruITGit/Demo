@@ -12,6 +12,9 @@ import { MODULES, NAV_GROUP_ORDER } from '@/lib/modules';
 // เมนูซ้ายสร้างจากทะเบียนโมดูลกลาง (lib/modules.ts) — เพิ่มโมดูลใหม่ที่นั่นแล้วเมนูขึ้นเอง
 const NAV_ITEMS = MODULES.filter((m) => m.navGroup);
 
+type Summary = { byStatus?: { status: string; count: number }[] } | null;
+const pendingOf = (sum: Summary) => sum?.byStatus?.find((s) => s.status === 'pending')?.count ?? 0;
+
 // เวลาที่เจ้าหน้าที่เปิดหน้าเรื่องแจ้ง/ร้องเรียนครั้งล่าสุด — เก็บต่อผู้ใช้ในเบราว์เซอร์นี้ (เลขบนเมนูนับเรื่องที่เข้ามาหลังเวลานี้)
 const seenKey = (uid?: string) => `citizen-reports-seen:${uid || 'anon'}`;
 const seenMem = new Map<string, string>();   // สำรองไว้ถ้า localStorage ใช้ไม่ได้ (โหมดส่วนตัว)
@@ -72,6 +75,30 @@ export function Sidebar({ mobileOpen = false, onClose }: { mobileOpen?: boolean;
   });
   const queueCount = myQueue?.length || 0;
 
+  // งานค้างของค่าแผง/ค่าขยะ: ป้ายบนเมนูนับตามแท็บ "รอตรวจ" (+ จองใหม่ / ใบสมัครแผงลอย ของค่าแผง) · ล้มเหลวให้เป็น 0 เงียบ ๆ
+  const showMarket = visible.some((i) => i.key === 'market');
+  const showWaste = visible.some((i) => i.key === 'waste');
+  const { data: marketTodo } = useQuery({
+    queryKey: ['market', 'sidebar-todo'],
+    queryFn: async () => {
+      const [sum, res, apps] = await Promise.all([
+        api.get('/market/summary').then((r) => r.data.data as Summary).catch(() => null),
+        api.get('/market/reservations').then((r) => r.data.data as unknown[]).catch(() => null),
+        api.get('/market/outside/applications', { params: { status: 'pending' } }).then((r) => r.data.data as unknown[]).catch(() => null),
+      ]);
+      return pendingOf(sum) + (res?.length ?? 0) + (apps?.length ?? 0);
+    },
+    enabled: showMarket,
+    refetchInterval: 60_000,
+  });
+  const { data: wasteTodo } = useQuery({
+    queryKey: ['waste', 'sidebar-todo'],
+    queryFn: async () => pendingOf((await api.get('/waste/summary')).data.data as Summary),
+    enabled: showWaste,
+    refetchInterval: 60_000,
+  });
+  const todoOf = (key: string) => (key === 'market' ? marketTodo : key === 'waste' ? wasteTodo : 0) || 0;
+
   const groups = NAV_GROUP_ORDER
     .map((g) => ({ name: g, items: visible.filter((i) => i.navGroup === g) }))
     .filter((g) => g.items.length > 0);
@@ -123,6 +150,15 @@ export function Sidebar({ mobileOpen = false, onClose }: { mobileOpen?: boolean;
                       aria-label={`มีเรื่องรอคุณเซ็น ${queueCount} เรื่อง`}
                     >
                       {queueCount > 99 ? '99+' : queueCount}
+                    </span>
+                  )}
+                  {todoOf(item.key) > 0 && (
+                    <span
+                      className="min-w-5 text-center text-[11px] font-semibold bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full shrink-0"
+                      title={`งานค้าง ${todoOf(item.key)} รายการ`}
+                      aria-label={`มีงานค้าง ${todoOf(item.key)} รายการ`}
+                    >
+                      {todoOf(item.key) > 99 ? '99+' : todoOf(item.key)}
                     </span>
                   )}
                 </Link>

@@ -20,13 +20,14 @@ import { ReservationCheck } from './reservation-check';
 type Stall = {
   id: string; stallCode: string; zone: string; status: 'available' | 'reserved' | 'occupied';
   tenantName: string | null; contactPhone: string | null; reservedAt: string | null; monthlyRate: string; reserveCardUrl?: string | null;
+  reserveStartDate?: string | null; reserveDays?: number | null;
 };
 type Summary = {
   byStatus: { status: string; count: number; total: number }[];
   arrears: { stallCode: string; payerName: string; months: number; oldest?: string; total: number }[];
   stallCounts: { status: string; count: number }[];
 };
-type Tab = 'overview' | 'queue' | 'reserve' | 'plan' | 'bills' | 'dues' | 'outside' | 'qr' | 'settings';
+type Tab = 'overview' | 'queue' | 'reserve' | 'plan' | 'tenants' | 'bills' | 'dues' | 'outside' | 'qr' | 'settings';
 
 const STALL_LABEL = { available: 'ว่าง', reserved: 'จอง', occupied: 'มีผู้เช่า' } as const;
 // สีตามผังเดิม: มีผู้เช่า = ฟ้าอ่อน · จอง = เหลืองอ่อน · ว่าง = ขาว
@@ -62,6 +63,7 @@ export function MarketAdmin() {
           { key: 'queue', label: 'รอตรวจ', badge: pendingCount },
           { key: 'reserve', label: 'จองแผง', badge: reservations.length },
           { key: 'plan', label: 'ผังแผง' },
+          { key: 'tenants', label: 'ผู้เช่าทั้งหมด' },
           { key: 'bills', label: 'บิล' },
           { key: 'dues', label: 'ค้างชำระ' },
           { key: 'outside', label: 'แผงลอย' },
@@ -73,6 +75,7 @@ export function MarketAdmin() {
       {tab === 'queue' && <SlipQueue kind="market" canManage={canBill} />}
       {tab === 'reserve' && <ReservationCheck canManage={canStall} />}
       {tab === 'plan' && <Plan canManage={canStall} onBills={(code) => goBills(code)} />}
+      {tab === 'tenants' && <Tenants sum={sum} />}
       {tab === 'bills' && <MarketBills key={billFilter.n} canManage={canBill} orgName={orgName} initialStall={billFilter.stall} initialStatus={billFilter.status} />}
       {tab === 'dues' && <Dues sum={sum} onBills={(code) => goBills(code, 'unpaid')} />}
       {tab === 'outside' && <MarketOutside canManageStall={canStall} canManageBill={canBill} orgName={orgName} />}
@@ -340,6 +343,61 @@ function Dues({ sum, onBills }: { sum?: Summary; onBills: (code: string) => void
               </tr>
             ))}
             {!rows.length && <tr><td colSpan={6}><Empty>{min || q ? 'ไม่มีรายการตามเงื่อนไขที่เลือก' : 'ไม่มียอดค้างชำระ'}</Empty></td></tr>}
+          </tbody>
+        </table>
+      </div>
+    </Panel>
+  );
+}
+
+/** ตารางผู้เช่าทุกแผง (สถานะ ผู้เช่า เบอร์ ค่าเช่า ช่วงเช่า ค้างชำระ) — ค้นหา/กรองสถานะ แล้วพิมพ์ได้ */
+function Tenants({ sum }: { sum?: Summary }) {
+  const { data: stalls = [] } = useQuery<Stall[]>({ queryKey: ['market', 'stalls'], queryFn: async () => (await api.get('/market/stalls')).data.data });
+  const [st, setSt] = useState<'all' | Stall['status']>('all');
+  const [q, setQ] = useState('');
+  const arrears = useMemo(() => new Map((sum?.arrears ?? []).map((a) => [a.stallCode, a])), [sum]);
+  const key = q.trim().toLowerCase();
+  const rows = stalls.filter((s) => (st === 'all' || s.status === st) && (!key || `${s.stallCode} ${s.tenantName ?? ''} ${s.contactPhone ?? ''}`.toLowerCase().includes(key)));
+  const fmtDate = (d: string) => new Date(d).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' });
+  return (
+    <Panel
+      title={<>ผู้เช่าทั้งหมด <span className="text-sm font-normal text-gray-500">{rows.length} แผง</span></>}
+      actions={<Button size="sm" variant="outline" onClick={() => window.print()}>พิมพ์รายงาน</Button>}
+    >
+      <div className="mb-3 flex flex-wrap gap-2">
+        <select value={st} onChange={(e) => setSt(e.target.value as 'all' | Stall['status'])} className={inputCls} aria-label="กรองสถานะ">
+          <option value="all">ทุกสถานะ</option>
+          <option value="occupied">มีผู้เช่า</option>
+          <option value="reserved">จอง</option>
+          <option value="available">ว่าง</option>
+        </select>
+        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="ค้นหาแผง ชื่อ หรือเบอร์" className={cn(inputCls, 'min-w-[12rem] flex-1')} />
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="bg-gray-50 text-left text-gray-600">
+            <tr>
+              <th className="px-4 py-2">แผง</th><th className="px-4 py-2">โซน</th><th className="px-4 py-2">สถานะ</th><th className="px-4 py-2">ผู้เช่า</th>
+              <th className="px-4 py-2">เบอร์ติดต่อ</th><th className="px-4 py-2 text-right">ค่าเช่า/เดือน</th><th className="px-4 py-2">ช่วงเช่า</th><th className="px-4 py-2 text-right">ค้างชำระ</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((s) => {
+              const a = arrears.get(s.stallCode);
+              return (
+                <tr key={s.id} className="border-t border-gray-100">
+                  <td className="px-4 py-2 font-medium">{s.stallCode}</td>
+                  <td className="px-4 py-2">{s.zone}</td>
+                  <td className="px-4 py-2"><span className={cn('rounded-full border px-2 py-0.5 text-xs', STALL_TONE[s.status])}>{STALL_LABEL[s.status]}</span></td>
+                  <td className="px-4 py-2">{s.tenantName || '—'}</td>
+                  <td className="px-4 py-2">{s.contactPhone || '—'}</td>
+                  <td className="px-4 py-2 text-right">{money(Number(s.monthlyRate))}</td>
+                  <td className="px-4 py-2 text-gray-600">{s.reserveStartDate ? `${fmtDate(s.reserveStartDate)}${s.reserveDays ? ` · ${s.reserveDays} วัน` : ''}` : '—'}</td>
+                  <td className="px-4 py-2 text-right">{a ? <span className={dueTone(a.months)}>{a.months} เดือน · {money(a.total)} บาท</span> : '—'}</td>
+                </tr>
+              );
+            })}
+            {!rows.length && <tr><td colSpan={8}><Empty>{st !== 'all' || key ? 'ไม่มีรายการตามเงื่อนไขที่เลือก' : 'ยังไม่มีแผงในระบบ'}</Empty></td></tr>}
           </tbody>
         </table>
       </div>
