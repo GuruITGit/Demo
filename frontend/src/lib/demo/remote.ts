@@ -16,11 +16,12 @@ export async function remoteLoad(): Promise<unknown | null> {
   return rows[0]?.data ?? null;
 }
 
-export async function remoteSave(data: unknown): Promise<void> {
+/** รับข้อมูลเป็น JSON string แล้วต่อเป็น body เอง (ไม่ stringify ซ้ำ) */
+export async function remoteSave(json: string): Promise<void> {
   const r = await fetch(`${URL_BASE}/rest/v1/demo_state`, {
     method: 'POST',
     headers: { ...headers, Prefer: 'resolution=merge-duplicates' },
-    body: JSON.stringify({ id: 'main', data, updated_at: new Date().toISOString() }),
+    body: `{"id":"main","updated_at":"${new Date().toISOString()}","data":${json}}`,
   });
   if (!r.ok) throw new Error(`remote save ${r.status}`);
 }

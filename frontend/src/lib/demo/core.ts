@@ -31,6 +31,7 @@ let loading: Promise<void> | null = null;
 let timer: ReturnType<typeof setTimeout> | null = null;
 let loadFailed = false; // โหลดข้อมูลกลางไม่ได้ → ห้ามเขียนทับ
 let saving: Promise<unknown> = Promise.resolve();
+let lastSaved = ''; // JSON ของสถานะที่ส่งไปฐานกลางล่าสุด — ไม่ส่งซ้ำถ้าไม่เปลี่ยน
 
 export function registerSeed(part: SeedPart) { seedParts.push(part); }
 
@@ -74,6 +75,7 @@ export function ensureLoaded(): Promise<void> {
       if ((saved as Row | null)?._meta?.[0]?.version === DB_VERSION) db = saved as Db;
     } catch { loadFailed = remoteEnabled; /* ใช้ข้อมูลตั้งต้น (เชื่อมฐานกลางไม่ได้ก็ไม่เขียนทับ) */ }
     if (!db) { db = fresh(); persist(true); }
+    else if (remoteEnabled) lastSaved = JSON.stringify(db);
   })());
 }
 
@@ -85,7 +87,15 @@ export function getDb(): Db {
 export function persist(now = false) {
   if (!db || typeof indexedDB === 'undefined') return;
   // ต่อคิวทีละงาน และอ่าน db ตอนถึงคิว → ข้อมูลล่าสุดเสมอ ไม่ให้คำขอเก่าที่เสร็จทีหลังทับของใหม่
-  const write = () => { if (loadFailed) return; saving = saving.then(() => (remoteEnabled ? remoteSave(db) : idbSet(KEY, db))).catch(() => { /* เก็บไม่ได้ก็ยังใช้ได้ในหน้านี้ */ }); };
+  const write = () => {
+    if (loadFailed) return;
+    saving = saving.then(() => {
+      if (!remoteEnabled) return idbSet(KEY, db);
+      const json = JSON.stringify(db);
+      if (json === lastSaved) return;
+      return remoteSave(json).then(() => { lastSaved = json; });
+    }).catch(() => { /* เก็บไม่ได้ก็ยังใช้ได้ในหน้านี้ */ });
+  };
   if (timer) clearTimeout(timer);
   if (now) write(); else timer = setTimeout(write, 150);
 }
@@ -95,7 +105,7 @@ export async function resetDemoData() {
   await ensureLoaded();
   db = fresh();
   if (timer) clearTimeout(timer);
-  if (!loadFailed) { try { await (remoteEnabled ? remoteSave(db) : idbSet(KEY, db)); } catch { /* ignore */ } }
+  if (!loadFailed) { try { if (remoteEnabled) { const json = JSON.stringify(db); await remoteSave(json); lastSaved = json; } else await idbSet(KEY, db); } catch { /* ignore */ } }
 }
 
 export const uid = () => (typeof crypto !== 'undefined' && 'randomUUID' in crypto
