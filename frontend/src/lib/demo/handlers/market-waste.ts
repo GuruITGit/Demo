@@ -90,7 +90,32 @@ registerSeed((db) => {
     { id: 'outside-2', organizationId: ORG_ID, name: 'ลานจอดรถ (รายเดือน)', rentRate: '1500', rentPeriod: 'monthly', enabled: false, active: true, createdAt: nowIso() },
   ];
   db.marketOutsideCollections = [];
-  db.marketOutsideApps = [];
+  // ผู้เช่าแผงลอยตัวอย่าง: รายวัน (ลานหน้าตลาด) และรายเดือน (ลานจอดรถ) — ค้างบ้าง ชำระครบบ้าง
+  const isoDaysAgo = (n: number) => { const d = new Date(); d.setDate(d.getDate() - n); return d.toISOString().slice(0, 10); };
+  const OUT = [
+    { code: 'OUT-0001', name: 'สมศรี ค้าดี', phone: '0871110001', loc: 'outside-1', days: 10, start: isoDaysAgo(12), dues: [-2, -1, 0] },
+    { code: 'OUT-0002', name: 'วิชัย ตลาดเช้า', phone: '0871110002', loc: 'outside-1', days: 30, start: isoDaysAgo(30), dues: [] },
+    { code: 'OUT-0003', name: 'ประนอม แสงจันทร์', phone: '0871110003', loc: 'outside-2', days: 1, start: isoDaysAgo(40), dues: [-1, 0] },
+    { code: 'OUT-0004', name: 'อรุณี ใจดี', phone: '0871110004', loc: 'outside-1', days: 5, start: isoDaysAgo(5), dues: [0] },
+  ];
+  db.marketOutsideApps = OUT.map((o, i) => ({
+    id: 'app-out-' + (i + 1), organizationId: ORG_ID, locationId: o.loc, appCode: o.code, applicantName: o.name, name: o.name, phone: o.phone,
+    idCardUrl: null, startDate: o.start, days: o.days, status: 'approved', reviewNote: null, billId: null, createdAt: nowIso(),
+  }));
+  const outBills: Row[] = [];
+  for (const o of OUT) {
+    const loc = db.marketOutsideLocations.find((l: Row) => l.id === o.loc)!;
+    const rate = Number(loc.rentRate);
+    for (const off of o.dues.length ? o.dues : [-1]) {
+      const per = period(off);
+      const paid = !o.dues.includes(off);
+      outBills.push({ id: uid(), organizationId: ORG_ID, stallId: null, stallCode: o.code, payerName: o.name, kind: 'rent', period: per,
+        amount: (loc.rentPeriod === 'monthly' ? rate : rate * o.days).toFixed(2), dueDate: periodEnd(per),
+        status: paid ? 'paid' : 'unpaid', paidMethod: paid ? 'cash' : null, paidAt: paid ? nowIso() : null, receiptNo: null,
+        submittedMethod: null, submittedAt: null, slipUrl: null, reviewNote: null });
+    }
+  }
+  db.marketBills = [...db.marketBills, ...outBills];
   db.wasteHouseholds = HOUSEHOLDS.map((h) => ({
     id: `hh-${h.ref}`, organizationId: ORG_ID, householdRef: h.ref, holderName: h.name, houseNo: h.houseNo, moo: h.moo, phone: h.phone,
     monthlyFee: null, active: true, createdAt: nowIso(),
