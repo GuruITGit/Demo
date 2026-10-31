@@ -880,11 +880,18 @@ function selectStall(id) { const stall = findStall(id); if (paymentMapMode) {
 } selectedStall = id; savePageState(); render(); }
 function ownedStallModal(stall) { const name = stall.tenantName ? `<b>${escapeHTML(stall.tenantName)}</b>` : ''; return `<div class="modal-inner"><div class="modal-top"><h2 id="modalTitle">แผง ${escapeHTML(stall.id)} มีเจ้าของแล้ว</h2><button class="close-btn" onclick="modal.close()" aria-label="ปิด">×</button></div><div class="modal-body"><p class="help">${stall.status === 'reserved' ? 'มีผู้จองแล้ว' : 'มีผู้เช่าแล้ว'}${name ? ` · ${name}` : ''}</p></div></div>`; }
 function paymentStallModal(id) { const bills = DEMO.bills.filter(b => b.payerType === 'stall' && b.status === 'unpaid' && b.stall === id); const tenant = findStall(id)?.tenantName || bills[0]?.merchant; const summary = `<p class="help"><b>${escapeHTML(tenant || 'ยังไม่มีผู้เช่า')}</b></p>`; return `<div class="modal-inner"><div class="modal-top"><h2 id="modalTitle">แผง ${escapeHTML(id)}</h2><button class="close-btn" onclick="modal.close()" aria-label="ปิด">×</button></div><div class="modal-body">${summary}${findStall(id)?.status === 'available' ? `<button class="qr-demo" onclick="modal.close();openSignupForStall('${escapeHTML(id)}')">จองแผงนี้</button>` : `<button class="qr-demo" onclick="modal.close();findPaymentByQr('${escapeHTML(id)}')">เช็คยอดค้างชำระ</button>`}</div></div>`; }
+function openOutsideTenant(code) { paymentMapMode = false; resetSelection(); setPage('dues'); setTimeout(() => { const sq = document.getElementById('sq'); if (sq) {
+    sq.value = code + ' ';
+    sq.focus();
+} }, 0); toast('พิมพ์ชื่อผู้เช่าไว้หน้ารหัส ' + code + ' แล้วกดค้นหา'); }
 function findPaymentByQr(raw) { let key = raw.trim(); try {
     const url = new URL(key);
     key = url.searchParams.get('stall') || url.searchParams.get('ref') || url.pathname.split('/').filter(Boolean).pop() || key;
 }
-catch { } key = key.trim().toUpperCase(); const bill = DEMO.bills.find(item => item.payerType === 'stall' && (item.stall?.toUpperCase() === key || item.ref.toUpperCase() === key)); const stall = findStall(key); searchTerm = bill?.stall || stall?.id || key; paymentMapMode = false; resetSelection(); setPage('dues'); if (!bill && !stall)
+catch { } key = key.trim().toUpperCase(); if (/^OUT-\d+$/.test(key)) {
+    openOutsideTenant(key);
+    return;
+} const bill = DEMO.bills.find(item => item.payerType === 'stall' && (item.stall?.toUpperCase() === key || item.ref.toUpperCase() === key)); const stall = findStall(key); searchTerm = bill?.stall || stall?.id || key; paymentMapMode = false; resetSelection(); setPage('dues'); if (!bill && !stall)
     toast('ไม่พบรหัสแผงใน QR นี้ · ลองค้นหาด้วยชื่อหรือเลขแผง'); }
 function openQrScanner() { startQrScan({ title: 'สแกน QR ที่แผง', help: 'หันกล้องไปที่ QR บนแผง เช่น A06 หรือ LM-021', demoCode: 'A06', demoLabel: 'ทดลองดูยอดตัวอย่าง A06', onCode: findPaymentByQr }); }
 const findStall = id => DEMO.stalls.find(s => s.id === id && s.active !== false);
@@ -1271,3 +1278,5 @@ void refreshStalls();
     billSubmitter = submitStallBills;
     render();
 } })();
+(() => { const q = new URLSearchParams(location.search).get('stall'); if (q && /^OUT-\d+$/i.test(q.trim()))
+    findPaymentByQr(q.trim().toUpperCase()); })();

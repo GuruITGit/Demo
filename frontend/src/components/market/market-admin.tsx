@@ -384,6 +384,8 @@ function TenantsOutside() {
   const qc = useQueryClient();
   const [q, setQ] = useState('');
   const [del, setDel] = useState<OutsideTenant | null>(null);
+  const [qrFor, setQrFor] = useState<OutsideTenant | null>(null);
+  const qrItem = (r: OutsideTenant): QrItem => ({ code: r.appCode, title: r.appCode, sub: r.applicantName, text: stallQrUrl(typeof window !== 'undefined' ? window.location.origin : '', r.appCode) });
   const { data: rows = [], isLoading } = useQuery<OutsideTenant[]>({
     queryKey: ['market', 'outside', 'apps', 'approved'],
     queryFn: async () => (await api.get('/market/outside/applications', { params: { status: 'approved' } })).data.data,
@@ -416,7 +418,10 @@ function TenantsOutside() {
                 <td className="px-4 py-2 text-gray-600">{r.startDate ? new Date(`${r.startDate}T00:00:00`).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' }) : '—'}</td>
                 <td className={cn('px-4 py-2', r.openDues.count > 0 && 'font-medium text-red-600')}>{r.openDues.count > 0 ? `${r.openDues.count} รายการ · ${money(r.openDues.total)} บาท` : 'ไม่มียอดค้าง'}</td>
                 <td className="px-4 py-2 text-right">
-                  <Button size="sm" variant="outline" disabled={r.openDues.count > 0} title={r.openDues.count > 0 ? 'ต้องชำระยอดค้างให้ครบก่อน' : undefined} onClick={() => setDel(r)}>ลบผู้เช่า</Button>
+                  <div className="flex justify-end gap-2">
+                    <Button size="sm" variant="outline" onClick={() => setQrFor(r)}>QR จ่ายเงิน</Button>
+                    <Button size="sm" variant="outline" disabled={r.openDues.count > 0} title={r.openDues.count > 0 ? 'ต้องชำระยอดค้างให้ครบก่อน' : undefined} onClick={() => setDel(r)}>ลบผู้เช่า</Button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -424,6 +429,17 @@ function TenantsOutside() {
           </tbody>
         </table>
       </div>
+      {qrFor && (
+        <div className="mt-4 flex flex-col items-center gap-2 rounded-xl border border-gray-200 p-4 text-center">
+          <QrSvg text={qrItem(qrFor).text} label={qrItem(qrFor).title} className="w-40" />
+          <b>{qrFor.appCode} · {qrFor.applicantName}</b>
+          <p className="text-sm text-gray-500">สแกนแล้วพิมพ์ชื่อผู้เช่าเพื่อดูยอดและจ่ายเงิน</p>
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" onClick={() => downloadQrPng(qrItem(qrFor), 'qr-outside').catch((e) => toast.error(getErrorMessage(e)))}>บันทึกรูป</Button>
+            <Button size="sm" variant="ghost" onClick={() => setQrFor(null)}>ปิด</Button>
+          </div>
+        </div>
+      )}
       <ConfirmDialog
         open={!!del}
         onOpenChange={(o) => { if (!o) setDel(null); }}
