@@ -76,7 +76,7 @@ export function MarketAdmin() {
       {tab === 'overview' && <Overview sum={sum} onGo={setTab} />}
       {tab === 'queue' && <SlipQueue kind="market" canManage={canBill} />}
       {tab === 'reserve' && (
-        <div className="space-y-5">
+        <div className="grid items-start gap-5 lg:grid-cols-2">
           <ReservationCheck canManage={canStall} />
           <OutsideApplications canManage={canBill} />
         </div>
