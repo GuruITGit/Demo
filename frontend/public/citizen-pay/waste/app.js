@@ -585,7 +585,7 @@ modal.addEventListener('close', stopQrCamera);
 // ไม่มีค่า KV_CONFIG (ไม่ได้ตั้ง env / ระบบจริง) = ไม่ทำอะไรเลย · ดึงจากฐานกลางก่อน แล้วค่อยเขียนกลับเมื่อมีการเปลี่ยนแปลง
 // ไฟล์นี้เป็น script ไม่ใช่ module (หน้า static รวมด้วย outFile) จึงห่อใน IIFE และตั้ง window.smartKvInit ให้หน้า Next เรียกได้
 (function () {
-    const KV_KEYS = ['market:payments', 'lamplaimat:demo-reservations', 'lamplaimat:demo-outside-apps', 'lamplaimat:demo-stalls', 'lamplaimat:outside-locations', 'market:rates'];
+    const KV_KEYS = ['market:payments', 'lamplaimat:demo-reservations', 'lamplaimat:demo-outside-apps', 'lamplaimat:demo-stalls', 'lamplaimat:outside-locations', 'market:rates', 'lamplaimat:demo-outside-bills'];
     const RELOAD_FLAG = 'kv:reloaded';
     const rawSet = Storage.prototype.setItem;
     const rawRemove = Storage.prototype.removeItem;

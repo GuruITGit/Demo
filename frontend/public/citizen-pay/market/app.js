@@ -585,7 +585,7 @@ modal.addEventListener('close', stopQrCamera);
 // ไม่มีค่า KV_CONFIG (ไม่ได้ตั้ง env / ระบบจริง) = ไม่ทำอะไรเลย · ดึงจากฐานกลางก่อน แล้วค่อยเขียนกลับเมื่อมีการเปลี่ยนแปลง
 // ไฟล์นี้เป็น script ไม่ใช่ module (หน้า static รวมด้วย outFile) จึงห่อใน IIFE และตั้ง window.smartKvInit ให้หน้า Next เรียกได้
 (function () {
-    const KV_KEYS = ['market:payments', 'lamplaimat:demo-reservations', 'lamplaimat:demo-outside-apps', 'lamplaimat:demo-stalls', 'lamplaimat:outside-locations', 'market:rates'];
+    const KV_KEYS = ['market:payments', 'lamplaimat:demo-reservations', 'lamplaimat:demo-outside-apps', 'lamplaimat:demo-stalls', 'lamplaimat:outside-locations', 'market:rates', 'lamplaimat:demo-outside-bills'];
     const RELOAD_FLAG = 'kv:reloaded';
     const rawSet = Storage.prototype.setItem;
     const rawRemove = Storage.prototype.removeItem;
@@ -927,13 +927,21 @@ function toStallBill(x) {
     const status = x.status === 'pending' ? (cash ? 'cash' : 'pending') : x.status === 'mismatch' ? 'mismatch' : 'unpaid';
     return { id: x.id, payerType: 'stall', merchant: verifiedName || x.payerName, ref: x.stallCode, stall: x.stallCode, kind: x.kind === 'waste' ? 'ค่าขยะ' : 'ค่าเช่า', month: periodToThai(x.period), due: x.dueDate || '', amount: Number(x.amount), status, note: x.reviewNote || undefined };
 }
+/** บิลแผงลอยที่เจ้าหน้าที่ออกไว้ (เดโม่: ซิงก์ผ่านฐานกลาง) */
+function readOutsideBills() {
+    try {
+        const v = JSON.parse(localStorage.getItem('lamplaimat:demo-outside-bills') || '[]');
+        return Array.isArray(v) ? v : [];
+    }
+    catch {
+        return [];
+    }
+}
 async function searchStallBills(name, stall) {
     verifiedName = name.trim();
     draftStall = stall.trim().toUpperCase();
     searchTerm = draftStall;
     resetSelection();
-    if (!searchTerm)
-        return render();
     if (verifiedName.length < 4) {
         toast('กรุณากรอกชื่อ-นามสกุลผู้เช่า');
         return render();
@@ -942,7 +950,19 @@ async function searchStallBills(name, stall) {
         const r = await payApi(`/market/bills?stall=${encodeURIComponent(searchTerm)}&name=${encodeURIComponent(verifiedName)}`);
         if (r === null) { // เดโม่: ไม่มี API → กรองข้อมูลตัวอย่างให้ตรงทั้งรหัสแผงและชื่อ
             demoBillsAll ?? (demoBillsAll = DEMO.bills);
-            DEMO.bills = demoBillsAll.filter((b) => b.payerType === 'stall' && b.stall?.toUpperCase() === searchTerm && demoNameKey(b.merchant) === demoNameKey(verifiedName));
+            const nk = demoNameKey(verifiedName);
+            if (searchTerm) {
+                DEMO.bills = demoBillsAll.filter((b) => b.payerType === 'stall' && b.stall?.toUpperCase() === searchTerm && demoNameKey(b.merchant) === nk);
+            }
+            else { // แผงลอย: ชื่ออย่างเดียว — ชื่อซ้ำหลายรายต้องพิมพ์รหัสผู้เช่าด้วย
+                const hits = readOutsideBills().filter((x) => demoNameKey(x.payerName) === nk).map(toStallBill);
+                if (new Set(hits.map((b) => b.stall)).size > 1) {
+                    toast('ชื่อนี้มีผู้เช่าแผงลอยมากกว่าหนึ่งราย กรุณาพิมพ์รหัสผู้เช่า (OUT-xxxx) ต่อท้ายชื่อ');
+                    DEMO.bills = [];
+                    return render();
+                }
+                DEMO.bills = hits;
+            }
             if (!DEMO.bills.length)
                 toast('ไม่พบข้อมูลที่ตรงกัน กรุณาตรวจสอบชื่อและเลขล็อก/บ้านเลขที่ให้ตรงกับที่ลงทะเบียนไว้');
             return render();
@@ -968,10 +988,8 @@ function parseStallQuery(raw) {
 }
 function searchStallFromForm() {
     const { name, code } = parseStallQuery(document.getElementById('sq')?.value || '');
-    if (!code)
-        return toast('พิมพ์รหัสแผงต่อท้ายชื่อ เช่น สมใจ ใจดี A06');
     if (!name)
-        return toast('พิมพ์ชื่อ-นามสกุลก่อนรหัสแผง เช่น สมใจ ใจดี A06');
+        return toast('พิมพ์ชื่อ-นามสกุลผู้เช่า (แผงประจำพิมพ์รหัสแผงต่อท้าย เช่น สมใจ ใจดี A06 · แผงลอยพิมพ์แค่ชื่อได้)');
     void searchStallBills(name, code);
 }
 /** ส่งการแจ้งชำระของบิลค่าแผงทีละใบ (แนบสลิปเฉพาะโอน) แล้วโหลดรายการใหม่ */
