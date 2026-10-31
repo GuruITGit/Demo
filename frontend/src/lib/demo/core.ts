@@ -30,6 +30,7 @@ let db: Db | null = null;
 let loading: Promise<void> | null = null;
 let timer: ReturnType<typeof setTimeout> | null = null;
 let loadFailed = false; // โหลดข้อมูลกลางไม่ได้ → ห้ามเขียนทับ
+let saving: Promise<unknown> = Promise.resolve();
 
 export function registerSeed(part: SeedPart) { seedParts.push(part); }
 
@@ -83,7 +84,8 @@ export function getDb(): Db {
 
 export function persist(now = false) {
   if (!db || typeof indexedDB === 'undefined') return;
-  const write = () => { if (loadFailed) return; void (remoteEnabled ? remoteSave(db) : idbSet(KEY, db)).catch(() => { /* เก็บไม่ได้ก็ยังใช้ได้ในหน้านี้ */ }); };
+  // ต่อคิวทีละงาน และอ่าน db ตอนถึงคิว → ข้อมูลล่าสุดเสมอ ไม่ให้คำขอเก่าที่เสร็จทีหลังทับของใหม่
+  const write = () => { if (loadFailed) return; saving = saving.then(() => (remoteEnabled ? remoteSave(db) : idbSet(KEY, db))).catch(() => { /* เก็บไม่ได้ก็ยังใช้ได้ในหน้านี้ */ }); };
   if (timer) clearTimeout(timer);
   if (now) write(); else timer = setTimeout(write, 150);
 }
