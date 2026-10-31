@@ -6,6 +6,7 @@ const URL_BASE = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
 export const remoteEnabled = !!(URL_BASE && ANON);
+export const kvConfig = remoteEnabled ? { url: URL_BASE, key: ANON } : null; // ซิงก์คีย์ฝั่งประชาชนข้ามเครื่อง (ดู citizen-pay/shared/kv-sync.ts)
 const headers = { apikey: ANON, 'Content-Type': 'application/json' }; // publishable key ใช้ใน apikey อย่างเดียว (ไม่ส่ง Bearer เพราะไม่ใช่ JWT)
 
 /** คืน null เมื่อยังไม่มีแถว · โยน error เมื่อเชื่อมต่อไม่ได้ (ผู้เรียกต้องไม่เขียนทับข้อมูลเดิม) */
