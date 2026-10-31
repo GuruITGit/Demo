@@ -152,7 +152,7 @@ function syncCitizenOutside(db: Ctx['db']) {
       .slice(0, 50)
       .map((l, i) => ({
         id: 'LOC-' + (i + 1), name: String(l.name).slice(0, 60), rentRate: Number(l.rentRate) || 0,
-        rentPeriod: l.rentPeriod === 'monthly' ? 'monthly' : 'daily', enabled: !!l.enabled, deleted: false, tenants: [], openFrom: l.openFrom || null, openUntil: l.openUntil || null, capacity: l.capacity || null, full: !!l.capacity && takenCount(db, l.id) >= l.capacity,
+        rentPeriod: l.rentPeriod === 'monthly' ? 'monthly' : 'daily', enabled: !!l.enabled, deleted: false, tenants: [], openFrom: l.openFrom || null, openUntil: l.openUntil || null, capacity: l.capacity || null, taken: takenCount(db, l.id), full: !!l.capacity && takenCount(db, l.id) >= l.capacity,
       }));
     localStorage.setItem(CITIZEN_OUTSIDE_KEY, JSON.stringify(rows));
   } catch { /* เบราว์เซอร์ไม่ให้เขียน = ข้าม */ }
