@@ -82,8 +82,6 @@ export function MarketOutside({ canManageStall, canManageBill, orgName }: { canM
 
   return (
     <div className="space-y-5">
-      <OutsideApplications canManage={canManageBill} />
-
       <Panel title="จุดแผงลอย" actions={canManageStall && <Button size="sm" onClick={() => startEdit('new')}>+ เปิดจุดใหม่</Button>}>
         {editId && canManageStall && (
           <div className="grid gap-3 border-b border-gray-100 p-4 sm:grid-cols-4">
@@ -103,14 +101,14 @@ export function MarketOutside({ canManageStall, canManageBill, orgName }: { canM
         {locs.length ? (
           <ul>
             {locs.map((l) => (
-              <li key={l.id} className="flex flex-wrap items-center gap-3 border-t border-gray-100 px-4 py-3 first:border-t-0">
+              <li key={l.id} onClick={() => setSelLoc(l.id)} aria-selected={selLoc === l.id} className={`flex cursor-pointer flex-wrap items-center gap-3 border-t border-gray-100 px-4 py-3 first:border-t-0 ${selLoc === l.id ? 'bg-blue-50' : 'hover:bg-gray-50'}`}>
                 <div className="min-w-0 flex-1">
                   <p className="font-semibold text-gray-900">{l.name}</p>
                   <p className="text-sm text-gray-500">{money(l.rentRate)} บาท {PERIOD_LABEL[l.rentPeriod]}</p>
                 </div>
                 <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${l.enabled ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500'}`}>{l.enabled ? 'เปิดอยู่' : 'ปิดอยู่'}</span>
                 {canManageStall && (
-                  <div className="flex gap-2">
+                  <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                     <Button size="sm" variant="outline" loading={toggle.isPending && toggle.variables?.id === l.id} onClick={() => toggle.mutate(l)}>{l.enabled ? 'ปิดจุด' : 'เปิดจุด'}</Button>
                     <Button size="sm" variant="outline" onClick={() => startEdit(l)}>แก้ไข</Button>
                     <Button size="sm" variant="ghost" className="text-red-600" onClick={() => setDelLoc(l)}>ลบ</Button>
@@ -121,6 +119,12 @@ export function MarketOutside({ canManageStall, canManageBill, orgName }: { canM
           </ul>
         ) : <Empty>ยังไม่มีจุดแผงลอย{canManageStall ? ' — กด “เปิดจุดใหม่” เพื่อเริ่ม' : ''}</Empty>}
       </Panel>
+
+      {selected ? (
+        <OutsideApplications canManage={canManageBill} locationId={selLoc} />
+      ) : (
+        <Panel title="ผู้เช่า"><Empty>เลือกจุดแผงลอยด้านบนเพื่อดูรายชื่อผู้เช่าของจุดนั้น</Empty></Panel>
+      )}
 
       <Panel title="เก็บเงินแผงลอย">
         {canManageBill && (
