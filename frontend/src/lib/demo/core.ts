@@ -6,6 +6,8 @@
  * `{ success, data, meta? }` เพิ่ม/แก้/ลบแล้วข้อมูลค้างอยู่จริง (รีเฟรชหน้าก็ยังอยู่) ปุ่ม "รีเซ็ต" ล้างกลับค่าตั้งต้น
  */
 
+import { remoteEnabled, remoteLoad, remoteSave } from './remote';
+
 export type Row = Record<string, any>;
 export type Db = Record<string, Row[]> & { _meta: Row[] };
 
@@ -19,7 +21,7 @@ export const forbidden = (m = 'ไม่มีสิทธิ์ดำเนิ�
 // ───────────────────────────── ฐานข้อมูลในเบราว์เซอร์ ─────────────────────────────
 // เก็บใน IndexedDB (ไม่จำกัด 5MB เหมือน localStorage — แนบไฟล์/ลายเซ็นได้) · ใช้ไม่ได้ (เช่นหน้าต่างส่วนตัว) = ทำงานในหน้านั้นต่อโดยไม่จำข้ามรอบ
 const KEY = 'db';
-export const DB_VERSION = 7; // เพิ่มเลขนี้เมื่อแก้ seed ให้เครื่องที่เคยเปิดไว้รับข้อมูลชุดใหม่
+export const DB_VERSION = 8; // เพิ่มเลขนี้เมื่อแก้ seed ให้เครื่องที่เคยเปิดไว้รับข้อมูลชุดใหม่
 
 /** ชิ้นข้อมูลตั้งต้นของแต่ละโมดูล — รับ db ที่สร้างไว้แล้วบางส่วน (ลำดับ = ลำดับที่ลงทะเบียน) */
 type SeedPart = (db: Db) => void;
@@ -27,6 +29,7 @@ const seedParts: SeedPart[] = [];
 let db: Db | null = null;
 let loading: Promise<void> | null = null;
 let timer: ReturnType<typeof setTimeout> | null = null;
+let loadFailed = false; // โหลดข้อมูลกลางไม่ได้ → ห้ามเขียนทับ
 
 export function registerSeed(part: SeedPart) { seedParts.push(part); }
 
@@ -66,9 +69,9 @@ async function idbSet(key: string, value: unknown): Promise<void> {
 export function ensureLoaded(): Promise<void> {
   return (loading ??= (async () => {
     try {
-      const saved = await idbGet(KEY);
-      if (saved?._meta?.[0]?.version === DB_VERSION) db = saved as Db;
-    } catch { /* ใช้ข้อมูลตั้งต้น */ }
+      const saved = remoteEnabled ? await remoteLoad() : await idbGet(KEY);
+      if ((saved as Row | null)?._meta?.[0]?.version === DB_VERSION) db = saved as Db;
+    } catch { loadFailed = remoteEnabled; /* ใช้ข้อมูลตั้งต้น (เชื่อมฐานกลางไม่ได้ก็ไม่เขียนทับ) */ }
     if (!db) { db = fresh(); persist(true); }
   })());
 }
@@ -80,7 +83,7 @@ export function getDb(): Db {
 
 export function persist(now = false) {
   if (!db || typeof indexedDB === 'undefined') return;
-  const write = () => { void idbSet(KEY, db).catch(() => { /* เก็บไม่ได้ก็ยังใช้ได้ในหน้านี้ */ }); };
+  const write = () => { if (loadFailed) return; void (remoteEnabled ? remoteSave(db) : idbSet(KEY, db)).catch(() => { /* เก็บไม่ได้ก็ยังใช้ได้ในหน้านี้ */ }); };
   if (timer) clearTimeout(timer);
   if (now) write(); else timer = setTimeout(write, 150);
 }
@@ -90,7 +93,7 @@ export async function resetDemoData() {
   await ensureLoaded();
   db = fresh();
   if (timer) clearTimeout(timer);
-  try { await idbSet(KEY, db); } catch { /* ignore */ }
+  if (!loadFailed) { try { await (remoteEnabled ? remoteSave(db) : idbSet(KEY, db)); } catch { /* ignore */ } }
 }
 
 export const uid = () => (typeof crypto !== 'undefined' && 'randomUUID' in crypto
