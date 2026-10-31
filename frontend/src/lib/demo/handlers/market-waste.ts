@@ -139,7 +139,7 @@ const takenCount = (db: Ctx['db'], locId: string) => db.marketOutsideApps.filter
 function syncCitizenOutsideBills(db: Ctx['db']) {
   try {
     const rows = db.marketBills
-      .filter((b) => b.organizationId === ORG_ID && String(b.stallCode).startsWith('OUT-') && ['unpaid', 'pending', 'mismatch'].includes(b.status))
+      .filter((b) => b.organizationId === ORG_ID && String(b.stallCode).startsWith('OUT-'))
       .map((b) => ({ id: b.id, stallCode: b.stallCode, payerName: b.payerName, kind: b.kind, period: b.period, amount: b.amount, status: b.status, submittedMethod: b.submittedMethod ?? null, dueDate: b.dueDate ?? null, reviewNote: b.reviewNote ?? null }));
     localStorage.setItem('lamplaimat:demo-outside-bills', JSON.stringify(rows));
   } catch { /* เขียนไม่ได้ = ข้าม */ }

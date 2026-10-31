@@ -57,31 +57,43 @@ function toStallBill(x: any): Bill {
 function readOutsideBills(): any[] {
   try { const v = JSON.parse(localStorage.getItem('lamplaimat:demo-outside-bills') || '[]'); return Array.isArray(v) ? v : []; } catch { return []; }
 }
+let emptyNote = '';
 async function searchStallBills(name: string, stall: string) {
   verifiedName = name.trim(); draftStall = stall.trim().toUpperCase();
-  searchTerm = draftStall; resetSelection();
+  searchTerm = draftStall; resetSelection(); emptyNote = '';
   if (verifiedName.length < 4) { toast('กรุณากรอกชื่อ-นามสกุลผู้เช่า'); return render(); }
+  const isOpenRow = (x: any) => ['unpaid', 'pending', 'mismatch'].includes(x.status);
   try {
     const r = await payApi<any>(`/market/bills?stall=${encodeURIComponent(searchTerm)}&name=${encodeURIComponent(verifiedName)}`);
-    if (r === null) { // เดโม่: ไม่มี API → กรองข้อมูลตัวอย่างให้ตรงทั้งรหัสแผงและชื่อ
+    if (r === null) { // เดโม่: ไม่มี API → กรองข้อมูลตัวอย่างและข้อมูลแผงลอยที่ซิงก์มา
       demoBillsAll ??= DEMO.bills;
       const nk = demoNameKey(verifiedName);
       if (searchTerm.startsWith('OUT-')) {
-        DEMO.bills = readOutsideBills().filter((x) => String(x.stallCode).toUpperCase() === searchTerm && demoNameKey(x.payerName) === nk).map(toStallBill);
+        const raw = readOutsideBills().filter((x) => String(x.stallCode).toUpperCase() === searchTerm && demoNameKey(x.payerName) === nk);
+        if (!raw.length) emptyNote = 'ไม่พบชื่อผู้เช่านี้ในระบบ กรุณาตรวจสอบชื่อ-นามสกุลให้ตรงกับที่สมัคร';
+        DEMO.bills = raw.filter(isOpenRow).map(toStallBill);
+        if (raw.length && !DEMO.bills.length) emptyNote = 'ไม่มียอดค้างชำระ';
       } else if (searchTerm) {
         DEMO.bills = demoBillsAll.filter((b) => b.payerType === 'stall' && b.stall?.toUpperCase() === searchTerm && demoNameKey(b.merchant) === nk);
+        if (!DEMO.bills.length) emptyNote = 'ไม่พบข้อมูลที่ตรงกัน กรุณาตรวจสอบชื่อและเลขล็อกให้ตรงกับที่ลงทะเบียนไว้';
       } else { // แผงลอย: ชื่ออย่างเดียว — ชื่อซ้ำหลายรายต้องพิมพ์รหัสผู้เช่าด้วย
-        const hits = readOutsideBills().filter((x) => demoNameKey(x.payerName) === nk).map(toStallBill);
-        if (new Set(hits.map((b) => b.stall)).size > 1) { toast('ชื่อนี้มีผู้เช่าแผงลอยมากกว่าหนึ่งราย กรุณาพิมพ์รหัสผู้เช่า (OUT-xxxx) ต่อท้ายชื่อ'); DEMO.bills = []; return render(); }
-        if (hits.length) searchTerm = hits[0].stall?.toUpperCase() ?? '';
-        DEMO.bills = hits;
+        const raw = readOutsideBills().filter((x) => demoNameKey(x.payerName) === nk);
+        if (!raw.length) emptyNote = 'ไม่พบชื่อผู้เช่านี้ในระบบ กรุณาตรวจสอบชื่อ-นามสกุลให้ตรงกับที่สมัคร';
+        if (new Set(raw.map((x) => String(x.stallCode).toUpperCase())).size > 1) { toast('ชื่อนี้มีผู้เช่าแผงลอยมากกว่าหนึ่งราย กรุณาพิมพ์รหัสผู้เช่า (OUT-xxxx) ต่อท้ายชื่อ'); DEMO.bills = []; searchTerm = verifiedName; return render(); }
+        searchTerm = raw.length ? String(raw[0].stallCode).toUpperCase() : verifiedName;
+        DEMO.bills = raw.filter(isOpenRow).map(toStallBill);
+        if (raw.length && !DEMO.bills.length) emptyNote = 'ไม่มียอดค้างชำระ';
       }
-      if (!DEMO.bills.length) toast('ไม่พบข้อมูลที่ตรงกัน กรุณาตรวจสอบชื่อและเลขล็อก/บ้านเลขที่ให้ตรงกับที่ลงทะเบียนไว้');
+      if (!DEMO.bills.length && !emptyNote) toast('ไม่พบข้อมูลที่ตรงกัน กรุณาตรวจสอบชื่อและเลขล็อก/บ้านเลขที่ให้ตรงกับที่ลงทะเบียนไว้');
       return render();
     }
     if (!searchTerm && r?.stall?.stallCode) searchTerm = String(r.stall.stallCode).toUpperCase();
     DEMO.bills = (r.bills || []).map(toStallBill);
-  } catch (e) { DEMO.bills = []; toast((e as Error).message); }
+    if (!DEMO.bills.length) emptyNote = 'ไม่มียอดค้างชำระ';
+  } catch (e) {
+    DEMO.bills = []; emptyNote = (e as Error).message; if (!searchTerm) searchTerm = verifiedName;
+    toast((e as Error).message);
+  }
   render();
 }
 /** ช่องเดียว: "สมใจ ใจดี A06" → ชื่อ + รหัสแผงต่อท้าย · รองรับรหัสแผงลอย OUT-0001 (พิมพ์ OUT0001 ก็ได้) */
@@ -118,7 +130,7 @@ function searchPage(){
  const matches=searchTerm?DEMO.bills.filter(b=>b.payerType==='stall'&&(PAYABLE.includes(b.status)||b.status==='pending'||b.status==='cash')).sort((a,b)=>b.id.localeCompare(a.id)):[];
  const shortcuts=searchTerm?'':`<div class="payment-shortcuts" style="grid-template-columns:1fr"><button class="payment-shortcut" type="button" onclick="openQrScanner()">${SHORTCUT_QR_ART}<b>สแกน QR ที่แผง</b><small>เปิดกล้องส่องรหัสบนแผง</small></button></div>`;
  const form=`<div class="page-heading with-photo"><h1>จ่ายค่าแผงตลาด</h1><p>ค้นหาด้วยชื่อผู้เช่าและรหัสแผงในช่องเดียว · ไม่ต้องเข้าสู่ระบบ</p></div><form class="search-card" onsubmit="event.preventDefault();searchStallFromForm()"><label for="sq">ชื่อ-นามสกุล แล้วต่อด้วยรหัสแผง</label><div class="search-row"><input id="sq" name="sq" value="${escapeHTML([verifiedName, draftStall].filter(Boolean).join(' '))}" placeholder="เช่น สมใจ ใจดี A06" autocomplete="name"><button type="submit">ค้นหา</button></div><p class="help">พิมพ์ชื่อผู้เช่าแล้วตามด้วยรหัสแผง · ผู้สมัครแผงลอยใช้รหัส OUT-xxxx ที่ได้รับ · ชื่อต้องตรงกับที่ลงทะเบียนไว้</p></form>`;
- return form+shortcuts+billListHTML({title:'ค่าแผงตลาด',matches,promptText:'พิมพ์ชื่อผู้เช่าตามด้วยรหัสแผง แล้วกดค้นหา',payerLabel:b=>'ล็อก '+(b.stall||b.ref),chargeLabel:b=>b.kind==='ค่าขยะ'?'ค่าขยะแผง':'ค่าเช่าแผง'})+contactFooterHTML();
+ return form+shortcuts+billListHTML({title:'ค่าแผงตลาด',matches,promptText:'พิมพ์ชื่อผู้เช่าตามด้วยรหัสแผง แล้วกดค้นหา',payerLabel:b=>'ล็อก '+(b.stall||b.ref),chargeLabel:b=>b.kind==='ค่าขยะ'?'ค่าขยะแผง':'ค่าเช่าแผง',emptyText:emptyNote||undefined})+contactFooterHTML();
 }
 const SHORTCUT_QR_ART='<img class="shortcut-art shortcut-art-photo" src="/citizen-pay/shared/img/scan-qr-market.webp" width="600" height="386" alt="" aria-hidden="true">';
 const SHORTCUT_MAP_ART='<img class="shortcut-art shortcut-art-photo" src="/citizen-pay/shared/img/pick-stall-map.webp" width="600" height="386" alt="" aria-hidden="true">';
