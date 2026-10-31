@@ -64,12 +64,12 @@
 @media(max-width:380px){.plan-card{padding:11px 8px}.plan-canvas{padding:11px 5px 10px}.plan-row{grid-template-columns:25px minmax(0,1fr);gap:4px}.plan-row-title{min-height:41px}.plan-stalls{gap:2px}.plan-stall{min-height:40px}.plan-stall b{font-size:7px}.plan-stall span{font-size:6px}.plan-bottom{grid-template-columns:1fr 1fr .65fr;gap:4px}}
 /* Clear market-plan colors inspired by cinema seat maps */
 .plan-stall:not(.occupied):not(.reserved){background:#BAE6FD;border-color:#7DD3FC;color:#075985;box-shadow:0 2px 0 #9A3412}
-.plan-stall.occupied{background:#aeb8c4;border-color:#8391a1;color:#354354;box-shadow:0 2px 0 #8f9bab}
+.plan-stall.occupied{background:#e2e8f0;border-color:#cbd5e1;color:#475569;box-shadow:0 2px 0 #cbd5e1}
 .plan-stall.reserved{background:#f4c84b;border-color:#d5a829;color:#51400b;box-shadow:0 2px 0 #d2aa32}
 .plan-stall::before{background:currentColor;opacity:.4;height:3px;border-radius:3px}
 .plan-stall.selected{outline:2px solid #173f68;outline-offset:2px;transform:none;z-index:2}
 .plan-stall.selected:not(.occupied):not(.reserved){background:#BAE6FD;border-color:#7DD3FC;color:#075985}
-.plan-stall.selected.occupied{background:#aeb8c4;border-color:#8391a1;color:#354354}
+.plan-stall.selected.occupied{background:#e2e8f0;border-color:#cbd5e1;color:#475569}
 .plan-stall.selected.reserved{background:#f4c84b;border-color:#d5a829;color:#51400b}
 .legend i{background:#0B7FC7;border-color:#075E96}.legend .leg-r{background:#f4c84b;border-color:#d5a829}.legend .leg-o{background:#aeb8c4;border-color:#8391a1}
 @media(min-width:650px) and (max-width:899px){
@@ -701,7 +701,7 @@
 .primary-btn,.search-row button,.pay-summary button,.selection-box button,.modal-actions button,.submit-signup,.scan-demo,.small-btn{min-height:44px;border-radius:14px;font-size:14px;font-weight:700;letter-spacing:.1px;transition:transform .12s,box-shadow .12s,background .12s}
 .primary-btn,.search-row button,.pay-summary button,.selection-box button,.modal-actions button:not(.secondary),.submit-signup{box-shadow:0 4px 10px -4px #075E9687}
 .primary-btn:active,.search-row button:active,.pay-summary button:active,.selection-box button:active,.modal-actions button:active,.submit-signup:active,.small-btn:active{transform:scale(.97)}
-.primary-btn:disabled,.search-row button:disabled,.pay-summary button:disabled,.selection-box button:disabled,.modal-actions button:disabled,.submit-signup:disabled{background:#cbd5e1;color:#fff;box-shadow:none;cursor:not-allowed}
+.primary-btn:disabled,.search-row button:disabled,.pay-summary button:disabled,.selection-box button:disabled,.modal-actions button:disabled,.submit-signup:disabled{background:#e2e8f0;color:#94a3b8;box-shadow:none;cursor:not-allowed}
 .modal-actions button.secondary{background:#fff;color:var(--forest-dark);border:1.5px solid var(--forest);box-shadow:none}
 .small-btn{min-height:36px;padding:0 12px;border-width:1.5px;font-size:12px}
 .pay-choice-btn,.signup-shortcut{transition:transform .12s,box-shadow .12s}
