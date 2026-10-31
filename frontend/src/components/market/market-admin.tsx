@@ -476,7 +476,7 @@ function TenantsStalls({ sum }: { sum?: Summary }) {
         </div>
       )}
       <div className="mb-3 flex flex-wrap gap-2">
-        <select value={st} onChange={(e) => setSt(e.target.value as 'all' | Stall['status'])} className={`${inputCls} bg-white text-gray-900`} aria-label="กรองสถานะ">
+        <select value={st} onChange={(e) => setSt(e.target.value as 'all' | Stall['status'])} className={`${inputCls} bg-white text-gray-900`} style={{ colorScheme: 'light' }} aria-label="กรองสถานะ">
           <option value="all" className="bg-white text-gray-900">ทุกสถานะ</option>
           <option value="occupied" className="bg-white text-gray-900">มีผู้เช่า</option>
           <option value="reserved" className="bg-white text-gray-900">จอง</option>
