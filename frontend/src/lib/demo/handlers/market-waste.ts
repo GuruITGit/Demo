@@ -132,6 +132,9 @@ registerSeed((db) => {
 // ───────────────────────────── ตัวช่วย
 /** เดโม่: จุดแผงลอยที่เปิดให้เช่า ซิงก์ไปคีย์ localStorage ที่หน้าประชาชน (same origin) อ่านอยู่ — รูปแบบต้องตรงกับ market/app.ts */
 const CITIZEN_OUTSIDE_KEY = 'lamplaimat:outside-locations';
+/** จำนวนผู้เช่าที่จองจุดนี้แล้ว (รอตรวจ/อนุมัติแล้ว) */
+const takenCount = (db: Ctx['db'], locId: string) => db.marketOutsideApps.filter((a) => a.locationId === locId && ['pending', 'approved'].includes(a.status)).length;
+
 /** บิลแผงลอยที่ยังค้าง → หน้าประชาชน (ค้นด้วยชื่อ) */
 function syncCitizenOutsideBills(db: Ctx['db']) {
   try {
@@ -149,7 +152,7 @@ function syncCitizenOutside(db: Ctx['db']) {
       .slice(0, 50)
       .map((l, i) => ({
         id: 'LOC-' + (i + 1), name: String(l.name).slice(0, 60), rentRate: Number(l.rentRate) || 0,
-        rentPeriod: l.rentPeriod === 'monthly' ? 'monthly' : 'daily', enabled: !!l.enabled, deleted: false, tenants: [], openFrom: l.openFrom || null, openUntil: l.openUntil || null,
+        rentPeriod: l.rentPeriod === 'monthly' ? 'monthly' : 'daily', enabled: !!l.enabled, deleted: false, tenants: [], openFrom: l.openFrom || null, openUntil: l.openUntil || null, capacity: l.capacity || null, full: !!l.capacity && takenCount(db, l.id) >= l.capacity,
       }));
     localStorage.setItem(CITIZEN_OUTSIDE_KEY, JSON.stringify(rows));
   } catch { /* เบราว์เซอร์ไม่ให้เขียน = ข้าม */ }
@@ -541,13 +544,13 @@ function saveConfig(c: Ctx) {
 get('/market/outside/locations', (c) => {
   needPerm(c, 'market:read:MarketStall');
   syncCitizenOutside(c.db); // เปิดดูรายการเมื่อไร หน้าประชาชนก็ได้ชุดเดียวกัน (ไม่ต้องรอให้มีการแก้ไข)
-  return c.db.marketOutsideLocations.filter((l) => l.active && l.organizationId === ORG_ID);
+  return c.db.marketOutsideLocations.filter((l) => l.active && l.organizationId === ORG_ID).map((l) => ({ ...l, taken: takenCount(c.db, l.id) }));
 });
 post('/market/outside/locations', (c) => {
   needPerm(c, 'market:manage:MarketStall');
   const name = String(c.body?.name ?? '').trim();
   if (!name) throw badRequest('กรุณาระบุชื่อจุดแผงลอย');
-  const row = { id: uid(), organizationId: ORG_ID, name, openFrom: c.body?.openFrom || null, openUntil: c.body?.openUntil || null, rentRate: String(Number(c.body?.rentRate) || 0), rentPeriod: c.body?.rentPeriod === 'monthly' ? 'monthly' : 'daily', enabled: c.body?.enabled ?? true, active: true, createdAt: nowIso() };
+  const row = { id: uid(), organizationId: ORG_ID, name, openFrom: c.body?.openFrom || null, openUntil: c.body?.openUntil || null, capacity: Number(c.body?.capacity) || null, rentRate: String(Number(c.body?.rentRate) || 0), rentPeriod: c.body?.rentPeriod === 'monthly' ? 'monthly' : 'daily', enabled: c.body?.enabled ?? true, active: true, createdAt: nowIso() };
   c.db.marketOutsideLocations.push(row);
   syncCitizenOutside(c.db);
   return row;
@@ -560,6 +563,7 @@ patch('/market/outside/locations/:id', (c) => {
   if (b.rentRate !== undefined) l.rentRate = String(Number(b.rentRate) || 0);
   if (b.rentPeriod !== undefined) l.rentPeriod = b.rentPeriod === 'monthly' ? 'monthly' : 'daily';
   if (b.enabled !== undefined) l.enabled = !!b.enabled;
+  if (b.capacity !== undefined) l.capacity = Number(b.capacity) || null;
   if (b.openFrom !== undefined || b.openUntil !== undefined) {
     const from = b.openFrom !== undefined ? b.openFrom || null : l.openFrom ?? null;
     const until = b.openUntil !== undefined ? b.openUntil || null : l.openUntil ?? null;

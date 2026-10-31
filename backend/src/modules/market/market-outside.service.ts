@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Between, DataSource, Repository } from 'typeorm';
+import { Between, DataSource, In, Repository } from 'typeorm';
 import { MarketOutsideCollection, MarketOutsideLocation } from '../../database/entities/market-outside.entity';
 import { MarketOutsideApplication } from '../../database/entities/market-outside-application.entity';
 import { MarketBill } from '../../database/entities/market-bill.entity';
@@ -81,8 +81,10 @@ export class MarketOutsideService {
     return { ok: true };
   }
 
-  list(orgId: string) {
-    return this.locs.find({ where: { organizationId: orgId, active: true }, order: { createdAt: 'ASC' } });
+  /** จุดแผงลอย + จำนวนผู้เช่าที่จองแล้ว (รอตรวจ/อนุมัติแล้ว) */
+  async list(orgId: string) {
+    const rows = await this.locs.find({ where: { organizationId: orgId, active: true }, order: { createdAt: 'ASC' } });
+    return Promise.all(rows.map(async (l) => ({ ...l, taken: await this.apps.count({ where: { organizationId: orgId, locationId: l.id, status: In(['pending', 'approved']) } }) })));
   }
 
   create(orgId: string, dto: OutsideLocationDto) {
@@ -90,7 +92,7 @@ export class MarketOutsideService {
     return this.locs.save(this.locs.create({
       organizationId: orgId, name: dto.name.trim(), rentRate: String(dto.rentRate ?? 0),
       rentPeriod: dto.rentPeriod ?? 'daily', enabled: dto.enabled ?? true, active: true,
-      openFrom: dto.openFrom || null, openUntil: dto.openUntil || null,
+      openFrom: dto.openFrom || null, openUntil: dto.openUntil || null, capacity: dto.capacity || null,
     }));
   }
 
@@ -104,6 +106,7 @@ export class MarketOutsideService {
     if (dto.rentRate !== undefined) loc.rentRate = String(dto.rentRate);
     if (dto.rentPeriod !== undefined) loc.rentPeriod = dto.rentPeriod;
     if (dto.enabled !== undefined) loc.enabled = dto.enabled;
+    if (dto.capacity !== undefined) loc.capacity = dto.capacity || null;
     if (dto.openFrom !== undefined || dto.openUntil !== undefined) {
       const from = dto.openFrom !== undefined ? dto.openFrom || null : loc.openFrom;
       const until = dto.openUntil !== undefined ? dto.openUntil || null : loc.openUntil;

@@ -30,6 +30,10 @@ export class MarketOutsideLocation {
   @Column({ name: 'open_until', type: 'date', nullable: true })
   openUntil: string | null;
 
+  /** จำนวนผู้เช่าสูงสุดของจุด (ว่าง = ไม่จำกัด) */
+  @Column({ type: 'int', nullable: true })
+  capacity: number | null;
+
   /** false = ลบแล้ว (เก็บประวัติรายการเก็บเงินไว้) */
   @Column({ type: 'boolean', default: true })
   active: boolean;

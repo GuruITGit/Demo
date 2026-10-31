@@ -121,6 +121,8 @@ export class OutsideLocationDto {
 
   @IsOptional() @Matches(/^\d{4}-\d{2}-\d{2}$/) openUntil?: string | null;
 
+  @IsOptional() @IsInt() @Min(1) @Max(9999) capacity?: number | null;
+
   @IsOptional() @IsNumber() @Min(0)
   rentRate?: number;
 
