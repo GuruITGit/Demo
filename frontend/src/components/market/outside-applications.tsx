@@ -9,7 +9,7 @@ import { Empty, Panel } from '@/components/pay/pay-ui';
 
 type Status = 'pending' | 'approved' | 'rejected' | 'cancelled';
 type Application = {
-  id: string; appCode: string; applicantName: string; phone: string; idCardUrl: string | null;
+  id: string; appCode: string; locationId: string; applicantName: string; phone: string; idCardUrl: string | null;
   startDate: string | null; days: number; status: Status; reviewNote: string | null; billId: string | null;
   location?: { name: string; rentRate: string; rentPeriod: 'daily' | 'monthly' };
   openDues: { count: number; total: number };
@@ -22,16 +22,17 @@ const FILTERS: { key: Status | 'all'; label: string }[] = [
 const thDate = (iso: string) => new Date(`${iso}T00:00:00`).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' });
 
 /** ใบสมัครแผงลอยจากประชาชน — อนุมัติแล้วระบบออกบิลค่าเช่าให้ทันที (ประชาชนค้นด้วยรหัส OUT-xxxx) */
-export function OutsideApplications({ canManage }: { canManage: boolean }) {
+export function OutsideApplications({ canManage, locationId }: { canManage: boolean; locationId?: string }) {
   const qc = useQueryClient();
   const [filter, setFilter] = useState<Status | 'all'>('pending');
   const [rejectTarget, setRejectTarget] = useState<Application | null>(null);
   const [cancelTarget, setCancelTarget] = useState<Application | null>(null);
-  const { data: rows = [] } = useQuery<Application[]>({
+  const { data: all = [] } = useQuery<Application[]>({
     queryKey: ['market', 'outside', 'apps', filter],
     queryFn: async () => (await api.get('/market/outside/applications', { params: filter === 'all' ? {} : { status: filter } })).data.data,
     refetchInterval: 10_000,
   });
+  const rows = locationId ? all.filter((a) => a.locationId === locationId) : all;
   const refresh = () => qc.invalidateQueries({ queryKey: ['market', 'outside', 'apps'] });
 
   const approve = useMutation({
