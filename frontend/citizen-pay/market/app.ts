@@ -11,7 +11,8 @@ const savedPageState=(()=>{try{const savedView=sessionStorage.getItem('demo:view
 let view=savedPageState.view, zone = 'A', stallArea=savedPageState.stallArea, selectedStall = savedPageState.selectedStall, signupStallId = null, selectedOutsideLocationId = 'LOC-01';
 let paymentMapMode=savedPageState.paymentMap;
 let signupLocationId:string|null=null;
-function openOutsideLocations(){return DEMO.outsideLocations.filter(location=>location.enabled&&!location.deleted)}
+function locationOpenNow(l:OutsideLocation){const t=localISODate();return (!l.openFrom||t>=String(l.openFrom))&&(!l.openUntil||t<=String(l.openUntil))}
+function openOutsideLocations(){return DEMO.outsideLocations.filter(location=>location.enabled&&!location.deleted&&locationOpenNow(location))}
 function outsideLocationIsOpen(id:string){return openOutsideLocations().some(location=>location.id===id)}
 function savePageState(){try{sessionStorage.setItem('demo:view',view);sessionStorage.setItem('demo:stallArea',stallArea);sessionStorage.setItem('demo:paymentMap',paymentMapMode?'1':'0');sessionStorage.setItem('demo:selectedStall',selectedStall||'')}catch{}}
 function openPaymentMap(){paymentMapMode=true;stallArea='regular';selectedStall=null;setPage('stalls')}
@@ -233,7 +234,7 @@ applySavedPayments();
 // render ใหม่เฉพาะตอนรายการเปลี่ยนจริง เพื่อไม่ให้หน้ากระพริบ
 const OUTSIDE_KEY='lamplaimat:outside-locations';
 let outsideSig='';
-async function refreshOutside(){try{let list:OutsideLocation[]|null=null;try{const r=await fetch('/v1/citizen/pay/market/outside',{cache:'no-store'});if(r.ok){const j=await r.json();if(Array.isArray(j?.data))list=j.data.slice(0,50).map((x:any)=>({id:String(x.id),name:String(x.name).slice(0,60),rentRate:Number(x.rentRate)||0,rentPeriod:x.rentPeriod==='monthly'?'monthly':'daily',enabled:true,deleted:false,tenants:[]}))}}catch{}if(!list){const stored=JSON.parse(localStorage.getItem(OUTSIDE_KEY)||'null');if(validOutsideLocations(stored))list=stored.filter(l=>l.enabled&&!l.deleted)}if(!list)return;const sig=JSON.stringify(list);if(sig===outsideSig)return;const ae=document.activeElement;if(ae&&/^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName))return;outsideSig=sig;DEMO.outsideLocations=list;if(!list.some(l=>l.id===selectedOutsideLocationId))selectedOutsideLocationId=list[0]?.id??'';render()}catch{}}
+async function refreshOutside(){try{let list:OutsideLocation[]|null=null;try{const r=await fetch('/v1/citizen/pay/market/outside',{cache:'no-store'});if(r.ok){const j=await r.json();if(Array.isArray(j?.data))list=j.data.slice(0,50).map((x:any)=>({id:String(x.id),name:String(x.name).slice(0,60),rentRate:Number(x.rentRate)||0,rentPeriod:x.rentPeriod==='monthly'?'monthly':'daily',enabled:true,deleted:false,tenants:[],openFrom:x.openFrom||null,openUntil:x.openUntil||null}))}}catch{}if(!list){const stored=JSON.parse(localStorage.getItem(OUTSIDE_KEY)||'null');if(validOutsideLocations(stored))list=stored.filter(l=>l.enabled&&!l.deleted)}if(!list)return;const sig=JSON.stringify(list);if(sig===outsideSig)return;const ae=document.activeElement;if(ae&&/^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName))return;outsideSig=sig;DEMO.outsideLocations=list;if(!list.some(l=>l.id===selectedOutsideLocationId))selectedOutsideLocationId=list[0]?.id??'';render()}catch{}}
 window.addEventListener('storage',(e)=>{if(e.key===OUTSIDE_KEY)void refreshOutside()});
 setInterval(()=>{if(document.visibilityState==='visible'){void refreshOutside();void refreshStalls()}},2000);
 render();

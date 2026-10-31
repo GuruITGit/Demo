@@ -10,7 +10,9 @@ import { Empty, Field, Panel, inputCls } from '@/components/pay/pay-ui';
 import { printReceipt } from '@/components/pay/receipt-print';
 import { OutsideApplications } from './outside-applications';
 
-type Location = { id: string; name: string; rentRate: string; rentPeriod: 'daily' | 'monthly'; enabled: boolean };
+type Location = { id: string; name: string; rentRate: string; rentPeriod: 'daily' | 'monthly'; enabled: boolean; openFrom?: string | null; openUntil?: string | null };
+const windowText = (l: Location) => (l.openFrom || l.openUntil ? `เปิดให้เช่า ${l.openFrom ? thDate(l.openFrom) : '…'} ถึง ${l.openUntil ? thDate(l.openUntil) : '…'}` : null);
+const outsideWindowNow = (l: Location) => { const t = todayIso(); return !!((l.openFrom && t < l.openFrom) || (l.openUntil && t > l.openUntil)); };
 type Collection = { id: string; locationId: string; vendorName: string; collectedOn: string; amount: string; receiptNo: string | null };
 
 const PERIOD_LABEL = { daily: 'ต่อวัน', monthly: 'ต่อเดือน' } as const;
@@ -24,7 +26,7 @@ export function MarketOutside({ canManageStall, canManageBill, orgName }: { canM
   const { data: locs = [] } = useQuery<Location[]>({ queryKey: ['market', 'outside', 'locs'], queryFn: async () => (await api.get('/market/outside/locations')).data.data });
 
   const [editId, setEditId] = useState<string | 'new' | null>(null);
-  const [form, setForm] = useState({ name: '', rentRate: '', rentPeriod: 'daily' as Location['rentPeriod'] });
+  const [form, setForm] = useState({ name: '', rentRate: '', rentPeriod: 'daily' as Location['rentPeriod'], openFrom: '', openUntil: '' });
   const [delLoc, setDelLoc] = useState<Location | null>(null);
 
   const [selLoc, setSelLoc] = useState('');
@@ -42,7 +44,7 @@ export function MarketOutside({ canManageStall, canManageBill, orgName }: { canM
 
   const saveLoc = useMutation({
     mutationFn: () => {
-      const body = { name: form.name.trim(), rentRate: Number(form.rentRate) || 0, rentPeriod: form.rentPeriod };
+      const body = { name: form.name.trim(), rentRate: Number(form.rentRate) || 0, rentPeriod: form.rentPeriod, openFrom: form.openFrom || null, openUntil: form.openUntil || null };
       return editId === 'new' ? api.post('/market/outside/locations', body) : api.patch(`/market/outside/locations/${editId}`, body);
     },
     onSuccess: () => { toast.success('บันทึกจุดแผงลอยแล้ว'); setEditId(null); refresh(); },
@@ -76,7 +78,7 @@ export function MarketOutside({ canManageStall, canManageBill, orgName }: { canM
   const locName = (id: string) => locs.find((l) => l.id === id)?.name ?? '—';
   const startEdit = (l: Location | 'new') => {
     setEditId(l === 'new' ? 'new' : l.id);
-    setForm(l === 'new' ? { name: '', rentRate: '', rentPeriod: 'daily' } : { name: l.name, rentRate: String(Number(l.rentRate)), rentPeriod: l.rentPeriod });
+    setForm(l === 'new' ? { name: '', rentRate: '', rentPeriod: 'daily', openFrom: '', openUntil: '' } : { name: l.name, rentRate: String(Number(l.rentRate)), rentPeriod: l.rentPeriod, openFrom: l.openFrom ?? '', openUntil: l.openUntil ?? '' });
   };
   const selected = locs.find((l) => l.id === selLoc);
 
@@ -92,6 +94,8 @@ export function MarketOutside({ canManageStall, canManageBill, orgName }: { canM
                 <option value="daily">รายวัน</option><option value="monthly">รายเดือน</option>
               </select>
             </Field>
+            <Field label="เปิดให้เช่าตั้งแต่" hint="ว่าง = ไม่จำกัด"><input type="date" className={inputCls} value={form.openFrom} onChange={(e) => setForm({ ...form, openFrom: e.target.value })} /></Field>
+            <Field label="ถึงวันที่"><input type="date" className={inputCls} value={form.openUntil} onChange={(e) => setForm({ ...form, openUntil: e.target.value })} /></Field>
             <div className="flex gap-2 sm:col-span-4">
               <Button loading={saveLoc.isPending} disabled={!form.name.trim()} onClick={() => saveLoc.mutate()}>บันทึก</Button>
               <Button variant="outline" onClick={() => setEditId(null)}>ยกเลิก</Button>
@@ -104,9 +108,9 @@ export function MarketOutside({ canManageStall, canManageBill, orgName }: { canM
               <li key={l.id} onClick={() => setSelLoc(l.id)} aria-selected={selLoc === l.id} className={`flex cursor-pointer flex-wrap items-center gap-3 border-t border-gray-100 px-4 py-3 first:border-t-0 ${selLoc === l.id ? 'bg-blue-50' : 'hover:bg-gray-50'}`}>
                 <div className="min-w-0 flex-1">
                   <p className="font-semibold text-gray-900">{l.name}</p>
-                  <p className="text-sm text-gray-500">{money(l.rentRate)} บาท {PERIOD_LABEL[l.rentPeriod]}</p>
+                  <p className="text-sm text-gray-500">{money(l.rentRate)} บาท {PERIOD_LABEL[l.rentPeriod]}{windowText(l) && <> · {windowText(l)}</>}</p>
                 </div>
-                <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${l.enabled ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500'}`}>{l.enabled ? 'เปิดอยู่' : 'ปิดอยู่'}</span>
+                <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${l.enabled && !outsideWindowNow(l) ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500'}`}>{!l.enabled ? 'ปิดอยู่' : outsideWindowNow(l) ? 'นอกช่วงเปิดให้เช่า' : 'เปิดอยู่'}</span>
                 {canManageStall && (
                   <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                     <Button size="sm" variant="outline" loading={toggle.isPending && toggle.variables?.id === l.id} onClick={() => toggle.mutate(l)}>{l.enabled ? 'ปิดจุด' : 'เปิดจุด'}</Button>

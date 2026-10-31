@@ -851,7 +851,8 @@ catch {
 let view = savedPageState.view, zone = 'A', stallArea = savedPageState.stallArea, selectedStall = savedPageState.selectedStall, signupStallId = null, selectedOutsideLocationId = 'LOC-01';
 let paymentMapMode = savedPageState.paymentMap;
 let signupLocationId = null;
-function openOutsideLocations() { return DEMO.outsideLocations.filter(location => location.enabled && !location.deleted); }
+function locationOpenNow(l) { const t = localISODate(); return (!l.openFrom || t >= String(l.openFrom)) && (!l.openUntil || t <= String(l.openUntil)); }
+function openOutsideLocations() { return DEMO.outsideLocations.filter(location => location.enabled && !location.deleted && locationOpenNow(location)); }
 function outsideLocationIsOpen(id) { return openOutsideLocations().some(location => location.id === id); }
 function savePageState() { try {
     sessionStorage.setItem('demo:view', view);
@@ -1261,7 +1262,7 @@ async function refreshOutside() { try {
         if (r.ok) {
             const j = await r.json();
             if (Array.isArray(j?.data))
-                list = j.data.slice(0, 50).map((x) => ({ id: String(x.id), name: String(x.name).slice(0, 60), rentRate: Number(x.rentRate) || 0, rentPeriod: x.rentPeriod === 'monthly' ? 'monthly' : 'daily', enabled: true, deleted: false, tenants: [] }));
+                list = j.data.slice(0, 50).map((x) => ({ id: String(x.id), name: String(x.name).slice(0, 60), rentRate: Number(x.rentRate) || 0, rentPeriod: x.rentPeriod === 'monthly' ? 'monthly' : 'daily', enabled: true, deleted: false, tenants: [], openFrom: x.openFrom || null, openUntil: x.openUntil || null }));
         }
     }
     catch { }

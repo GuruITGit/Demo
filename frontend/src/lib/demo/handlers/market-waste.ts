@@ -149,7 +149,7 @@ function syncCitizenOutside(db: Ctx['db']) {
       .slice(0, 50)
       .map((l, i) => ({
         id: 'LOC-' + (i + 1), name: String(l.name).slice(0, 60), rentRate: Number(l.rentRate) || 0,
-        rentPeriod: l.rentPeriod === 'monthly' ? 'monthly' : 'daily', enabled: !!l.enabled, deleted: false, tenants: [],
+        rentPeriod: l.rentPeriod === 'monthly' ? 'monthly' : 'daily', enabled: !!l.enabled, deleted: false, tenants: [], openFrom: l.openFrom || null, openUntil: l.openUntil || null,
       }));
     localStorage.setItem(CITIZEN_OUTSIDE_KEY, JSON.stringify(rows));
   } catch { /* เบราว์เซอร์ไม่ให้เขียน = ข้าม */ }
@@ -547,7 +547,7 @@ post('/market/outside/locations', (c) => {
   needPerm(c, 'market:manage:MarketStall');
   const name = String(c.body?.name ?? '').trim();
   if (!name) throw badRequest('กรุณาระบุชื่อจุดแผงลอย');
-  const row = { id: uid(), organizationId: ORG_ID, name, rentRate: String(Number(c.body?.rentRate) || 0), rentPeriod: c.body?.rentPeriod === 'monthly' ? 'monthly' : 'daily', enabled: c.body?.enabled ?? true, active: true, createdAt: nowIso() };
+  const row = { id: uid(), organizationId: ORG_ID, name, openFrom: c.body?.openFrom || null, openUntil: c.body?.openUntil || null, rentRate: String(Number(c.body?.rentRate) || 0), rentPeriod: c.body?.rentPeriod === 'monthly' ? 'monthly' : 'daily', enabled: c.body?.enabled ?? true, active: true, createdAt: nowIso() };
   c.db.marketOutsideLocations.push(row);
   syncCitizenOutside(c.db);
   return row;
@@ -560,6 +560,12 @@ patch('/market/outside/locations/:id', (c) => {
   if (b.rentRate !== undefined) l.rentRate = String(Number(b.rentRate) || 0);
   if (b.rentPeriod !== undefined) l.rentPeriod = b.rentPeriod === 'monthly' ? 'monthly' : 'daily';
   if (b.enabled !== undefined) l.enabled = !!b.enabled;
+  if (b.openFrom !== undefined || b.openUntil !== undefined) {
+    const from = b.openFrom !== undefined ? b.openFrom || null : l.openFrom ?? null;
+    const until = b.openUntil !== undefined ? b.openUntil || null : l.openUntil ?? null;
+    if (from && until && from > until) throw badRequest('วันเริ่มเปิดให้เช่าต้องไม่หลังวันสิ้นสุด');
+    l.openFrom = from; l.openUntil = until;
+  }
   syncCitizenOutside(c.db);
   return l;
 });

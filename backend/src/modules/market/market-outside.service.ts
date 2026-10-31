@@ -90,6 +90,7 @@ export class MarketOutsideService {
     return this.locs.save(this.locs.create({
       organizationId: orgId, name: dto.name.trim(), rentRate: String(dto.rentRate ?? 0),
       rentPeriod: dto.rentPeriod ?? 'daily', enabled: dto.enabled ?? true, active: true,
+      openFrom: dto.openFrom || null, openUntil: dto.openUntil || null,
     }));
   }
 
@@ -103,6 +104,13 @@ export class MarketOutsideService {
     if (dto.rentRate !== undefined) loc.rentRate = String(dto.rentRate);
     if (dto.rentPeriod !== undefined) loc.rentPeriod = dto.rentPeriod;
     if (dto.enabled !== undefined) loc.enabled = dto.enabled;
+    if (dto.openFrom !== undefined || dto.openUntil !== undefined) {
+      const from = dto.openFrom !== undefined ? dto.openFrom || null : loc.openFrom;
+      const until = dto.openUntil !== undefined ? dto.openUntil || null : loc.openUntil;
+      if (from && until && from > until) throw new BadRequestException('วันเริ่มเปิดให้เช่าต้องไม่หลังวันสิ้นสุด');
+      loc.openFrom = from;
+      loc.openUntil = until;
+    }
     return this.locs.save(loc);
   }
 

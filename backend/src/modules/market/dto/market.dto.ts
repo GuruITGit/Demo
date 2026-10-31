@@ -117,6 +117,10 @@ export class OutsideLocationDto {
   @IsOptional() @IsString() @MaxLength(100)
   name?: string;
 
+  @IsOptional() @Matches(/^\d{4}-\d{2}-\d{2}$/) openFrom?: string | null;
+
+  @IsOptional() @Matches(/^\d{4}-\d{2}-\d{2}$/) openUntil?: string | null;
+
   @IsOptional() @IsNumber() @Min(0)
   rentRate?: number;
 

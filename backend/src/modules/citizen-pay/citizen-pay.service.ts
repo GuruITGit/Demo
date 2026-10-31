@@ -29,6 +29,11 @@ const maskPhone = (p: string | null) => (p && p.length >= 9 ? `${p.slice(0, 3)}-
 const NO_MATCH = 'ไม่พบข้อมูลที่ตรงกัน กรุณาตรวจสอบชื่อและเลขล็อก/บ้านเลขที่ให้ตรงกับที่ลงทะเบียนไว้';
 const TITLES = /^(นางสาว|น\.ส\.|นาย|นาง|เด็กชาย|เด็กหญิง|ด\.ช\.|ด\.ญ\.|คุณ)\s*/;
 /** ตัดคำนำหน้า/ช่องว่าง/เลขไทย → ใช้เทียบชื่อ */
+/** อยู่ในช่วงเปิดให้เช่าวันนี้หรือไม่ (ว่าง = ไม่จำกัด) */
+const inWindow = (from: string | null | undefined, until: string | null | undefined) => {
+  const d = new Date(); const t = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  return (!from || t >= String(from)) && (!until || t <= String(until));
+};
 const nameKey = (n: string | null | undefined) => normalize(n || '').replace(TITLES, '').replace(/\s+/g, '').toLowerCase();
 /** ชื่อที่กรอกต้องยาวพอ (กันเดาด้วยชื่อสั้น ๆ) */
 const nameMatchReady = (n: string) => nameKey(n).length >= 4;
@@ -104,7 +109,7 @@ export class CitizenPayService {
   /** จุดแผงลอยที่เปิดให้เช่าอยู่ (เฉพาะที่เจ้าหน้าที่เปิดไว้และยังไม่ถูกลบ) */
   async outsideLocations(orgId: string) {
     const rows = await this.outsideLocs.find({ where: { organizationId: orgId, active: true, enabled: true }, order: { createdAt: 'ASC' } });
-    return rows.map((l) => ({ id: l.id, name: l.name, rentRate: Number(l.rentRate), rentPeriod: l.rentPeriod === 'monthly' ? 'monthly' : 'daily' }));
+    return rows.map((l) => ({ id: l.id, name: l.name, rentRate: Number(l.rentRate), rentPeriod: l.rentPeriod === 'monthly' ? 'monthly' : 'daily', openFrom: l.openFrom, openUntil: l.openUntil, openNow: inWindow(l.openFrom, l.openUntil) }));
   }
 
   async marketStalls(orgId: string) {
@@ -241,6 +246,7 @@ export class CitizenPayService {
     if (!card) throw new BadRequestException('กรุณาแนบรูปบัตรประชาชน');
     const loc = await this.outsideLocs.findOne({ where: { id: locId, organizationId: orgId, active: true, enabled: true } });
     if (!loc) throw new NotFoundException('ไม่พบจุดแผงลอยนี้หรือปิดให้เช่าแล้ว');
+    if (!inWindow(loc.openFrom, loc.openUntil)) throw new BadRequestException(`จุดนี้เปิดให้เช่าเฉพาะช่วง ${loc.openFrom ?? '…'} ถึง ${loc.openUntil ?? '…'}`);
     const d = Math.min(Math.max(Number(days) || 1, 1), 365);
     const sd = startDate && /^\d{4}-\d{2}-\d{2}$/.test(startDate) ? startDate : null;
     const cardUrl = await this.storage.storeCitizenAttachment(card.buffer, card.mimetype, card.originalname, 'outside-cards');
