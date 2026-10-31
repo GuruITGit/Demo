@@ -3,7 +3,7 @@
 declare const qrcode: (typeNumber: number, level: string) => { addData(s: string): void; make(): void; getModuleCount(): number; isDark(r: number, c: number): boolean };
 
 type PayMethod = 'qr' | 'app' | 'cash';
-interface PaymentRecord { status: 'pending' | 'cash' | 'confirmed' | 'rejected'; method: PayMethod; ref: string; at: string; amount: number; slipName?: string; meta?: { t: string; s: string; k: string; m: string } }
+interface PaymentRecord { status: 'pending' | 'cash' | 'confirmed' | 'rejected'; method: PayMethod; ref: string; at: string; amount: number; slipName?: string; note?: string; meta?: { t: string; s: string; k: string; m: string } }
 
 const PAY_STORE = 'market:payments';
 let payMethod: PayMethod = 'qr';
@@ -28,7 +28,7 @@ function writePaymentRecords(all: Record<string, PaymentRecord>) { try { localSt
 /** เรียกครั้งเดียวก่อน render แรก — คืนสถานะ "รอตรวจสอบ/รอจ่ายเงินสด" ที่เคยส่งจากเครื่องนี้ */
 function applySavedPayments() {
   const all = loadPaymentRecords();
-  for (const b of DEMO.bills) { const r = all[b.id]; if (r) b.status = r.status === 'rejected' ? 'unpaid' : r.status; }
+  for (const b of DEMO.bills) { const r = all[b.id]; if (r) { b.status = r.status === 'rejected' ? 'unpaid' : r.status; if (r.status === 'rejected' && r.note) b.note = r.note; } }
 }
 function paymentRecordFor(billId: string) { return loadPaymentRecords()[billId]; }
 
