@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { PlaceFilter, placeMatch, type PlaceKind } from '@/components/market/place-filter';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, getErrorMessage } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
@@ -25,6 +26,7 @@ type SlipResult = { label: string; count: number; amount: number; ok: boolean; r
 export function SlipQueue({ kind, canManage }: { kind: 'market' | 'waste'; canManage: boolean }) {
   const qc = useQueryClient();
   const [rejecting, setRejecting] = useState<QueueBill | null>(null);
+  const [place, setPlace] = useState<PlaceKind>('all');
   const [note, setNote] = useState('');
   const [zoom, setZoom] = useState<string | null>(null);
   const [batch, setBatch] = useState<{ results: SlipResult[]; remaining: number } | null>(null);
@@ -58,7 +60,7 @@ export function SlipQueue({ kind, canManage }: { kind: 'market' | 'waste'; canMa
     onError: (e) => toast.error(getErrorMessage(e)),
   });
 
-  const rows = [...(data ?? [])].sort((a, b) => (a.submittedAt ?? '').localeCompare(b.submittedAt ?? ''));
+  const rows = [...(data ?? [])].filter((r) => kind !== 'market' || placeMatch(place, r.stallCode)).sort((a, b) => (a.submittedAt ?? '').localeCompare(b.submittedAt ?? ''));
   const slips = rows.filter((r) => r.submittedMethod !== 'cash');
   const cash = rows.filter((r) => r.submittedMethod === 'cash');
 
@@ -95,6 +97,7 @@ export function SlipQueue({ kind, canManage }: { kind: 'market' | 'waste'; canMa
 
   return (
     <div className="space-y-5">
+      {kind === 'market' && <PlaceFilter value={place} onChange={setPlace} />}
       {batch && (
         <Panel
           title={<>ผลตรวจสลิป <span className="text-sm font-normal text-gray-500">ผ่าน {batch.results.filter((r) => r.ok).length} · ไม่ผ่าน {batch.results.filter((r) => !r.ok).length}</span></>}

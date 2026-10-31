@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { PlaceFilter, placeMatch, type PlaceKind } from './place-filter';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, getErrorMessage } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
@@ -28,6 +29,7 @@ export function MarketBills({ canManage, orgName, initialStall, initialStatus }:
   const [status, setStatus] = useState(initialStatus ?? '');
   const [period, setPeriod] = useState('');
   const [stall, setStall] = useState(initialStall ?? '');
+  const [place, setPlace] = useState<PlaceKind>('all');
   const [genPeriod, setGenPeriod] = useState(periods[0]);
   const [method, setMethod] = useState<Record<string, string>>({});
   const [cancelId, setCancelId] = useState<string | null>(null);
@@ -65,7 +67,7 @@ export function MarketBills({ canManage, orgName, initialStall, initialStatus }:
     onError: (e) => toast.error(getErrorMessage(e)),
   });
 
-  const rows = data ?? [];
+  const rows = (data ?? []).filter((b) => placeMatch(place, b.stallCode));
   const openTotal = rows.filter((b) => b.status !== 'paid').reduce((s, b) => s + Number(b.amount), 0);
   const doPrint = (b: Bill) => {
     const ok = printReceipt({
@@ -121,6 +123,7 @@ export function MarketBills({ canManage, orgName, initialStall, initialStatus }:
             <option value="">ทุกงวด</option>
             {recentPeriods(36).map((p) => <option key={p} value={p}>{periodLabel(p)}</option>)}
           </select>
+          <PlaceFilter value={place} onChange={setPlace} />
           <input value={stall} onChange={(e) => setStall(e.target.value)} placeholder="รหัสแผง เช่น A06" className={`${inputCls} w-40`} />
         </div>
         <div className="overflow-x-auto">
