@@ -385,7 +385,7 @@ function TenantsOutside() {
   const [q, setQ] = useState('');
   const [del, setDel] = useState<OutsideTenant | null>(null);
   const [qrFor, setQrFor] = useState<OutsideTenant | null>(null);
-  const qrItem = (r: OutsideTenant): QrItem => ({ code: r.appCode, title: r.appCode, sub: r.applicantName, text: stallQrUrl(typeof window !== 'undefined' ? window.location.origin : '', r.appCode) });
+  const qrItem = (r: OutsideTenant): QrItem => ({ code: r.appCode, title: r.appCode, sub: r.applicantName, text: outsideQrUrl(typeof window !== 'undefined' ? window.location.origin : '', r.appCode, r.applicantName) });
   const { data: rows = [], isLoading } = useQuery<OutsideTenant[]>({
     queryKey: ['market', 'outside', 'apps', 'approved'],
     queryFn: async () => (await api.get('/market/outside/applications', { params: { status: 'approved' } })).data.data,
@@ -556,27 +556,42 @@ function TenantsStalls({ sum }: { sum?: Summary }) {
 }
 
 // ───────────────────────────── QR ประจำแผง
+/** QR แผงลอย: รหัสผู้เช่า + ชื่อ (สแกนแล้วหน้าจ่ายเงินกรอกชื่อให้และแสดงยอดทันที) */
+const outsideQrUrl = (origin: string, code: string, name: string) =>
+  `${origin}/citizen/market?stall=${encodeURIComponent(code)}&name=${encodeURIComponent(name)}`;
+
 function StallQr({ orgName }: { orgName: string }) {
   const { data: stalls = [] } = useQuery<Stall[]>({ queryKey: ['market', 'stalls'], queryFn: async () => (await api.get('/market/stalls')).data.data });
+  const { data: outside = [] } = useQuery<OutsideTenant[]>({ queryKey: ['market', 'outside', 'apps', 'approved'], queryFn: async () => (await api.get('/market/outside/applications', { params: { status: 'approved' } })).data.data });
+  const [kind, setKind] = useState<'stall' | 'outside'>('stall');
   const [zone, setZone] = useState('');
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const zones = [...new Set(stalls.map((s) => s.zone))];
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
-  // บนสติกเกอร์ไม่ใส่ชื่อผู้เช่า (ติดหน้าแผงต่อสาธารณะ) — ใส่แค่โซน
-  const items: QrItem[] = stalls.filter((s) => !zone || s.zone === zone).map((s) => ({ code: s.stallCode, title: `แผง ${s.stallCode}`, sub: `โซน ${s.zone}`, text: stallQrUrl(origin, s.stallCode) }));
+  // บนสติกเกอร์แผงประจำไม่ใส่ชื่อผู้เช่า (ติดหน้าแผงต่อสาธารณะ) — แผงลอยใส่ชื่อในรหัส QR ตามที่เจ้าหน้าที่เลือก
+  const items: QrItem[] = kind === 'stall'
+    ? stalls.filter((s) => !zone || s.zone === zone).map((s) => ({ code: s.stallCode, title: `แผง ${s.stallCode}`, sub: `โซน ${s.zone}`, text: stallQrUrl(origin, s.stallCode) }))
+    : outside.map((r) => ({ code: r.appCode, title: r.appCode, sub: `${r.applicantName} · ${r.location?.name ?? ''}`, text: outsideQrUrl(origin, r.appCode, r.applicantName) }));
   const target = picked.size ? items.filter((i) => picked.has(i.code)) : items;
   const toggle = (code: string) => setPicked((p) => { const n = new Set(p); if (n.has(code)) n.delete(code); else n.add(code); return n; });
+  const switchKind = (k: 'stall' | 'outside') => { setKind(k); setPicked(new Set()); };
 
   return (
     <Panel
       title="QR ประจำแผง"
       actions={
         <>
-          <select className={`${inputCls} w-auto`} value={zone} onChange={(e) => { setZone(e.target.value); setPicked(new Set()); }}>
-            <option value="">ทุกโซน</option>
-            {zones.map((z) => <option key={z} value={z}>โซน {z}</option>)}
-          </select>
-          <Button size="sm" onClick={() => { if (!printQrSheet(target, 'ค่าแผงตลาด', orgName)) toast.error('เปิดหน้าพิมพ์ไม่ได้ — อนุญาตป็อปอัปของเว็บนี้แล้วลองใหม่'); }}>
+          <div className="flex gap-1">
+            <Button size="sm" variant={kind === 'stall' ? 'default' : 'outline'} onClick={() => switchKind('stall')}>แผงประจำ</Button>
+            <Button size="sm" variant={kind === 'outside' ? 'default' : 'outline'} onClick={() => switchKind('outside')}>แผงลอย</Button>
+          </div>
+          {kind === 'stall' && (
+            <select className={`${inputCls} w-auto`} value={zone} onChange={(e) => { setZone(e.target.value); setPicked(new Set()); }}>
+              <option value="">ทุกโซน</option>
+              {zones.map((z) => <option key={z} value={z}>โซน {z}</option>)}
+            </select>
+          )}
+          <Button size="sm" onClick={() => { if (!printQrSheet(target, kind === 'stall' ? 'ค่าแผงตลาด' : 'ค่าแผงลอย', orgName)) toast.error('เปิดหน้าพิมพ์ไม่ได้ — อนุญาตป็อปอัปของเว็บนี้แล้วลองใหม่'); }}>
             พิมพ์ {picked.size ? `ที่เลือก ${picked.size}` : `ทั้งหมด ${items.length}`} ดวง
           </Button>
           {picked.size > 0 && <Button size="sm" variant="ghost" onClick={() => setPicked(new Set())}>ล้างที่เลือก</Button>}
@@ -584,9 +599,11 @@ function StallQr({ orgName }: { orgName: string }) {
       }
     >
       <p className="border-b border-gray-100 px-4 py-3 text-sm text-gray-500">
-        ติดหน้าแผง — ประชาชนสแกนแล้วกรอกชื่อผู้เช่าเพื่อดูยอดและชำระ · QR มีแค่รหัสแผง ไม่มีชื่อหรือยอดเงิน · เลือกบางแผงเพื่อพิมพ์เฉพาะที่ต้องการได้
+        {kind === 'stall'
+          ? 'ติดหน้าแผง — ประชาชนสแกนแล้วกรอกชื่อผู้เช่าเพื่อดูยอดและชำระ · QR มีแค่รหัสแผง ไม่มีชื่อ'
+          : 'แผงลอย — QR เก็บรหัสผู้เช่าและชื่อไว้ สแกนแล้วหน้าจ่ายเงินแสดงยอดให้ทันที · ผู้เช่าที่ถูกลบจะไม่มียอดให้ดู'}
       </p>
-      {items.length === 0 ? <Empty>ไม่มีแผง</Empty> : (
+      {items.length === 0 ? <Empty>{kind === 'stall' ? 'ไม่มีแผง' : 'ยังไม่มีผู้เช่าแผงลอยที่อนุมัติแล้ว'}</Empty> : (
         <div className="grid grid-cols-2 gap-3 p-4 sm:grid-cols-4 lg:grid-cols-6">
           {items.map((i) => (
             <article key={i.code} className={`rounded-xl border p-3 text-center ${picked.has(i.code) ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200'}`}>
@@ -595,7 +612,7 @@ function StallQr({ orgName }: { orgName: string }) {
               </button>
               <b className="mt-1 block">{i.title}</b>
               <small className="block text-gray-500">{i.sub}</small>
-              <Button size="sm" variant="outline" className="mt-2 w-full" onClick={() => downloadQrPng(i, 'qr-market').catch((e) => toast.error(getErrorMessage(e)))}>บันทึกรูป</Button>
+              <Button size="sm" variant="outline" className="mt-2 w-full" onClick={() => downloadQrPng(i, kind === 'stall' ? 'qr-market' : 'qr-outside').catch((e) => toast.error(getErrorMessage(e)))}>บันทึกรูป</Button>
             </article>
           ))}
         </div>

@@ -232,4 +232,4 @@ void refreshOutside();
 void refreshStalls();
 // ถ้าเข้าถึงระบบจริงได้: ใช้ช่องทางรับเงินจริงและส่งการแจ้งชำระเข้าระบบ
 (async () => { const c = await payApi<any>("/config").catch(() => null); if (c) { applyPayConfig(c); billSubmitter = submitStallBills; render(); } })();
-(() => { const q = new URLSearchParams(location.search).get('stall'); if (q && /^OUT-\d+$/i.test(q.trim())) findPaymentByQr(q.trim().toUpperCase()); })();
+(() => { const p = new URLSearchParams(location.search); const q = (p.get('stall') || '').trim().toUpperCase(); if (!/^OUT-\d+$/.test(q)) return; const n = (p.get('name') || '').trim(); if (n.length >= 4) { setPage('dues'); void searchStallBills(n, q); } else findPaymentByQr(q); })();
