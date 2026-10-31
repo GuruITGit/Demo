@@ -431,14 +431,18 @@ function Dues({ onBills }: { onBills: (ref: string) => void }) {
 // ───────────────────────────── QR ประจำบ้าน
 function HouseQr({ orgName }: { orgName: string }) {
   const [moo, setMoo] = useState('');
+  const [q, setQ] = useState('');
   const { data = [] } = useQuery<Household[]>({ queryKey: ['waste', 'households', ''], queryFn: async () => (await api.get('/waste/households')).data.data });
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
   const moos = [...new Set(data.map((h) => h.moo))].sort((a, b) => Number(a) - Number(b));
   // บนสติกเกอร์ไม่ใส่ชื่อเจ้าของบ้าน (ติดหน้าบ้านต่อสาธารณะ) — ใส่แค่บ้านเลขที่/หมู่และรหัส
-  const items: QrItem[] = data.filter((h) => !moo || h.moo === moo).map((h) => ({
+  const key = q.trim().toLowerCase();
+  const rows = data.filter((h) => (!moo || h.moo === moo) && (!key || `${h.householdRef} ${h.holderName} ${h.houseNo} ${h.moo}`.toLowerCase().includes(key)));
+  const items: QrItem[] = rows.map((h) => ({
     code: h.householdRef, title: `บ้านเลขที่ ${h.houseNo} หมู่ ${Number(h.moo)}`, sub: h.householdRef, text: houseQrUrl(origin, h.houseNo, String(Number(h.moo))),
   }));
+  const nameOf = new Map(rows.map((h) => [h.householdRef, h.holderName]));
   const target = picked.size ? items.filter((i) => picked.has(i.code)) : items;
   const toggle = (code: string) => setPicked((p) => { const n = new Set(p); if (n.has(code)) n.delete(code); else n.add(code); return n; });
 
@@ -447,6 +451,7 @@ function HouseQr({ orgName }: { orgName: string }) {
       title="QR ประจำบ้าน"
       actions={
         <>
+          <input className={`${inputCls} w-48`} value={q} onChange={(e) => { setQ(e.target.value); setPicked(new Set()); }} placeholder="ค้นหาชื่อ รหัส หรือบ้านเลขที่" aria-label="ค้นหาครัวเรือน" />
           <select className={`${inputCls} w-auto`} value={moo} onChange={(e) => { setMoo(e.target.value); setPicked(new Set()); }}>
             <option value="">ทุกหมู่</option>
             {moos.map((m) => <option key={m} value={m}>หมู่ {Number(m)}</option>)}
@@ -461,7 +466,7 @@ function HouseQr({ orgName }: { orgName: string }) {
       <p className="border-b border-gray-100 px-4 py-3 text-sm text-gray-500">
         ติดหน้าบ้าน — ประชาชนสแกนแล้วกรอกชื่อผู้รับบิลเพื่อดูค่าขยะและชำระ · QR มีแค่บ้านเลขที่และหมู่ ไม่มีชื่อหรือยอดเงิน · เลือกบางหลังเพื่อพิมพ์เฉพาะที่ต้องการได้
       </p>
-      {items.length === 0 ? <Empty>ยังไม่มีครัวเรือนในทะเบียน</Empty> : (
+      {items.length === 0 ? <Empty>{key || moo ? 'ไม่พบครัวเรือนตามที่ค้นหา' : 'ยังไม่มีครัวเรือนในทะเบียน'}</Empty> : (
         <div className="grid grid-cols-2 gap-3 p-4 sm:grid-cols-4 lg:grid-cols-6">
           {items.map((i) => (
             <article key={i.code} className={`rounded-xl border p-3 text-center ${picked.has(i.code) ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200'}`}>
@@ -469,6 +474,7 @@ function HouseQr({ orgName }: { orgName: string }) {
                 <QrSvg text={i.text} label={i.title} className="mx-auto w-full max-w-[140px]" />
               </button>
               <b className="mt-1 block text-sm">{i.title}</b>
+              <span className="block text-sm text-gray-800">{nameOf.get(i.code)}</span>
               <small className="block text-gray-500">{i.sub}</small>
               <Button size="sm" variant="outline" className="mt-2 w-full" onClick={() => downloadQrPng(i, 'qr-waste').catch((e) => toast.error(getErrorMessage(e)))}>บันทึกรูป</Button>
             </article>
