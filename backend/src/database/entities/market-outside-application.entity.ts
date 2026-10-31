@@ -42,6 +42,10 @@ export class MarketOutsideApplication {
   @Column({ type: 'int', default: 1 })
   days: number;
 
+  /** regular = ประจำ (จ่ายทีหลังได้) · temporary = ชั่วคราว (จ่ายทันที) */
+  @Column({ name: 'tenancy_type', type: 'varchar', length: 12, default: 'regular' })
+  tenancyType: 'regular' | 'temporary';
+
   /** pending = รอตรวจ · approved = อนุมัติแล้ว (มีบิล) · rejected = ไม่อนุมัติ */
   @Column({ type: 'varchar', length: 12, default: 'pending' })
   status: string;

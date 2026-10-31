@@ -233,7 +233,7 @@ export class CitizenPayService {
   }
 
   /** สมัครแผงลอยจากหน้าประชาชน (ต้องแนบรูปบัตร) → รอเจ้าหน้าที่อนุมัติ แล้วจึงออกบิลค่าเช่า */
-  async applyOutside(orgId: string, locId: string, name: string, phone: string, card?: Express.Multer.File, startDate?: string, days?: number) {
+  async applyOutside(orgId: string, locId: string, name: string, phone: string, card?: Express.Multer.File, startDate?: string, days?: number, tenancy: 'regular' | 'temporary' = 'regular') {
     const n = (name || '').trim();
     const p = (phone || '').replace(/[\s-]/g, '');
     if (n.length < 2 || n.length > 200) throw new BadRequestException('กรุณากรอกชื่อ-นามสกุล');
@@ -246,7 +246,7 @@ export class CitizenPayService {
     const cardUrl = await this.storage.storeCitizenAttachment(card.buffer, card.mimetype, card.originalname, 'outside-cards');
     const code = await this.nextAppCode(orgId);
     const row = await this.outsideApps.save(this.outsideApps.create({
-      organizationId: orgId, locationId: loc.id, appCode: code, applicantName: n, phone: p, idCardUrl: cardUrl, startDate: sd, days: d, status: 'pending',
+      organizationId: orgId, locationId: loc.id, appCode: code, applicantName: n, phone: p, idCardUrl: cardUrl, startDate: sd, days: d, status: 'pending', tenancyType: tenancy,
     }));
     await notifyUsersWithPermission(this.ds, this.notifications, orgId, { module: 'market', action: 'manage', subject: 'MarketStall' }, {
       type: 'market:outside_applied', title: 'มีใบสมัครแผงลอยใหม่', body: `${code} · ${loc.name} · ${n} · โทร ${p}`,

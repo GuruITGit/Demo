@@ -385,6 +385,7 @@ function TenantsOutside() {
   const [q, setQ] = useState('');
   const [del, setDel] = useState<OutsideTenant | null>(null);
   const [qrFor, setQrFor] = useState<OutsideTenant | null>(null);
+  const [kind, setKind] = useState<'all' | 'regular' | 'temporary'>('all');
   const qrItem = (r: OutsideTenant): QrItem => ({ code: r.appCode, title: r.appCode, sub: r.applicantName, text: outsideQrUrl(typeof window !== 'undefined' ? window.location.origin : '', r.appCode, r.applicantName) });
   const { data: rows = [], isLoading } = useQuery<OutsideTenant[]>({
     queryKey: ['market', 'outside', 'apps', 'approved'],
@@ -402,6 +403,11 @@ function TenantsOutside() {
     <Panel title={<>ผู้เช่าแผงลอย <span className="text-sm font-normal text-gray-500">{list.length} ราย</span></>}>
       <div className="mb-3">
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="ค้นหาชื่อ รหัสผู้เช่า เบอร์ หรือจุด" className={inputCls} aria-label="ค้นหาผู้เช่าแผงลอย" />
+        <div className="mt-2 flex flex-wrap gap-2">
+          {(['all', 'regular', 'temporary'] as const).map((k) => (
+            <Button key={k} size="sm" variant={kind === k ? 'default' : 'outline'} onClick={() => setKind(k)}>{k === 'all' ? 'ทั้งหมด' : k === 'regular' ? 'ประจำ' : 'ชั่วคราว'}</Button>
+          ))}
+        </div>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
@@ -409,10 +415,10 @@ function TenantsOutside() {
             <tr><th className="px-4 py-2">รหัสผู้เช่า</th><th className="px-4 py-2">ชื่อ</th><th className="px-4 py-2">เบอร์</th><th className="px-4 py-2">จุด</th><th className="px-4 py-2">เริ่มเช่า</th><th className="px-4 py-2">ค้างชำระ</th><th className="px-4 py-2" /></tr>
           </thead>
           <tbody>
-            {list.map((r) => (
+            {list.filter((r) => kind === 'all' || r.tenancyType === kind).map((r) => (
               <tr key={r.id} className="border-t border-gray-100">
                 <td className="px-4 py-2 font-medium">{r.appCode}</td>
-                <td className="px-4 py-2">{r.applicantName}</td>
+                <td className="px-4 py-2">{r.applicantName} <span className="text-xs text-gray-500">({r.tenancyType === 'temporary' ? 'ชั่วคราว' : 'ประจำ'})</span></td>
                 <td className="px-4 py-2">{r.phone}</td>
                 <td className="px-4 py-2">{r.location?.name ?? '—'}</td>
                 <td className="px-4 py-2 text-gray-600">{r.startDate ? new Date(`${r.startDate}T00:00:00`).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' }) : '—'}</td>
@@ -455,7 +461,7 @@ function TenantsOutside() {
 
 type OutsideTenant = {
   id: string; appCode: string; applicantName: string; phone: string; startDate: string | null;
-  location?: { name: string }; openDues: { count: number; total: number };
+  location?: { name: string }; openDues: { count: number; total: number }; tenancyType: 'regular' | 'temporary';
 };
 
 function TenantsStalls({ sum }: { sum?: Summary }) {

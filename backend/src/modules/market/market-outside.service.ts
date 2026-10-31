@@ -63,7 +63,7 @@ export class MarketOutsideService {
     return this.ds.transaction(async (em) => {
       const bill = await em.save(em.create(MarketBill, {
         organizationId: orgId, stallId: null, stallCode: app.appCode, payerName: app.applicantName, kind: 'rent', period,
-        amount: amount.toFixed(2), dueDate: periodEndDate(period), status: 'unpaid',
+        amount: amount.toFixed(2), dueDate: app.tenancyType === 'temporary' ? today() : periodEndDate(period), status: 'unpaid',
       }));
       app.status = 'approved'; app.billId = bill.id; app.reviewNote = null;
       await em.save(app);
