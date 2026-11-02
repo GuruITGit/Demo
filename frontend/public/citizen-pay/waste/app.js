@@ -734,8 +734,23 @@ function householdMatches(b, query) {
     }
     return matchesAllTokens(`${b.merchant} ${b.ref}`, searchTokens(q));
 }
+// ข้อความจาก QR หน้าบ้าน: ลิงก์ ...?house=18&moo=2 → "18 หมู่ 2" · ข้อความอื่นใช้ตามเดิม
+function houseFromQr(raw) {
+    const t = raw.trim();
+    const u = (() => { try {
+        return new URL(t, location.href);
+    }
+    catch {
+        return null;
+    } })();
+    const house = u?.searchParams.get('house')?.trim();
+    if (!house)
+        return t;
+    const moo = u.searchParams.get('moo')?.trim();
+    return moo ? `${house} หมู่ ${moo}` : house;
+}
 // สแกน QR หน้าบ้าน: ได้บ้านเลขที่+หมู่ แล้วให้ผู้ใช้กรอกชื่อผู้รับบิลเอง (ต้องตรงกันจึงจะเห็นยอด)
-function scanHouseQr() { startQrScan({ title: 'สแกน QR หน้าบ้าน', help: 'หันกล้องไปที่ QR หน้าบ้าน เช่น 18 หมู่ 2', demoCode: '18 หมู่ 2', demoLabel: 'ทดลองดูค่าขยะตัวอย่าง 18 หมู่ 2', onCode: (code) => { draftQuery = code; render(); toast('กรอกชื่อผู้รับบิลแล้วกดค้นหา'); } }); }
+function scanHouseQr() { startQrScan({ title: 'สแกน QR หน้าบ้าน', help: 'หันกล้องไปที่ QR หน้าบ้าน เช่น 18 หมู่ 2', demoCode: '18 หมู่ 2', demoLabel: 'ทดลองดูค่าขยะตัวอย่าง 18 หมู่ 2', onCode: (code) => { draftQuery = houseFromQr(code); render(); toast('กรอกชื่อผู้รับบิลแล้วกดค้นหา'); } }); }
 const CASH_HOUSE_ART = '<img class="shortcut-art shortcut-art-photo" src="/citizen-pay/shared/img/cash-pay-house.webp" width="600" height="338" alt="" aria-hidden="true">';
 const SCAN_HOUSE_ART = '<img class="shortcut-art shortcut-art-photo" src="/citizen-pay/shared/img/scan-qr-house.webp" width="600" height="338" alt="" aria-hidden="true">';
 // จ่ายเงินสด: ไม่มียอดให้จ่ายออนไลน์ ต้องไปจ่ายที่ อบต. (สถานที่/เวลาอ่านจาก payment-config)
@@ -815,6 +830,9 @@ function render() {
     app.innerHTML = homeBackHTML() + searchFormHTML() + shortcut + billListHTML({ title: 'ค่าขยะ', matches, promptText: 'กรอกชื่อผู้รับบิลและบ้านเลขที่ แล้วกดค้นหา', payerLabel: b => b.location || b.ref, chargeLabel: () => 'ค่าขยะครัวเรือน' }) + contactFooterHTML();
 }
 applySavedPayments();
+// เปิดจาก QR หน้าบ้าน (?house=&moo=) → ใส่บ้านเลขที่ให้แล้ว ผู้ใช้กรอกแค่ชื่อ
+if (new URLSearchParams(location.search).has('house'))
+    draftQuery = houseFromQr(location.href);
 // ถ้าเข้าถึงระบบจริงได้: ใช้ช่องทางรับเงินจริงและส่งการแจ้งชำระเข้าระบบ · ไม่ได้ (เดโม่) ใช้ข้อมูลตัวอย่างเดิม
 (async () => { const c = await payApi("/config").catch(() => null); if (c) {
     applyPayConfig(c);
