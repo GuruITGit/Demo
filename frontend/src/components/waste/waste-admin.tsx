@@ -432,7 +432,9 @@ function Dues({ onBills }: { onBills: (ref: string) => void }) {
 function HouseQr({ orgName }: { orgName: string }) {
   const [moo, setMoo] = useState('');
   const [q, setQ] = useState('');
-  const { data = [] } = useQuery<Household[]>({ queryKey: ['waste', 'households', ''], queryFn: async () => (await api.get('/waste/households')).data.data });
+  const { data: all = [] } = useQuery<Household[]>({ queryKey: ['waste', 'households', ''], queryFn: async () => (await api.get('/waste/households')).data.data });
+  // เฉพาะบ้านที่มียอดค้าง — บ้านที่ไม่ค้างสแกนแล้วไม่มีข้อมูลให้ดู จึงไม่ต้องพิมพ์ QR
+  const data = all.filter((h) => h.owedMonths > 0);
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
   const moos = [...new Set(data.map((h) => h.moo))].sort((a, b) => Number(a) - Number(b));
@@ -464,9 +466,9 @@ function HouseQr({ orgName }: { orgName: string }) {
       }
     >
       <p className="border-b border-gray-100 px-4 py-3 text-sm text-gray-500">
-        ติดหน้าบ้าน — ประชาชนสแกนแล้วกรอกชื่อผู้รับบิลเพื่อดูค่าขยะและชำระ · QR มีแค่บ้านเลขที่และหมู่ ไม่มีชื่อหรือยอดเงิน · เลือกบางหลังเพื่อพิมพ์เฉพาะที่ต้องการได้
+        ติดหน้าบ้าน — ประชาชนสแกนแล้วเห็นชื่อและยอดค่าขยะเพื่อชำระได้ทันที · QR มีรหัสลับเฉพาะบ้าน ไม่มีชื่อหรือยอดเงินในตัว QR · แสดงเฉพาะบ้านที่มียอดค้าง เลือกบางหลังเพื่อพิมพ์ได้
       </p>
-      {items.length === 0 ? <Empty>{key || moo ? 'ไม่พบครัวเรือนตามที่ค้นหา' : 'ยังไม่มีครัวเรือนในทะเบียน'}</Empty> : (
+      {items.length === 0 ? <Empty>{key || moo ? 'ไม่พบครัวเรือนตามที่ค้นหา' : 'ไม่มีครัวเรือนที่มียอดค้าง'}</Empty> : (
         <div className="grid grid-cols-2 gap-3 p-4 sm:grid-cols-4 lg:grid-cols-6">
           {items.map((i) => (
             <article key={i.code} className={`rounded-xl border p-3 text-center ${picked.has(i.code) ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200'}`}>
