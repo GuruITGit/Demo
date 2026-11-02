@@ -53,7 +53,7 @@ async function searchWasteBills(name: string, q: string) {
   verifiedName = name.trim(); draftQuery = q.trim();
   searchTerm = draftQuery; resetSelection();
   if (!searchTerm) return render();
-  if (verifiedName.length < 4) { toast('กรุณากรอกชื่อ-นามสกุลผู้รับบิล'); return render(); }
+  if (verifiedName.length < 4) { toast('กรุณากรอกชื่อ-นามสกุลผู้รับบิล'); searchTerm = ''; return render(); }
   try {
     const rows = await payApi<any[]>(`/waste/bills?q=${enc(searchTerm)}&name=${enc(verifiedName)}`);
     if (rows === null) { // เดโม่: ไม่มี API → กรองข้อมูลตัวอย่างให้ตรงทั้งชื่อและบ้านเลขที่/เบอร์/รหัสครัวเรือน
@@ -122,7 +122,7 @@ function searchFormHTML() {
 }
 
 function render(){
- const matches=searchTerm?DEMO.bills.filter(b=>PAYABLE.includes(b.status)||b.status==='pending'||b.status==='cash').sort((a,b)=>b.id.localeCompare(a.id)):[];
+ const matches=searchTerm&&verifiedName?DEMO.bills.filter(b=>demoNameKey(b.merchant)===demoNameKey(verifiedName)&&(PAYABLE.includes(b.status)||b.status==='pending'||b.status==='cash')).sort((a,b)=>b.id.localeCompare(a.id)):[];
  const shortcut=searchTerm?'':`<div class="payment-shortcuts"><button class="payment-shortcut" type="button" onclick="scanHouseQr()">${SCAN_HOUSE_ART}<b>สแกน QR หน้าบ้าน</b><small>ส่องรหัสหน้าบ้านหรือเลือกรูป QR เพื่อดูค่าขยะ</small></button><button class="payment-shortcut payment-shortcut-cash" type="button" onclick="openCashInfo()">${CASH_HOUSE_ART}<b>จ่ายเงินสด</b><small>ไปจ่ายที่ ${escapeHTML(PAYMENT.cashPlace)}</small></button></div>`;
  app.innerHTML=homeBackHTML()+searchFormHTML()+shortcut+billListHTML({title:'ค่าขยะ',matches,promptText:'กรอกชื่อผู้รับบิลและบ้านเลขที่ แล้วกดค้นหา',payerLabel:b=>b.location||b.ref,chargeLabel:()=>'ค่าขยะครัวเรือน'})+contactFooterHTML();
 }
