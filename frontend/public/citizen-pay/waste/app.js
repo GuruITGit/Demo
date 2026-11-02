@@ -756,7 +756,7 @@ function houseFromQr(raw) {
     return moo ? `${house} หมู่ ${moo}` : house;
 }
 // สแกน QR หน้าบ้าน: ได้บ้านเลขที่+หมู่ แล้วให้ผู้ใช้กรอกชื่อผู้รับบิลเอง (ต้องตรงกันจึงจะเห็นยอด)
-function scanHouseQr() { startQrScan({ title: 'สแกน QR หน้าบ้าน', help: 'หันกล้องไปที่ QR หน้าบ้าน เช่น 18 หมู่ 2', demoCode: '18 หมู่ 2', demoLabel: 'ทดลองดูค่าขยะตัวอย่าง 18 หมู่ 2', onCode: (code) => { draftQuery = houseFromQr(code); render(); toast('กรอกชื่อผู้รับบิลแล้วกดค้นหา'); } }); }
+function scanHouseQr() { startQrScan({ title: 'สแกน QR หน้าบ้าน', help: 'หันกล้องไปที่ QR หน้าบ้าน เช่น 18 หมู่ 2', demoCode: '18 หมู่ 2', demoLabel: 'ทดลองดูค่าขยะตัวอย่าง 18 หมู่ 2', onCode: (code) => { qrHouse = houseFromQr(code); render(); toast('กรอกชื่อผู้รับบิลแล้วกดค้นหา'); } }); }
 const CASH_HOUSE_ART = '<img class="shortcut-art shortcut-art-photo" src="/citizen-pay/shared/img/cash-pay-house.webp" width="600" height="338" alt="" aria-hidden="true">';
 const SCAN_HOUSE_ART = '<img class="shortcut-art shortcut-art-photo" src="/citizen-pay/shared/img/scan-qr-house.webp" width="600" height="338" alt="" aria-hidden="true">';
 // จ่ายเงินสด: ไม่มียอดให้จ่ายออนไลน์ ต้องไปจ่ายที่ อบต. (สถานที่/เวลาอ่านจาก payment-config)
@@ -764,6 +764,7 @@ function openCashInfo() { modalContent.innerHTML = `<div class="modal-inner"><di
 // ---------- ต่อ API จริง: ชื่อผู้รับบิล + บ้านเลขที่ ต้องตรงกันจึงเห็นยอด ----------
 let verifiedName = '';
 let draftQuery = '';
+let qrHouse = ''; // บ้านเลขที่+หมู่ที่ได้จาก QR หน้าบ้าน — มีค่าแล้วกรอกแค่ชื่อ
 const enc = (v) => encodeURIComponent(v);
 /** แปลงบิลจาก API เป็นรูปแบบบิลของหน้านี้ (ชื่อที่ผู้ใช้กรอกใช้แทนชื่อที่ถูกปกปิด) */
 function toWasteBill(x) {
@@ -802,11 +803,30 @@ async function searchWasteBills(name, q) {
     }
     render();
 }
-function searchWasteFromForm() {
-    const name = document.getElementById('wname')?.value || '';
-    const q = document.getElementById('query')?.value || '';
-    void searchWasteBills(name, q);
+/** ช่องเดียว "ชื่อ-นามสกุล แล้วต่อด้วยบ้านเลขที่/หมู่ หรือเบอร์โทร" → แยกชื่อกับตัวค้นหา */
+function splitNameAndKey(text) {
+    const t = text.replace(/[๐-๙]/g, d => String('๐๑๒๓๔๕๖๗๘๙'.indexOf(d))).replace(/\s+/g, ' ').trim();
+    const ph = t.match(/(?:^|\s)(0\d(?:[\s-]?\d){7,8})$/);
+    if (ph)
+        return { name: t.slice(0, ph.index).trim(), key: ph[1].replace(/[\s-]/g, '') };
+    const h = t.match(/(?:^|\s)(?:บ้านเลขที่|เลขที่)?\s*(\d+(?:\/\d+)?)(?:\s*(?:หมู่ที่|หมู่|ม\.)\s*(\d+))?$/);
+    if (h)
+        return { name: t.slice(0, h.index).replace(/(?:บ้านเลขที่|เลขที่)$/, '').trim(), key: h[2] ? `${h[1]} หมู่ ${h[2]}` : h[1] };
+    return { name: t, key: '' };
 }
+function searchWasteFromForm() {
+    if (qrHouse) {
+        void searchWasteBills(document.getElementById('wname')?.value || '', qrHouse);
+        return;
+    }
+    const { name, key } = splitNameAndKey(document.getElementById('wq')?.value || '');
+    if (!key) {
+        toast('กรอกชื่อ แล้วต่อด้วยบ้านเลขที่และหมู่ เช่น สมชาย ใจบุญ 18 หมู่ 2');
+        return;
+    }
+    void searchWasteBills(name, key);
+}
+function clearQrHouse() { qrHouse = ''; draftQuery = ''; verifiedName = ''; render(); }
 /** ส่งการแจ้งชำระทีละบิล (แนบสลิปเฉพาะโอน) แล้วโหลดรายการใหม่ให้เห็นสถานะ */
 async function submitWasteBills(ids, method, slip) {
     try {
@@ -828,7 +848,11 @@ async function submitWasteBills(ids, method, slip) {
     }
 }
 function searchFormHTML() {
-    return `<div class="page-heading with-photo with-waste-photo"><h1>จ่ายค่าขยะ</h1><p>ค้นหาด้วยชื่อผู้รับบิลและบ้านเลขที่ · ไม่ต้องเข้าสู่ระบบ</p></div><form class="search-card" onsubmit="event.preventDefault();searchWasteFromForm()"><label for="wname">ชื่อ-นามสกุลผู้รับบิล</label><div class="search-row"><input id="wname" name="wname" value="${escapeHTML(verifiedName)}" placeholder="เช่น สมชาย ใจบุญ" autocomplete="name"></div><label for="query">บ้านเลขที่และหมู่ หรือเบอร์โทร</label><div class="search-row"><input id="query" name="query" value="${escapeHTML(draftQuery)}" placeholder="เช่น 18 หมู่ 2 · 081-000-0014"><button type="submit">ค้นหา</button></div><p class="help">ชื่อต้องตรงกับที่ลงทะเบียนไว้ จึงจะเห็นยอดค้าง</p></form>`;
+    const head = `<div class="page-heading with-photo with-waste-photo"><h1>จ่ายค่าขยะ</h1><p>ค้นหาด้วยชื่อผู้รับบิลและบ้านเลขที่ · ไม่ต้องเข้าสู่ระบบ</p></div>`;
+    if (qrHouse)
+        return head + `<form class="search-card" onsubmit="event.preventDefault();searchWasteFromForm()"><label>บ้านที่สแกน</label><div class="search-row"><input value="${escapeHTML(qrHouse.includes('หมู่') ? 'บ้านเลขที่ ' + qrHouse : 'บ้านเลขที่ ' + qrHouse)}" readonly aria-label="บ้านที่สแกน"><button type="button" class="secondary" onclick="clearQrHouse()">เปลี่ยน</button></div><label for="wname">ชื่อ-นามสกุลผู้รับบิล</label><div class="search-row"><input id="wname" name="wname" value="${escapeHTML(verifiedName)}" placeholder="เช่น สมชาย ใจบุญ" autocomplete="name"><button type="submit">ค้นหา</button></div><p class="help">ชื่อต้องตรงกับที่ลงทะเบียนไว้ จึงจะเห็นยอดค้าง</p></form>`;
+    const v = verifiedName && draftQuery ? `${verifiedName} ${draftQuery}` : '';
+    return head + `<form class="search-card" onsubmit="event.preventDefault();searchWasteFromForm()"><label for="wq">ชื่อ-นามสกุล แล้วต่อด้วยบ้านเลขที่และหมู่ (หรือเบอร์โทร)</label><div class="search-row"><input id="wq" name="wq" value="${escapeHTML(v)}" placeholder="เช่น สมชาย ใจบุญ 18 หมู่ 2" autocomplete="off"><button type="submit">ค้นหา</button></div><p class="help">ชื่อต้องตรงกับที่ลงทะเบียนไว้ จึงจะเห็นยอดค้าง</p></form>`;
 }
 function render() {
     const matches = searchTerm ? DEMO.bills.filter(b => PAYABLE.includes(b.status) || b.status === 'pending' || b.status === 'cash').sort((a, b) => b.id.localeCompare(a.id)) : [];
@@ -838,7 +862,7 @@ function render() {
 applySavedPayments();
 // เปิดจาก QR หน้าบ้าน (?house=&moo=) → ใส่บ้านเลขที่ให้แล้ว ผู้ใช้กรอกแค่ชื่อ
 if (new URLSearchParams(location.search).has('house'))
-    draftQuery = houseFromQr(location.href);
+    qrHouse = houseFromQr(location.href);
 // ถ้าเข้าถึงระบบจริงได้: ใช้ช่องทางรับเงินจริงและส่งการแจ้งชำระเข้าระบบ · ไม่ได้ (เดโม่) ใช้ข้อมูลตัวอย่างเดิม
 (async () => { const c = await payApi("/config").catch(() => null); if (c) {
     applyPayConfig(c);
