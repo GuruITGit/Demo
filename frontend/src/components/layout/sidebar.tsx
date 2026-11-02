@@ -64,7 +64,7 @@ export function Sidebar({ mobileOpen = false, onClose }: { mobileOpen?: boolean;
     queryFn: async () => (await api.get('/citizen-reports/count', { params: { since: seenAt || undefined } })).data.data as
       { unseen: number; new: number; today: number },
     enabled: showReportCount && seenAt !== undefined,
-    refetchInterval: 60_000,
+    refetchInterval: 15_000,
   });
   // คิว "รอฉันเซ็น" (ผอ.กอง/ปลัด/นายก/admin) — queryKey เดียวกับหน้า /citizen-reports อนุมัติแล้วป้ายอัปเดตตาม
   const { data: myQueue } = useQuery({

@@ -185,6 +185,7 @@ function CitizenReportsPageInner() {
     queryFn: async () => (await api.get('/citizen-reports', { params: { status: tab || undefined, page, limit: pageSize } })).data,
     enabled: canRead,
     placeholderData: (p) => p,
+    refetchInterval: 10_000, // เรื่องใหม่จากประชาชนขึ้นเองโดยไม่ต้องรีเฟรชหน้า
   });
   const rows: any[] = data?.data || [];
   const meta = data?.meta || { totalPages: 1, page: 1, total: 0, counts: {} };
