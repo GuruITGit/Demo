@@ -16,7 +16,7 @@ import { printReceipt } from '@/components/pay/receipt-print';
 
 type Household = {
   id: string; householdRef: string; holderName: string; houseNo: string; moo: string; phone: string | null; monthlyFee: string | null;
-  owedMonths: number; owedTotal: number;
+  owedMonths: number; owedTotal: number; qrKey?: string;
 };
 type WasteBill = {
   id: string; householdRef: string; holderName: string; houseNo: string; moo: string; phone: string | null; period: string; amount: string; status: string;
@@ -440,7 +440,7 @@ function HouseQr({ orgName }: { orgName: string }) {
   const key = q.trim().toLowerCase();
   const rows = data.filter((h) => (!moo || h.moo === moo) && (!key || `${h.householdRef} ${h.holderName} ${h.houseNo} ${h.moo}`.toLowerCase().includes(key)));
   const items: QrItem[] = rows.map((h) => ({
-    code: h.householdRef, title: `บ้านเลขที่ ${h.houseNo} หมู่ ${Number(h.moo)}`, sub: h.householdRef, text: houseQrUrl(origin, h.houseNo, String(Number(h.moo))),
+    code: h.householdRef, title: `บ้านเลขที่ ${h.houseNo} หมู่ ${Number(h.moo)}`, sub: h.householdRef, text: houseQrUrl(origin, h.houseNo, String(Number(h.moo)), h.householdRef, h.qrKey),
   }));
   const nameOf = new Map(rows.map((h) => [h.householdRef, h.holderName]));
   const target = picked.size ? items.filter((i) => picked.has(i.code)) : items;

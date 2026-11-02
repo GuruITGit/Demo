@@ -78,7 +78,8 @@ export class CitizenPayController {
 
   @Get('waste/bills')
   @ApiOperation({ summary: 'ค้นบิลค่าขยะบ้านที่ยังไม่จ่าย — ต้องกรอกชื่อคู่กับ (บ้านเลขที่+หมู่ หรือ เบอร์) ให้ตรงกัน' })
-  async wasteBills(@Req() req: Request, @Query('q') q: string, @Query('name') name: string, @Query('org') org?: string) {
+  async wasteBills(@Req() req: Request, @Query('q') q: string, @Query('name') name: string, @Query('org') org?: string, @Query('ref') ref?: string, @Query('key') key?: string) {
+    if (ref && key) return this.service.wasteBillsByKey(await this.org(req, org, true), ref, key);
     return this.service.wasteBillsFor(await this.org(req, org, true), q, name);
   }
 

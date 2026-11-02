@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { houseKey } from '../../common/house-key';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, In, Repository, ILike, FindOptionsWhere } from 'typeorm';
 import { WasteBill } from '../../database/entities/waste-bill.entity';
@@ -182,7 +183,7 @@ export class WasteService {
       `SELECT household_ref, COUNT(*)::int AS months, SUM(amount)::float AS total FROM waste_bills
         WHERE organization_id = $1 AND status <> 'paid' AND household_ref = ANY($2) GROUP BY household_ref`, [orgId, rows.map((r) => r.householdRef)]);
     const byRef = new Map(owed.map((o) => [o.household_ref, o]));
-    return rows.map((r) => ({ ...r, owedMonths: byRef.get(r.householdRef)?.months ?? 0, owedTotal: byRef.get(r.householdRef)?.total ?? 0 }));
+    return rows.map((r) => ({ ...r, qrKey: houseKey(orgId, r.householdRef), owedMonths: byRef.get(r.householdRef)?.months ?? 0, owedTotal: byRef.get(r.householdRef)?.total ?? 0 }));
   }
 
   private async nextRef(orgId: string): Promise<string> {
