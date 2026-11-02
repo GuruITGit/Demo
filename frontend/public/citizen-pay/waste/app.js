@@ -767,7 +767,7 @@ function parseHouseKeyLink(raw) {
     return h && k ? { ref: h, key: k } : null;
 }
 // สแกน QR หน้าบ้าน: QR ใหม่ (มีรหัสลับ) แสดงยอดทันที · QR เก่า (บ้านเลขที่+หมู่) ให้กรอกชื่อผู้รับบิลเอง
-function scanHouseQr() { startQrScan({ title: 'สแกน QR หน้าบ้าน', help: 'หันกล้องไปที่ QR หน้าบ้าน แล้วระบบจะแสดงยอดให้เลย', demoCode: location.origin + '/citizen/waste?h=HH-014&k=demo', demoLabel: 'ทดลองดูค่าขยะตัวอย่าง 18 หมู่ 2', onCode: (code) => { const k = parseHouseKeyLink(code); if (k) {
+function scanHouseQr() { startQrScan({ title: 'สแกน QR หน้าบ้าน', help: 'หันกล้องไปที่ QR หน้าบ้าน แล้วระบบจะแสดงยอดให้เลย', demoCode: location.origin + '/citizen/waste?h=HH-021&k=demo', demoLabel: 'ทดลองดูค่าขยะตัวอย่าง 7 หมู่ 3', onCode: (code) => { const k = parseHouseKeyLink(code); if (k) {
         void searchWasteByKey(k.ref, k.key);
         return;
     } qrHouse = houseFromQr(code); render(); toast('กรอกชื่อผู้รับบิลแล้วกดค้นหา'); } }); }
