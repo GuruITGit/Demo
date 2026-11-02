@@ -966,7 +966,7 @@ function toStallBill(x) {
 function readOutsideBills() {
     try {
         const v = JSON.parse(localStorage.getItem('lamplaimat:demo-outside-bills') || '[]');
-        return Array.isArray(v) ? v : [];
+        return Array.isArray(v) ? v.filter((x) => String(x?.stallCode || '').startsWith('OUT-')) : [];
     }
     catch {
         return [];

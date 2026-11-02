@@ -787,6 +787,27 @@ function toWasteBill(x) {
     const status = x.status === 'pending' ? (cash ? 'cash' : 'pending') : x.status === 'mismatch' ? 'mismatch' : 'unpaid';
     return { id: x.id, payerType: 'household', merchant: verifiedName || x.holderName, ref: x.householdRef, location: `บ้านเลขที่ ${x.houseNo} หมู่ ${Number(x.moo)}`, houseNo: x.houseNo, moo: x.moo, phone: x.phone || '', kind: 'ค่าเก็บขยะ', month: periodToThai(x.period), due: x.dueDate || '', amount: Number(x.amount), status, note: x.reviewNote || undefined };
 }
+const STATIC_HOUSE_BILLS = DEMO.bills.slice();
+/** เดโม่: บิลค่าขยะทุกครัวเรือนที่หน้าเจ้าหน้าที่เดโม่ซิงก์มา (คีย์เดียวกับแผงลอย แถวที่มี hh) — ไม่มี = ใช้ข้อมูลตัวอย่างในไฟล์ */
+function demoHouseBills() {
+    try {
+        const v = JSON.parse(localStorage.getItem('lamplaimat:demo-outside-bills') || '[]');
+        const rows = (Array.isArray(v) ? v : []).filter((x) => x && x.hh);
+        if (!rows.length)
+            return STATIC_HOUSE_BILLS;
+        const out = rows.map((x) => ({ id: x.id, payerType: 'household', merchant: x.holderName, ref: x.householdRef, location: 'บ้านเลขที่ ' + x.houseNo + ' หมู่ ' + Number(x.moo), houseNo: x.houseNo, moo: String(Number(x.moo)), phone: x.phone || '', kind: 'ค่าเก็บขยะ', month: periodToThai(x.period), due: x.dueDate || '', amount: Number(x.amount), status: x.status === 'pending' ? (x.submittedMethod === 'cash' ? 'cash' : 'pending') : x.status === 'mismatch' ? 'mismatch' : 'unpaid', note: x.reviewNote || undefined }));
+        const saved = loadPaymentRecords(); // สถานะที่ผู้ใช้เครื่องนี้เพิ่งแจ้งชำระ
+        for (const b of out) {
+            const r = saved[b.id];
+            if (r)
+                b.status = r.status === 'rejected' ? 'unpaid' : r.status;
+        }
+        return out;
+    }
+    catch {
+        return STATIC_HOUSE_BILLS;
+    }
+}
 let demoBillsAll = null;
 async function searchWasteBills(name, q) {
     verifiedName = name.trim();
@@ -803,7 +824,7 @@ async function searchWasteBills(name, q) {
     try {
         const rows = await payApi(`/waste/bills?q=${enc(searchTerm)}&name=${enc(verifiedName)}`);
         if (rows === null) { // เดโม่: ไม่มี API → กรองข้อมูลตัวอย่างให้ตรงทั้งชื่อและบ้านเลขที่/เบอร์/รหัสครัวเรือน
-            demoBillsAll ?? (demoBillsAll = DEMO.bills);
+            demoBillsAll = demoHouseBills();
             const k = (s) => s.replace(/\s+/g, '').replace(/หมู่ที่|ม\./g, 'หมู่');
             DEMO.bills = demoBillsAll.filter((b) => b.payerType === 'household' && demoNameKey(b.merchant) === demoNameKey(verifiedName)
                 && (k(searchTerm) === k(`${b.houseNo} หมู่ ${b.moo}`) || searchTerm.replace(/[\s-]/g, '') === b.phone || searchTerm.toUpperCase() === b.ref));
@@ -832,7 +853,7 @@ function splitNameAndKey(text) {
 }
 /** เดโม่เท่านั้น: QR บ้านแบบเก่า (บ้านเลขที่+หมู่) กรอกชื่อและแสดงยอดให้เลย — ระบบจริงต้องใช้ QR ที่มีรหัสลับหรือกรอกชื่อเอง */
 function fillDemoHouse() {
-    demoBillsAll ?? (demoBillsAll = DEMO.bills);
+    demoBillsAll = demoHouseBills();
     const hit = demoBillsAll.filter((b) => b.payerType === 'household' && householdMatches(b, qrHouse));
     if (!hit.length)
         return false;
@@ -855,7 +876,7 @@ async function searchWasteByKey(ref, key) {
     try {
         const r = await payApi(`/waste/bills?ref=${enc(ref)}&key=${enc(key)}`);
         if (r === null) {
-            demoBillsAll ?? (demoBillsAll = DEMO.bills);
+            demoBillsAll = demoHouseBills();
             DEMO.bills = demoBillsAll.filter((b) => b.payerType === 'household' && b.ref.toUpperCase() === ref.toUpperCase());
             verifiedName = DEMO.bills[0]?.merchant || '';
         }
