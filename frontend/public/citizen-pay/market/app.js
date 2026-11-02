@@ -1420,7 +1420,11 @@ void refreshStalls();
     billSubmitter = submitStallBills;
     render();
 } })();
-(() => { const p = new URLSearchParams(location.search); const q = (p.get('stall') || '').trim().toUpperCase(); if (!/^OUT-\d+$/.test(q))
+(() => { const p = new URLSearchParams(location.search); const q = (p.get('stall') || '').trim().toUpperCase(); const k = (p.get('k') || '').trim(); if (q && k) {
+    setPage('dues');
+    void searchStallByKey(q, k);
+    return;
+} if (!/^OUT-\d+$/.test(q))
     return; const n = (p.get('name') || '').trim(); if (n.length >= 4) {
     setPage('dues');
     void searchStallBills(n, q);
