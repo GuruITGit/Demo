@@ -910,7 +910,12 @@ catch { } key = key.trim().toUpperCase(); if (/^OUT-\d+$/.test(key)) {
         void searchStallBills(qrName, key);
         return;
     }
-    openOutsideTenant(key);
+    setPage('dues');
+    void searchStallByKey(key, '');
+    return;
+} if (/^[A-Z]{1,3}-?\d{1,3}$/.test(key)) {
+    setPage('dues');
+    void searchStallByKey(key, '');
     return;
 } const bill = DEMO.bills.find(item => item.payerType === 'stall' && (item.stall?.toUpperCase() === key || item.ref.toUpperCase() === key)); const stall = findStall(key); verifiedName = ''; searchTerm = ''; draftStall = bill?.stall || stall?.id || key; paymentMapMode = false; resetSelection(); setPage('dues'); if (!bill && !stall)
     toast('ไม่พบรหัสแผงใน QR นี้ · ลองค้นหาด้วยชื่อหรือเลขแผง'); }
@@ -1065,8 +1070,18 @@ async function searchStallByKey(code, key) {
     }
     catch (e) {
         DEMO.bills = [];
-        emptyNote = e.message;
-        toast(e.message);
+        if (!key) {
+            emptyNote = '';
+            if (code.startsWith('OUT-')) {
+                openOutsideTenant(code);
+                return;
+            }
+            toast('กรอกชื่อผู้เช่าแล้วกดค้นหา');
+        }
+        else {
+            emptyNote = e.message;
+            toast(e.message);
+        }
     }
     render();
 }
@@ -1424,7 +1439,7 @@ void refreshStalls();
     setPage('dues');
     void searchStallByKey(q, k);
     return;
-} if (!/^OUT-\d+$/.test(q))
+} if (!q)
     return; const n = (p.get('name') || '').trim(); if (n.length >= 4) {
     setPage('dues');
     void searchStallBills(n, q);

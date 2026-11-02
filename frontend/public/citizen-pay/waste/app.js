@@ -770,7 +770,8 @@ function parseHouseKeyLink(raw) {
 function scanHouseQr() { startQrScan({ title: 'สแกน QR หน้าบ้าน', help: 'หันกล้องไปที่ QR หน้าบ้าน แล้วระบบจะแสดงยอดให้เลย', demoCode: location.origin + '/citizen/waste?h=HH-021&k=demo', demoLabel: 'ทดลองดูค่าขยะตัวอย่าง 7 หมู่ 3', onCode: (code) => { const k = parseHouseKeyLink(code); if (k) {
         void searchWasteByKey(k.ref, k.key);
         return;
-    } qrHouse = houseFromQr(code); render(); toast('กรอกชื่อผู้รับบิลแล้วกดค้นหา'); } }); }
+    } qrHouse = houseFromQr(code); if (PAYMENT.demo && fillDemoHouse())
+        return; render(); toast('กรอกชื่อผู้รับบิลแล้วกดค้นหา'); } }); }
 const CASH_HOUSE_ART = '<img class="shortcut-art shortcut-art-photo" src="/citizen-pay/shared/img/cash-pay-house.webp" width="600" height="338" alt="" aria-hidden="true">';
 const SCAN_HOUSE_ART = '<img class="shortcut-art shortcut-art-photo" src="/citizen-pay/shared/img/scan-qr-house.webp" width="600" height="338" alt="" aria-hidden="true">';
 // จ่ายเงินสด: ไม่มียอดให้จ่ายออนไลน์ ต้องไปจ่ายที่ อบต. (สถานที่/เวลาอ่านจาก payment-config)
@@ -828,6 +829,21 @@ function splitNameAndKey(text) {
     if (h)
         return { name: t.slice(0, h.index).replace(/(?:บ้านเลขที่|เลขที่)$/, '').trim(), key: h[2] ? `${h[1]} หมู่ ${h[2]}` : h[1] };
     return { name: t, key: '' };
+}
+/** เดโม่เท่านั้น: QR บ้านแบบเก่า (บ้านเลขที่+หมู่) กรอกชื่อและแสดงยอดให้เลย — ระบบจริงต้องใช้ QR ที่มีรหัสลับหรือกรอกชื่อเอง */
+function fillDemoHouse() {
+    demoBillsAll ?? (demoBillsAll = DEMO.bills);
+    const hit = demoBillsAll.filter((b) => b.payerType === 'household' && householdMatches(b, qrHouse));
+    if (!hit.length)
+        return false;
+    DEMO.bills = hit;
+    verifiedName = hit[0].merchant;
+    draftQuery = qrHouse;
+    searchTerm = qrHouse;
+    qrHouse = '';
+    resetSelection();
+    render();
+    return true;
 }
 /** ค้นด้วยรหัสลับของ QR บ้าน — ไม่ต้องกรอกชื่อ (เดโม่: ใช้ข้อมูลตัวอย่างตามรหัสครัวเรือน) */
 async function searchWasteByKey(ref, key) {
@@ -912,5 +928,6 @@ if (new URLSearchParams(location.search).has('house'))
 (async () => { const c = await payApi("/config").catch(() => null); if (c) {
     applyPayConfig(c);
     billSubmitter = submitWasteBills;
-} render(); const hk = parseHouseKeyLink(location.href); if (hk)
+} render(); if (qrHouse && PAYMENT.demo)
+    fillDemoHouse(); const hk = parseHouseKeyLink(location.href); if (hk)
     void searchWasteByKey(hk.ref, hk.key); })();
