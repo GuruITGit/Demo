@@ -724,3 +724,7 @@
 /* ปรับขนาดแตะและตัวอักษรบนมือถือ (หน้าประชาชน) */
 .contact-box a{display:inline-flex;align-items:center;min-height:40px;padding:8px 14px}
 @media(max-width:480px){.plan-card .plan-head span,.plan-card>div>span{font-size:11px}.plan-row-title,.plan-row-title small{font-size:11px}}
+
+/* เบอร์โทรเจ้าหน้าที่อยู่กึ่งกลางกล่อง */
+.contact-box a{justify-self:center;justify-content:center}
+.link-btn{border:0;background:none;color:#0b6bb5;font:inherit;font-size:13px;text-decoration:underline;padding:0 0 0 6px;cursor:pointer;min-height:0}
