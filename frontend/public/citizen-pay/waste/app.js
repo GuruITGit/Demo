@@ -401,6 +401,8 @@ function openBankApp(i) {
     setTimeout(() => { document.removeEventListener('visibilitychange', onHide); if (!left)
         toast(`เปิด ${bank.name} ไม่ได้ · เครื่องอาจไม่มีแอปนี้ ลองเปิดแอปเอง`); }, 1800);
 }
+/** แจ้งหน้าที่เรียกใช้ว่าส่งการชำระสำเร็จแล้ว (เช่น สมัครแผงลอยชั่วคราวต้องจ่ายก่อนจึงสมัครสำเร็จ) */
+const paySubmitted = () => window.dispatchEvent(new Event('pay-submitted'));
 function clearSlip() { if (slipPreviewUrl)
     URL.revokeObjectURL(slipPreviewUrl); slipFile = null; slipPreviewUrl = ''; }
 function pickSlip(input) {
@@ -439,6 +441,7 @@ async function submitTransferPayment() {
             return;
         clearSlip();
         resetSelection();
+        paySubmitted();
         modal.close();
         toast(res.status === 'paid' ? 'ตรวจสลิปผ่านแล้ว · ชำระเรียบร้อย' : res.reason ? `ส่งสลิปแล้ว · ${res.reason}` : 'ส่งสลิปแล้ว · รอเจ้าหน้าที่ตรวจสอบ');
         render();
@@ -447,6 +450,7 @@ async function submitTransferPayment() {
     recordPayment('pending', newPaymentRef('TRF'));
     clearSlip();
     resetSelection();
+    paySubmitted();
     modal.close();
     toast('ส่งสลิปแล้ว · รอเจ้าหน้าที่ตรวจสอบ');
     render();
@@ -454,11 +458,12 @@ async function submitTransferPayment() {
 async function submitCashPayment() {
     if (billSubmitter) {
         const total = payTotal();
-        const res = await billSubmitter(payBillIds, 'cash', null);
+        const res = await billSubmitter(payBillIds, 'cash', slipFile);
         if (!res)
             return;
         clearSlip();
         resetSelection();
+        paySubmitted();
         render();
         showCashTicket(newPaymentRef('CSH'), total);
         return;
@@ -468,6 +473,7 @@ async function submitCashPayment() {
     recordPayment('cash', payRef);
     clearSlip();
     resetSelection();
+    paySubmitted();
     render();
     showCashTicket(payRef, total);
 }
