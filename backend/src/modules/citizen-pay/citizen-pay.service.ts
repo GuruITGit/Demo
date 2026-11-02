@@ -108,6 +108,26 @@ export class CitizenPayService {
     return rows.map(publicWasteBill);
   }
 
+  /** สแกน QR ประจำแผง/ผู้เช่าแผงลอย: รหัสลับถูกต้อง = เห็นยอดค้างได้เลย ไม่ต้องกรอกชื่อ (คืนชื่อผู้เช่าไว้ยืนยันตอนแจ้งชำระ) */
+  async marketBillsByKey(orgId: string, stallRaw: string, key: string) {
+    const code = (stallRaw || '').trim().toUpperCase();
+    if (!code || !houseKeyOk(orgId, 'STALL:' + code, key)) throw new NotFoundException('QR นี้ใช้ไม่ได้ กรุณาค้นด้วยชื่อและรหัสแผงแทน');
+    let payerName: string | null; let stallInfo: Record<string, unknown>;
+    if (code.startsWith('OUT-')) {
+      const app = await this.outsideApps.findOne({ where: { organizationId: orgId, appCode: code, status: 'approved' }, relations: ['location'] });
+      if (!app) throw new NotFoundException(NAME_NOT_FOUND);
+      payerName = app.applicantName;
+      stallInfo = { stallCode: code, zone: `แผงลอย · ${app.location?.name ?? ''}`, status: 'outside', monthlyRate: Number(app.location?.rentRate ?? 0) };
+    } else {
+      const stall = await this.stalls.findOne({ where: { organizationId: orgId, stallCode: code, active: true } });
+      if (!stall) throw new NotFoundException(NO_MATCH);
+      payerName = stall.tenantName;
+      stallInfo = { stallCode: stall.stallCode, zone: stall.zone, status: stall.status, monthlyRate: Number(stall.monthlyRate) };
+    }
+    const rows = await this.marketBills.find({ where: { organizationId: orgId, stallCode: code, status: In(OPEN_STATUSES) }, order: { period: 'DESC', kind: 'ASC' }, take: 60 });
+    return { payerName, stall: stallInfo, bills: rows.map(publicMarketBill) };
+  }
+
   /** สแกน QR ประจำบ้าน: รหัสลับถูกต้อง = เห็นยอดค้างของบ้านนั้นได้เลย ไม่ต้องกรอกชื่อ (คืนชื่อเต็มไว้ใช้ยืนยันตอนแจ้งชำระ) */
   async wasteBillsByKey(orgId: string, refRaw: string, key: string) {
     const ref = (refRaw || '').trim().toUpperCase();

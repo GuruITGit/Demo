@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { houseKey } from '../../common/house-key';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Between, DataSource, In, Repository } from 'typeorm';
 import { MarketOutsideCollection, MarketOutsideLocation } from '../../database/entities/market-outside.entity';
@@ -43,7 +44,7 @@ export class MarketOutsideService {
          WHERE organization_id = $1 AND stall_code = ANY($2) AND status IN ('unpaid','pending','mismatch') GROUP BY stall_code`,
       [orgId, rows.map((a) => a.appCode)]) : [];
     const byCode = new Map(dues.map((d) => [d.code, { count: d.count, total: d.total }]));
-    return rows.map((a) => ({ ...a, idCardUrl: this.storage.signUrlIfPrivate(a.idCardUrl), openDues: byCode.get(a.appCode) ?? { count: 0, total: 0 } })); // รูปบัตรอยู่ใน private bucket
+    return rows.map((a) => ({ ...a, idCardUrl: this.storage.signUrlIfPrivate(a.idCardUrl), openDues: byCode.get(a.appCode) ?? { count: 0, total: 0 }, qrKey: houseKey(orgId, 'STALL:' + a.appCode) })); // รูปบัตรอยู่ใน private bucket
   }
 
   /** ลบผู้เช่าแผงลอย (เช่น ยกเลิกการเช่า) — ต้องชำระยอดค้างให้ครบก่อน · เก็บประวัติไว้ (สถานะ cancelled) */

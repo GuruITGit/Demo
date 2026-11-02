@@ -23,8 +23,8 @@ function selectStall(id){const stall=findStall(id);if(paymentMapMode){selectedSt
 function ownedStallModal(stall){const name=stall.tenantName?`<b>${escapeHTML(stall.tenantName)}</b>`:'';return `<div class="modal-inner"><div class="modal-top"><h2 id="modalTitle">แผง ${escapeHTML(stall.id)} มีเจ้าของแล้ว</h2><button class="close-btn" onclick="modal.close()" aria-label="ปิด">×</button></div><div class="modal-body"><p class="help">${stall.status==='reserved'?'มีผู้จองแล้ว':'มีผู้เช่าแล้ว'}${name?` · ${name}`:''}</p></div></div>`}
 function paymentStallModal(id){const bills=DEMO.bills.filter(b=>b.payerType==='stall'&&b.status==='unpaid'&&b.stall===id);const tenant=findStall(id)?.tenantName||bills[0]?.merchant;const summary=`<p class="help"><b>${escapeHTML(tenant||'ยังไม่มีผู้เช่า')}</b></p>`;return `<div class="modal-inner"><div class="modal-top"><h2 id="modalTitle">แผง ${escapeHTML(id)}</h2><button class="close-btn" onclick="modal.close()" aria-label="ปิด">×</button></div><div class="modal-body">${summary}${findStall(id)?.status==='available'?`<button class="qr-demo" onclick="modal.close();openSignupForStall('${escapeHTML(id)}')">จองแผงนี้</button>`:`<button class="qr-demo" onclick="modal.close();findPaymentByQr('${escapeHTML(id)}')">เช็คยอดค้างชำระ</button>`}</div></div>`}
 function openOutsideTenant(code:string){verifiedName='';searchTerm='';paymentMapMode=false;resetSelection();setPage('dues');setTimeout(()=>{const sq=document.getElementById('sq') as HTMLInputElement|null;if(sq){sq.value=code+' ';sq.focus()}},0);toast('พิมพ์ชื่อผู้เช่าไว้หน้ารหัส '+code+' แล้วกดค้นหา')}
-function findPaymentByQr(raw:string){let key=raw.trim();let qrName='';try{const url=new URL(key);qrName=(url.searchParams.get('name')||'').trim();key=url.searchParams.get('stall')||url.searchParams.get('ref')||url.pathname.split('/').filter(Boolean).pop()||key}catch{}key=key.trim().toUpperCase();if(/^OUT-\d+$/.test(key)){if(qrName.length>=4){setPage('dues');void searchStallBills(qrName,key);return}openOutsideTenant(key);return}const bill=DEMO.bills.find(item=>item.payerType==='stall'&&(item.stall?.toUpperCase()===key||item.ref.toUpperCase()===key));const stall=findStall(key);verifiedName='';searchTerm='';draftStall=bill?.stall||stall?.id||key;paymentMapMode=false;resetSelection();setPage('dues');if(!bill&&!stall)toast('ไม่พบรหัสแผงใน QR นี้ · ลองค้นหาด้วยชื่อหรือเลขแผง')}
-function openQrScanner(){startQrScan({title:'สแกน QR ที่แผง',help:'หันกล้องไปที่ QR บนแผง เช่น A06 หรือ LM-021',demoCode:'A06',demoLabel:'ทดลองดูยอดตัวอย่าง A06',onCode:findPaymentByQr})}
+function findPaymentByQr(raw:string){let key=raw.trim();let qrName='';try{const url=new URL(key);const qk=(url.searchParams.get('k')||'').trim(),qs=(url.searchParams.get('stall')||'').trim();if(qk&&qs){setPage('dues');void searchStallByKey(qs.toUpperCase(),qk);return}qrName=(url.searchParams.get('name')||'').trim();key=url.searchParams.get('stall')||url.searchParams.get('ref')||url.pathname.split('/').filter(Boolean).pop()||key}catch{}key=key.trim().toUpperCase();if(/^OUT-\d+$/.test(key)){if(qrName.length>=4){setPage('dues');void searchStallBills(qrName,key);return}openOutsideTenant(key);return}const bill=DEMO.bills.find(item=>item.payerType==='stall'&&(item.stall?.toUpperCase()===key||item.ref.toUpperCase()===key));const stall=findStall(key);verifiedName='';searchTerm='';draftStall=bill?.stall||stall?.id||key;paymentMapMode=false;resetSelection();setPage('dues');if(!bill&&!stall)toast('ไม่พบรหัสแผงใน QR นี้ · ลองค้นหาด้วยชื่อหรือเลขแผง')}
+function openQrScanner(){startQrScan({title:'สแกน QR ที่แผง',help:'หันกล้องไปที่ QR บนแผง เช่น A06 หรือ LM-021',demoCode:location.origin+'/citizen/market?stall=A06&k=demo',demoLabel:'ทดลองดูยอดตัวอย่าง A06',onCode:findPaymentByQr})}
 const findStall = id => DEMO.stalls.find(s=>s.id===id&&s.active!==false);
 const localISODate = () => {const date=new Date();date.setMinutes(date.getMinutes()-date.getTimezoneOffset());return date.toISOString().slice(0,10)};
 let rentalStartDate = localISODate();
@@ -96,6 +96,31 @@ async function searchStallBills(name: string, stall: string) {
   }
   render();
 }
+/** QR ประจำแผงแบบมีรหัสลับ (?stall=B05&k=...): สแกนแล้วเห็นยอดเลย ไม่ต้องพิมพ์ชื่อ (เดโม่: ใช้ข้อมูลตัวอย่างตามรหัสแผง) */
+async function searchStallByKey(code: string, key: string) {
+  verifiedName = ''; draftStall = code; searchTerm = code; resetSelection(); emptyNote = '';
+  try {
+    const r = await payApi<any>(`/market/bills?stall=${encodeURIComponent(code)}&key=${encodeURIComponent(key)}`);
+    if (r === null) {
+      demoBillsAll ??= DEMO.bills;
+      const isOpenRow = (x: any) => ['unpaid', 'pending', 'mismatch'].includes(x.status);
+      if (code.startsWith('OUT-')) {
+        const raw = readOutsideBills().filter((x) => String(x.stallCode).toUpperCase() === code);
+        verifiedName = raw[0]?.payerName || ''; DEMO.bills = raw.filter(isOpenRow).map(toStallBill);
+      } else {
+        DEMO.bills = demoBillsAll.filter((b) => b.payerType === 'stall' && b.stall?.toUpperCase() === code);
+        verifiedName = DEMO.bills[0]?.merchant || '';
+      }
+      if (!verifiedName) emptyNote = 'ไม่พบข้อมูลแผงนี้ในระบบ';
+      else if (!DEMO.bills.length) emptyNote = 'ไม่มียอดค้างชำระ';
+      return render();
+    }
+    verifiedName = r.payerName || '';
+    DEMO.bills = (r.bills || []).map(toStallBill);
+    if (!DEMO.bills.length) emptyNote = 'ไม่มียอดค้างชำระ';
+  } catch (e) { DEMO.bills = []; emptyNote = (e as Error).message; toast((e as Error).message); }
+  render();
+}
 /** ช่องเดียว: "สมใจ ใจดี A06" → ชื่อ + รหัสแผงต่อท้าย · รองรับรหัสแผงลอย OUT-0001 (พิมพ์ OUT0001 ก็ได้) */
 function parseStallQuery(raw: string): { name: string; code: string } {
   const text = raw.replace(/\s+/g, ' ').trim();
@@ -109,7 +134,7 @@ function parseStallQuery(raw: string): { name: string; code: string } {
 }
 function searchStallFromForm() {
   const { name, code } = parseStallQuery((document.getElementById('sq') as HTMLInputElement | null)?.value || '');
-  if (!name) return toast('พิมพ์ชื่อ-นามสกุลผู้เช่า (แผงประจำพิมพ์รหัสแผงต่อท้าย เช่น สมใจ ใจดี A06 · แผงลอยพิมพ์แค่ชื่อได้)');
+  if (!name) return toast('พิมพ์ชื่อผู้เช่า แล้วต่อด้วยรหัสแผง เช่น สมใจ ใจดี A06');
   void searchStallBills(name, code);
 }
 /** ส่งการแจ้งชำระของบิลค่าแผงทีละใบ (แนบสลิปเฉพาะโอน) แล้วโหลดรายการใหม่ */

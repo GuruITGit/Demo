@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { houseKey } from '../../common/house-key';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, In, Repository, FindOptionsWhere } from 'typeorm';
 import { MarketStall } from '../../database/entities/market-stall.entity';
@@ -51,7 +52,7 @@ export class MarketService {
   /** รูปบัตรของผู้จองอยู่ใน private bucket → ออกลิงก์มีลายเซ็นอายุสั้นให้เจ้าหน้าที่เปิดดูได้ */
   async listStalls(orgId: string) {
     const rows = await this.stalls.find({ where: { organizationId: orgId, active: true }, order: { zone: 'ASC', stallCode: 'ASC' } });
-    return rows.map((s) => ({ ...s, reserveCardUrl: this.storage.signUrlIfPrivate(s.reserveCardUrl) }));
+    return rows.map((s) => ({ ...s, reserveCardUrl: this.storage.signUrlIfPrivate(s.reserveCardUrl), qrKey: houseKey(orgId, 'STALL:' + s.stallCode) }));
   }
 
   /** แก้ไขแผง: ถ้าเป็นว่างจะล้างชื่อผู้เช่า/ผู้จองให้เอง */
