@@ -1,4 +1,5 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { houseKeyOk } from '../../common/house-key';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Like, Repository, FindOptionsWhere, DataSource } from 'typeorm';
 import { MarketStall } from '../../database/entities/market-stall.entity';
@@ -105,6 +106,14 @@ export class CitizenPayService {
       .filter((r) => nameMatches(r.holderName, nameRaw));
     if (!rows.length) throw new NotFoundException(NO_MATCH);
     return rows.map(publicWasteBill);
+  }
+
+  /** สแกน QR ประจำบ้าน: รหัสลับถูกต้อง = เห็นยอดค้างของบ้านนั้นได้เลย ไม่ต้องกรอกชื่อ (คืนชื่อเต็มไว้ใช้ยืนยันตอนแจ้งชำระ) */
+  async wasteBillsByKey(orgId: string, refRaw: string, key: string) {
+    const ref = (refRaw || '').trim().toUpperCase();
+    if (!ref || !houseKeyOk(orgId, ref, key)) throw new NotFoundException('QR นี้ใช้ไม่ได้ กรุณาค้นด้วยชื่อและบ้านเลขที่แทน');
+    const rows = await this.wasteBills.find({ where: { organizationId: orgId, householdRef: ref, status: In(OPEN_STATUSES) }, order: { period: 'DESC' }, take: 60 });
+    return { holderName: rows[0]?.holderName ?? null, bills: rows.map(publicWasteBill) };
   }
 
   /** ผังแผงสาธารณะ: รหัส/โซน/สถานะ/ค่าเช่า เท่านั้น — ไม่มีชื่อผู้เช่า */

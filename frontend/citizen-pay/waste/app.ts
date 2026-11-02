@@ -23,8 +23,14 @@ function houseFromQr(raw:string){
  const moo=u.searchParams.get('moo')?.trim();
  return moo?`${house} หมู่ ${moo}`:house;
 }
-// สแกน QR หน้าบ้าน: ได้บ้านเลขที่+หมู่ แล้วให้ผู้ใช้กรอกชื่อผู้รับบิลเอง (ต้องตรงกันจึงจะเห็นยอด)
-function scanHouseQr(){startQrScan({title:'สแกน QR หน้าบ้าน',help:'หันกล้องไปที่ QR หน้าบ้าน เช่น 18 หมู่ 2',demoCode:'18 หมู่ 2',demoLabel:'ทดลองดูค่าขยะตัวอย่าง 18 หมู่ 2',onCode:(code:string)=>{qrHouse=houseFromQr(code);render();toast('กรอกชื่อผู้รับบิลแล้วกดค้นหา')}})}
+// QR ประจำบ้านแบบมีรหัสลับ (?h=HH-014&k=...): สแกนแล้วเห็นยอดเลย ไม่ต้องพิมพ์อะไร
+function parseHouseKeyLink(raw:string){
+ const u=(()=>{try{return new URL(raw.trim(),location.href)}catch{return null}})();
+ const h=u?.searchParams.get('h')?.trim(),k=u?.searchParams.get('k')?.trim();
+ return h&&k?{ref:h,key:k}:null;
+}
+// สแกน QR หน้าบ้าน: QR ใหม่ (มีรหัสลับ) แสดงยอดทันที · QR เก่า (บ้านเลขที่+หมู่) ให้กรอกชื่อผู้รับบิลเอง
+function scanHouseQr(){startQrScan({title:'สแกน QR หน้าบ้าน',help:'หันกล้องไปที่ QR หน้าบ้าน แล้วระบบจะแสดงยอดให้เลย',demoCode:location.origin+'/citizen/waste?h=HH-014&k=demo',demoLabel:'ทดลองดูค่าขยะตัวอย่าง 18 หมู่ 2',onCode:(code:string)=>{const k=parseHouseKeyLink(code);if(k){void searchWasteByKey(k.ref,k.key);return}qrHouse=houseFromQr(code);render();toast('กรอกชื่อผู้รับบิลแล้วกดค้นหา')}})}
 
 const CASH_HOUSE_ART='<img class="shortcut-art shortcut-art-photo" src="/citizen-pay/shared/img/cash-pay-house.webp" width="600" height="338" alt="" aria-hidden="true">';
 const SCAN_HOUSE_ART='<img class="shortcut-art shortcut-art-photo" src="/citizen-pay/shared/img/scan-qr-house.webp" width="600" height="338" alt="" aria-hidden="true">';
@@ -71,6 +77,22 @@ function splitNameAndKey(text:string){
  if(h)return{name:t.slice(0,h.index).replace(/(?:บ้านเลขที่|เลขที่)$/,'').trim(),key:h[2]?`${h[1]} หมู่ ${h[2]}`:h[1]};
  return{name:t,key:''};
 }
+/** ค้นด้วยรหัสลับของ QR บ้าน — ไม่ต้องกรอกชื่อ (เดโม่: ใช้ข้อมูลตัวอย่างตามรหัสครัวเรือน) */
+async function searchWasteByKey(ref: string, key: string) {
+  qrHouse = ''; verifiedName = ''; draftQuery = ''; searchTerm = ''; resetSelection();
+  try {
+    const r = await payApi<any>(`/waste/bills?ref=${enc(ref)}&key=${enc(key)}`);
+    if (r === null) {
+      demoBillsAll ??= DEMO.bills;
+      DEMO.bills = demoBillsAll.filter((b) => b.payerType === 'household' && b.ref.toUpperCase() === ref.toUpperCase());
+      verifiedName = DEMO.bills[0]?.merchant || '';
+    } else { verifiedName = r.holderName || ''; DEMO.bills = (r.bills || []).map(toWasteBill); }
+    if (DEMO.bills[0]) draftQuery = `${DEMO.bills[0].houseNo} หมู่ ${Number(DEMO.bills[0].moo)}`;
+    searchTerm = draftQuery || ref;
+    if (!DEMO.bills.length) toast('บ้านนี้ไม่มียอดค้างชำระ');
+  } catch (e) { DEMO.bills = []; toast((e as Error).message); }
+  render();
+}
 function searchWasteFromForm() {
   if (qrHouse) { void searchWasteBills((document.getElementById('wname') as HTMLInputElement | null)?.value || '', qrHouse); return; }
   const { name, key } = splitNameAndKey((document.getElementById('wq') as HTMLInputElement | null)?.value || '');
@@ -109,4 +131,4 @@ applySavedPayments();
 // เปิดจาก QR หน้าบ้าน (?house=&moo=) → ใส่บ้านเลขที่ให้แล้ว ผู้ใช้กรอกแค่ชื่อ
 if (new URLSearchParams(location.search).has('house')) qrHouse = houseFromQr(location.href);
 // ถ้าเข้าถึงระบบจริงได้: ใช้ช่องทางรับเงินจริงและส่งการแจ้งชำระเข้าระบบ · ไม่ได้ (เดโม่) ใช้ข้อมูลตัวอย่างเดิม
-(async () => { const c = await payApi<any>("/config").catch(() => null); if (c) { applyPayConfig(c); billSubmitter = submitWasteBills; } render(); })();
+(async () => { const c = await payApi<any>("/config").catch(() => null); if (c) { applyPayConfig(c); billSubmitter = submitWasteBills; } render(); const hk = parseHouseKeyLink(location.href); if (hk) void searchWasteByKey(hk.ref, hk.key); })();

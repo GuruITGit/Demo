@@ -729,7 +729,7 @@ function householdsOf(c: Ctx, qRaw?: string) {
   else { const t = p.text.toLowerCase(); rows = c.db.wasteHouseholds.filter((h) => base(h) && (h.holderName.toLowerCase().includes(t) || h.householdRef.toLowerCase().includes(t))); }
   return rows.sort((a, b) => Number(a.moo) - Number(b.moo) || a.houseNo.localeCompare(b.houseNo)).slice(0, 500).map((h) => {
     const owed = c.db.wasteBills.filter((b) => b.householdRef === h.householdRef && b.status !== 'paid');
-    return { ...h, owedMonths: owed.length, owedTotal: owed.reduce((s, b) => s + Number(b.amount), 0) };
+    return { ...h, qrKey: 'demo', owedMonths: owed.length, owedTotal: owed.reduce((s, b) => s + Number(b.amount), 0) };
   });
 }
 get('/waste/households', (c) => { needPerm(c, 'waste:read:WasteBill'); return householdsOf(c, c.query.q); });
