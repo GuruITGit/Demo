@@ -577,11 +577,13 @@ function StallQr({ orgName }: { orgName: string }) {
   const [kind, setKind] = useState<'stall' | 'outside'>('stall');
   const [zone, setZone] = useState('');
   const [picked, setPicked] = useState<Set<string>>(new Set());
-  const zones = [...new Set(stalls.map((s) => s.zone))];
+  // เฉพาะแผงที่มีผู้เช่า/ผู้จอง — แผงว่างสแกนแล้วไม่มีข้อมูลให้ดู จึงไม่ต้องพิมพ์ QR
+  const rented = stalls.filter((s) => s.tenantName && s.status !== 'available');
+  const zones = [...new Set(rented.map((s) => s.zone))];
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
   // บนสติกเกอร์แผงประจำไม่ใส่ชื่อผู้เช่า (ติดหน้าแผงต่อสาธารณะ) — แผงลอยใส่ชื่อในรหัส QR ตามที่เจ้าหน้าที่เลือก
   const items: QrItem[] = kind === 'stall'
-    ? stalls.filter((s) => !zone || s.zone === zone).map((s) => ({ code: s.stallCode, title: `แผง ${s.stallCode}`, sub: `โซน ${s.zone}`, text: stallQrUrl(origin, s.stallCode, s.qrKey) }))
+    ? rented.filter((s) => !zone || s.zone === zone).map((s) => ({ code: s.stallCode, title: `แผง ${s.stallCode}`, sub: `โซน ${s.zone}`, text: stallQrUrl(origin, s.stallCode, s.qrKey) }))
     : outside.map((r) => ({ code: r.appCode, title: r.appCode, sub: `${r.applicantName} · ${r.location?.name ?? ''}`, text: outsideQrUrl(origin, r.appCode, r.applicantName, r.qrKey) }));
   const target = picked.size ? items.filter((i) => picked.has(i.code)) : items;
   const toggle = (code: string) => setPicked((p) => { const n = new Set(p); if (n.has(code)) n.delete(code); else n.add(code); return n; });

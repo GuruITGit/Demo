@@ -120,7 +120,7 @@ export class CitizenPayService {
       stallInfo = { stallCode: code, zone: `แผงลอย · ${app.location?.name ?? ''}`, status: 'outside', monthlyRate: Number(app.location?.rentRate ?? 0) };
     } else {
       const stall = await this.stalls.findOne({ where: { organizationId: orgId, stallCode: code, active: true } });
-      if (!stall) throw new NotFoundException(NO_MATCH);
+      if (!stall || !stall.tenantName) throw new NotFoundException('แผงนี้ยังไม่มีผู้เช่า');
       payerName = stall.tenantName;
       stallInfo = { stallCode: stall.stallCode, zone: stall.zone, status: stall.status, monthlyRate: Number(stall.monthlyRate) };
     }
