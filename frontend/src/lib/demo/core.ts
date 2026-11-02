@@ -98,7 +98,7 @@ function startRemotePoll() {
       db = r as Db;
       lastSaved = json;
     } catch { /* เชื่อมไม่ได้รอบนี้ ลองใหม่รอบหน้า */ }
-  }, 10_000);
+  }, 4_000);
 }
 
 export function getDb(): Db {
