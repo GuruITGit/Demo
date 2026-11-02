@@ -20,6 +20,7 @@ import { ReservationCheck } from './reservation-check';
 import { OutsideApplications } from './outside-applications';
 
 type Stall = {
+  qrKey?: string;
   id: string; stallCode: string; zone: string; status: 'available' | 'reserved' | 'occupied';
   tenantName: string | null; contactPhone: string | null; reservedAt: string | null; monthlyRate: string; reserveCardUrl?: string | null;
   reserveStartDate?: string | null; reserveDays?: number | null;
@@ -389,7 +390,7 @@ function TenantsOutside() {
   const [del, setDel] = useState<OutsideTenant | null>(null);
   const [qrFor, setQrFor] = useState<OutsideTenant | null>(null);
   const [kind, setKind] = useState<'all' | 'regular' | 'temporary'>('all');
-  const qrItem = (r: OutsideTenant): QrItem => ({ code: r.appCode, title: r.appCode, sub: r.applicantName, text: outsideQrUrl(typeof window !== 'undefined' ? window.location.origin : '', r.appCode, r.applicantName) });
+  const qrItem = (r: OutsideTenant): QrItem => ({ code: r.appCode, title: r.appCode, sub: r.applicantName, text: outsideQrUrl(typeof window !== 'undefined' ? window.location.origin : '', r.appCode, r.applicantName, r.qrKey) });
   const { data: rows = [], isLoading } = useQuery<OutsideTenant[]>({
     queryKey: ['market', 'outside', 'apps', 'approved'],
     queryFn: async () => (await api.get('/market/outside/applications', { params: { status: 'approved' } })).data.data,
@@ -463,6 +464,7 @@ function TenantsOutside() {
 }
 
 type OutsideTenant = {
+  qrKey?: string;
   id: string; appCode: string; applicantName: string; phone: string; startDate: string | null;
   location?: { name: string }; openDues: { count: number; total: number }; tenancyType: 'regular' | 'temporary';
 };
@@ -566,8 +568,8 @@ function TenantsStalls({ sum }: { sum?: Summary }) {
 
 // ───────────────────────────── QR ประจำแผง
 /** QR แผงลอย: รหัสผู้เช่า + ชื่อ (สแกนแล้วหน้าจ่ายเงินกรอกชื่อให้และแสดงยอดทันที) */
-const outsideQrUrl = (origin: string, code: string, name: string) =>
-  `${origin}/citizen/market?stall=${encodeURIComponent(code)}&name=${encodeURIComponent(name)}`;
+const outsideQrUrl = (origin: string, code: string, name: string, key?: string) =>
+  key ? stallQrUrl(origin, code, key) : `${origin}/citizen/market?stall=${encodeURIComponent(code)}&name=${encodeURIComponent(name)}`;
 
 function StallQr({ orgName }: { orgName: string }) {
   const { data: stalls = [] } = useQuery<Stall[]>({ queryKey: ['market', 'stalls'], queryFn: async () => (await api.get('/market/stalls')).data.data });
@@ -579,8 +581,8 @@ function StallQr({ orgName }: { orgName: string }) {
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
   // บนสติกเกอร์แผงประจำไม่ใส่ชื่อผู้เช่า (ติดหน้าแผงต่อสาธารณะ) — แผงลอยใส่ชื่อในรหัส QR ตามที่เจ้าหน้าที่เลือก
   const items: QrItem[] = kind === 'stall'
-    ? stalls.filter((s) => !zone || s.zone === zone).map((s) => ({ code: s.stallCode, title: `แผง ${s.stallCode}`, sub: `โซน ${s.zone}`, text: stallQrUrl(origin, s.stallCode) }))
-    : outside.map((r) => ({ code: r.appCode, title: r.appCode, sub: `${r.applicantName} · ${r.location?.name ?? ''}`, text: outsideQrUrl(origin, r.appCode, r.applicantName) }));
+    ? stalls.filter((s) => !zone || s.zone === zone).map((s) => ({ code: s.stallCode, title: `แผง ${s.stallCode}`, sub: `โซน ${s.zone}`, text: stallQrUrl(origin, s.stallCode, s.qrKey) }))
+    : outside.map((r) => ({ code: r.appCode, title: r.appCode, sub: `${r.applicantName} · ${r.location?.name ?? ''}`, text: outsideQrUrl(origin, r.appCode, r.applicantName, r.qrKey) }));
   const target = picked.size ? items.filter((i) => picked.has(i.code)) : items;
   const toggle = (code: string) => setPicked((p) => { const n = new Set(p); if (n.has(code)) n.delete(code); else n.add(code); return n; });
   const switchKind = (k: 'stall' | 'outside') => { setKind(k); setPicked(new Set()); };

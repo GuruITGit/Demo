@@ -333,7 +333,7 @@ get('/market/outside/applications', (c) => {
   return c.db.marketOutsideApps
     .filter((a) => a.organizationId === ORG_ID && (!st || a.status === st))
     .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)))
-    .map((a) => ({ ...withLocation(c.db, a), openDues: openDuesOf(c.db, a.appCode) }));
+    .map((a) => ({ ...withLocation(c.db, a), openDues: openDuesOf(c.db, a.appCode), qrKey: 'demo' }));
 });
 
 post('/market/outside/applications/:id/cancel', (c) => {
@@ -379,7 +379,7 @@ get('/market/stalls', (c) => {
   needPerm(c, 'market:read:MarketStall');
   absorbCitizen(c.db);
   syncCitizenStalls(c.db);
-  return c.db.marketStalls.filter((s) => s.active && s.organizationId === ORG_ID).sort((a, b) => a.stallCode.localeCompare(b.stallCode));
+  return c.db.marketStalls.filter((s) => s.active && s.organizationId === ORG_ID).sort((a, b) => a.stallCode.localeCompare(b.stallCode)).map((s) => ({ ...s, qrKey: 'demo' }));
 });
 
 post('/market/stalls', (c) => {

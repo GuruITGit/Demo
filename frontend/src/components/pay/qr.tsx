@@ -9,7 +9,8 @@ import qrcode from 'qrcode-generator';
 export type QrItem = { code: string; title: string; sub: string; text: string };
 
 /** ลิงก์ของ QR แผง: /citizen/market?stall=A06 */
-export const stallQrUrl = (origin: string, stallCode: string) => `${origin}/citizen/market?stall=${encodeURIComponent(stallCode)}`;
+export const stallQrUrl = (origin: string, stallCode: string, key?: string) =>
+  `${origin}/citizen/market?stall=${encodeURIComponent(stallCode)}${key ? `&k=${key}` : ''}`; // มีรหัสลับ: สแกนแล้วเห็นยอดเลย
 /** ลิงก์ของ QR บ้าน: /citizen/waste?house=18&moo=2 */
 export const houseQrUrl = (origin: string, houseNo: string, moo: string, ref?: string, key?: string) =>
   ref && key ? `${origin}/citizen/waste?h=${encodeURIComponent(ref)}&k=${key}` // มีรหัสลับ: สแกนแล้วเห็นยอดเลย

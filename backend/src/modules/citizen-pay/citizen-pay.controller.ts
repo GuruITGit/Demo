@@ -125,7 +125,8 @@ export class CitizenPayController {
 
   @Get('market/bills')
   @ApiOperation({ summary: 'บิลค่าแผงที่ยังไม่จ่าย — ต้องกรอกเลขล็อก + ชื่อผู้เช่าให้ตรงกัน' })
-  async marketBills(@Req() req: Request, @Query('stall') stall: string, @Query('name') name: string, @Query('org') org?: string) {
+  async marketBills(@Req() req: Request, @Query('stall') stall: string, @Query('name') name: string, @Query('org') org?: string, @Query('key') key?: string) {
+    if (stall && key) return this.service.marketBillsByKey(await this.org(req, org, true), stall, key);
     return this.service.marketBillsFor(await this.org(req, org, true), stall, name);
   }
 
