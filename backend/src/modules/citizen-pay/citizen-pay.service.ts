@@ -11,6 +11,7 @@ import { StorageService } from '../storage/storage.service';
 import { OrganizationsService } from '../organizations/organizations.service';
 import { PayConfigService } from '../market/pay-config.service';
 import { nextReceiptNo, currentPeriod, periodEndDate } from '../market/receipt';
+import { cancelUnpaidTemporary, TEMP_PAY_WINDOW_MIN } from '../market/outside-temp';
 import { checkSlip } from '../market/slip-check';
 import { NotificationsService } from '../notifications/notifications.service';
 import { notifyUsersWithPermission } from '../../common/notify-permission';
@@ -109,6 +110,7 @@ export class CitizenPayService {
   /** ผังแผงสาธารณะ: รหัส/โซน/สถานะ/ค่าเช่า เท่านั้น — ไม่มีชื่อผู้เช่า */
   /** จุดแผงลอยที่เปิดให้เช่าอยู่ (เฉพาะที่เจ้าหน้าที่เปิดไว้และยังไม่ถูกลบ) */
   async outsideLocations(orgId: string) {
+    await cancelUnpaidTemporary(this.ds, orgId, { staleMin: TEMP_PAY_WINDOW_MIN });
     const rows = await this.outsideLocs.find({ where: { organizationId: orgId, active: true, enabled: true }, order: { createdAt: 'ASC' } });
     return Promise.all(rows.map(async (l) => {
       const taken = await this.outsideApps.count({ where: { organizationId: orgId, locationId: l.id, status: In(['pending', 'approved']) } });
@@ -202,7 +204,7 @@ export class CitizenPayService {
       }
       return this.holdForReview(repo, bills, method, slipUrl, now, check.reason);
     }
-    return this.holdForReview(repo, bills, method, null, now, null);
+    return this.holdForReview(repo, bills, method, slipUrl, now, null);
   }
 
   /** เข้าคิวให้เจ้าหน้าที่ตรวจ (สลิปโอนที่ตรวจไม่ผ่าน หรือแจ้งเงินสด) */
@@ -255,6 +257,7 @@ export class CitizenPayService {
     if (n.length < 2 || n.length > 200) throw new BadRequestException('กรุณากรอกชื่อ-นามสกุล');
     if (!/^0\d{8,9}$/.test(p)) throw new BadRequestException('เบอร์โทรไม่ถูกต้อง');
     if (!card) throw new BadRequestException('กรุณาแนบรูปบัตรประชาชน');
+    await cancelUnpaidTemporary(this.ds, orgId, { staleMin: TEMP_PAY_WINDOW_MIN });
     const loc = await this.outsideLocs.findOne({ where: { id: locId, organizationId: orgId, active: true, enabled: true } });
     if (!loc) throw new NotFoundException('ไม่พบจุดแผงลอยนี้หรือปิดให้เช่าแล้ว');
     if (loc.capacity) {
@@ -269,11 +272,31 @@ export class CitizenPayService {
     const row = await this.outsideApps.save(this.outsideApps.create({
       organizationId: orgId, locationId: loc.id, appCode: code, applicantName: n, phone: p, idCardUrl: cardUrl, startDate: sd, days: d, status: 'pending', tenancyType: tenancy,
     }));
+    if (tenancy === 'temporary') { // ชั่วคราว: ออกบิลทันที (ครบกำหนดวันนี้) ให้ผู้สมัครจ่ายต่อเลย · แจ้งเจ้าหน้าที่ตอนแจ้งชำระ ไม่ใช่ตอนสมัคร
+      const rate = Number(loc.rentRate);
+      const amount = loc.rentPeriod === 'monthly' ? rate : rate * d;
+      const period = sd ? `${Number(sd.slice(0, 4)) + 543}-${sd.slice(5, 7)}` : currentPeriod();
+      const t = new Date();
+      const bill = await this.marketBills.save(this.marketBills.create({
+        organizationId: orgId, stallId: null, stallCode: code, payerName: n, kind: 'rent', period,
+        amount: amount.toFixed(2), dueDate: `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`, status: 'unpaid',
+      }));
+      row.billId = bill.id; await this.outsideApps.save(row);
+      return { ok: true, appCode: code, payNow: true, billId: bill.id, amount, period };
+    }
     await notifyUsersWithPermission(this.ds, this.notifications, orgId, { module: 'market', action: 'manage', subject: 'MarketStall' }, {
       type: 'market:outside_applied', title: 'มีใบสมัครแผงลอยใหม่', body: `${code} · ${loc.name} · ${n} · โทร ${p}`,
       actionUrl: '/market', refType: 'market_outside_application', refId: row.id,
     });
     return { ok: true, appCode: code };
+  }
+
+  /** ผู้สมัครแผงลอยแบบชั่วคราวปิดหน้าจ่ายเงินโดยไม่จ่าย → สมัครไม่สำเร็จ (ยกเลิกใบสมัคร ลบบิล) · ชื่อต้องตรงกับใบสมัคร */
+  async abandonOutside(orgId: string, appCode: string, name: string) {
+    const app = await this.outsideApps.findOne({ where: { organizationId: orgId, appCode: (appCode || '').toUpperCase() } });
+    if (!app || !nameMatches(app.applicantName, name)) throw new NotFoundException(NO_MATCH);
+    await cancelUnpaidTemporary(this.ds, orgId, { appCode: app.appCode });
+    return { ok: true };
   }
 
   /** ค้นบิลแผงลอยด้วยรหัสใบสมัคร (OUT-xxxx) — ใบต้องอนุมัติแล้ว และชื่อผู้สมัครต้องตรงกัน */

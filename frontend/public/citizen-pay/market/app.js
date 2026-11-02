@@ -401,6 +401,8 @@ function openBankApp(i) {
     setTimeout(() => { document.removeEventListener('visibilitychange', onHide); if (!left)
         toast(`เปิด ${bank.name} ไม่ได้ · เครื่องอาจไม่มีแอปนี้ ลองเปิดแอปเอง`); }, 1800);
 }
+/** แจ้งหน้าที่เรียกใช้ว่าส่งการชำระสำเร็จแล้ว (เช่น สมัครแผงลอยชั่วคราวต้องจ่ายก่อนจึงสมัครสำเร็จ) */
+const paySubmitted = () => window.dispatchEvent(new Event('pay-submitted'));
 function clearSlip() { if (slipPreviewUrl)
     URL.revokeObjectURL(slipPreviewUrl); slipFile = null; slipPreviewUrl = ''; }
 function pickSlip(input) {
@@ -439,6 +441,7 @@ async function submitTransferPayment() {
             return;
         clearSlip();
         resetSelection();
+        paySubmitted();
         modal.close();
         toast(res.status === 'paid' ? 'ตรวจสลิปผ่านแล้ว · ชำระเรียบร้อย' : res.reason ? `ส่งสลิปแล้ว · ${res.reason}` : 'ส่งสลิปแล้ว · รอเจ้าหน้าที่ตรวจสอบ');
         render();
@@ -447,6 +450,7 @@ async function submitTransferPayment() {
     recordPayment('pending', newPaymentRef('TRF'));
     clearSlip();
     resetSelection();
+    paySubmitted();
     modal.close();
     toast('ส่งสลิปแล้ว · รอเจ้าหน้าที่ตรวจสอบ');
     render();
@@ -454,11 +458,12 @@ async function submitTransferPayment() {
 async function submitCashPayment() {
     if (billSubmitter) {
         const total = payTotal();
-        const res = await billSubmitter(payBillIds, 'cash', null);
+        const res = await billSubmitter(payBillIds, 'cash', slipFile);
         if (!res)
             return;
         clearSlip();
         resetSelection();
+        paySubmitted();
         render();
         showCashTicket(newPaymentRef('CSH'), total);
         return;
@@ -468,6 +473,7 @@ async function submitCashPayment() {
     recordPayment('cash', payRef);
     clearSlip();
     resetSelection();
+    paySubmitted();
     render();
     showCashTicket(payRef, total);
 }
@@ -1054,7 +1060,8 @@ async function submitStallBills(ids, method, slip) {
         const r = await payApi('/market/submit', { method: 'POST', body: fd });
         if (r === null)
             throw new Error('ส่งข้อมูลไม่ได้ ตรวจการเชื่อมต่อแล้วลองใหม่');
-        await searchStallBills(verifiedName, searchTerm);
+        if (!tempApply)
+            await searchStallBills(verifiedName, searchTerm);
         return r;
     }
     catch (e) {
@@ -1215,6 +1222,7 @@ async function applyOutsideOnline(form, locationId) {
     fd.append('startDate', rentalStartDate);
     fd.append('days', String(rentalDays));
     fd.append('tenancyType', tenancyKind);
+    const applicantName = form.querySelector('[name=name]')?.value.trim() || '';
     if (idCardFile)
         fd.append('idCard', idCardFile, idCardFile.name);
     try {
@@ -1229,6 +1237,11 @@ async function applyOutsideOnline(form, locationId) {
         signupLocationId = null;
         rentalStartDate = localISODate();
         rentalDays = 1;
+        if (j.data?.payNow) {
+            setPage('stalls');
+            startTempPayment({ code: j.data.appCode, name: applicantName, billId: j.data.billId, period: j.data.period, amount: Number(j.data.amount), real: true });
+            return;
+        }
         toast(`ส่งใบสมัครแล้ว · รหัส ${j.data?.appCode} · จดรหัสนี้ไว้เพื่อชำระค่าเช่า`);
         setPage('stalls');
     }
@@ -1236,6 +1249,31 @@ async function applyOutsideOnline(form, locationId) {
         toast('เชื่อมต่อระบบไม่ได้ ลองใหม่อีกครั้ง');
     }
 }
+// ---------- สมัครแผงลอยแบบชั่วคราว: ส่งใบสมัครแล้วเปิดหน้าจ่ายเงินทันที · ปิดโดยไม่จ่าย = สมัครไม่สำเร็จ (แบบประจำจ่ายทีหลังได้) ----------
+let tempApply = null;
+function startTempPayment(t) {
+    verifiedName = t.name;
+    DEMO.bills = [{ id: t.billId, payerType: 'stall', merchant: t.name, ref: t.code, stall: t.code, kind: 'ค่าเช่า', month: periodToThai(t.period), due: '', amount: t.amount, status: 'unpaid' }];
+    payBillIds = [t.billId];
+    payMethod = hasPromptpay() ? (isMobile() ? 'app' : 'qr') : 'cash';
+    clearSlip();
+    tempApply = { code: t.code, name: t.name, billId: t.billId, real: t.real, done: false, demoApp: t.demoApp };
+    renderPaymentModal();
+    modal.showModal();
+}
+window.addEventListener('pay-submitted', () => { const t = tempApply; if (!t)
+    return; t.done = true; if (!t.real && t.demoApp)
+    queueDemo('lamplaimat:demo-outside-apps', t.demoApp); });
+modal.addEventListener('close', () => {
+    const t = tempApply;
+    tempApply = null;
+    if (!t || t.done)
+        return;
+    DEMO.bills = DEMO.bills.filter((b) => b.id !== t.billId);
+    if (t.real)
+        void fetch(`/v1/citizen/pay/market/outside/${encodeURIComponent(t.code)}/abandon`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: t.name }), keepalive: true }).catch(() => { });
+    toast('สมัครไม่สำเร็จ เพราะยังไม่ได้ชำระเงิน · แผงลอยแบบชั่วคราวต้องจ่ายตอนสมัคร กรอกใบสมัครใหม่ได้');
+});
 /** เดโม่ (ไม่มี backend): ฝากรายการไว้ใน localStorage ให้หน้าเจ้าหน้าที่เดโม่ (origin เดียวกัน) หยิบไปแสดง */
 function queueDemo(key, item) { try {
     const list = JSON.parse(localStorage.getItem(key) || '[]');
@@ -1262,13 +1300,25 @@ function submitRegistration(event) { event.preventDefault(); const form = event.
 } const amount = stall ? firstChargeAmount(stall) : 0; const period = stall ? rentPeriodFor(stall) : 'monthly'; const days = rentalDays; if (stall) {
     stall.status = 'reserved';
     markDemoStall(stall.id, 'reserved');
-} const dName = form.querySelector('[name=name]')?.value || '', dPhone = form.querySelector('[name=phone]')?.value || ''; let demoCode = ''; if (stall) {
+} const dName = form.querySelector('[name=name]')?.value || '', dPhone = form.querySelector('[name=phone]')?.value || ''; let demoCode = ''; let tempStarted = false; let tempArgs = null; if (stall) {
     queueDemo('lamplaimat:demo-reservations', { stallCode: stall.id, name: dName, phone: dPhone, startDate: rentalStartDate, days: period === 'daily' ? days : null, reservedAt: new Date().toISOString() });
 }
 else if (signupLocationId) {
     demoCode = 'OUT-' + String(Math.floor(Math.random() * 9000) + 1000);
-    queueDemo('lamplaimat:demo-outside-apps', { appCode: demoCode, locationId: signupLocationId, name: dName, phone: dPhone, startDate: rentalStartDate, days, tenancyType: tenancyKind, createdAt: new Date().toISOString() });
-} form.reset(); clearIdCard(); signupDraft.name = ''; signupDraft.phone = ''; signupStallId = null; signupLocationId = null; selectedStall = null; rentalStartDate = localISODate(); rentalDays = 1; toast(stall ? `ส่งใบสมัครและคำขอจองแล้ว · ${period === 'daily' ? `${days} วัน` : 'เดือนแรก'} ประมาณ ${money(amount)} บาท` : demoCode ? `ส่งใบสมัครแล้ว · รหัส ${demoCode} · จดรหัสนี้ไว้เพื่อชำระค่าเช่า` : 'ส่งใบสมัครตัวอย่างแล้ว · เจ้าหน้าที่จะตรวจทาน'); setPage('stalls'); }
+    const demoApp = { appCode: demoCode, locationId: signupLocationId, name: dName, phone: dPhone, startDate: rentalStartDate, days, tenancyType: tenancyKind, createdAt: new Date().toISOString(), prepaid: tenancyKind === 'temporary' };
+    if (tenancyKind === 'temporary') {
+        const loc = DEMO.outsideLocations.find(l => l.id === signupLocationId);
+        const rate = Number(loc?.rentPeriod === 'monthly' ? loc.rentRate : (loc?.rentRate || 0) * days);
+        tempStarted = true;
+        tempArgs = { code: demoCode, name: dName, billId: 'TMP-' + demoCode, period: `${Number(rentalStartDate.slice(0, 4)) + 543}-${rentalStartDate.slice(5, 7)}`, amount: rate, real: false, demoApp };
+    }
+    else
+        queueDemo('lamplaimat:demo-outside-apps', demoApp);
+} form.reset(); clearIdCard(); signupDraft.name = ''; signupDraft.phone = ''; signupStallId = null; signupLocationId = null; selectedStall = null; rentalStartDate = localISODate(); rentalDays = 1; if (tempStarted) {
+    setPage('stalls');
+    startTempPayment(tempArgs);
+    return;
+} toast(stall ? `ส่งใบสมัครและคำขอจองแล้ว · ${period === 'daily' ? `${days} วัน` : 'เดือนแรก'} ประมาณ ${money(amount)} บาท` : demoCode ? `ส่งใบสมัครแล้ว · รหัส ${demoCode} · จดรหัสนี้ไว้เพื่อชำระค่าเช่า` : 'ส่งใบสมัครตัวอย่างแล้ว · เจ้าหน้าที่จะตรวจทาน'); setPage('stalls'); }
 /** หน้าแรกค่าแผง — เลือกว่าจะจ่ายค่าแผงหรือจองแผง */
 function choicePage() { return `<div class="page-heading"><h1>ค่าแผงตลาด</h1><p>เลือกว่าจะทำอะไร</p></div><div class="choice-grid"><button class="choice-card choice-card-photo" onclick="setPage('dues')" aria-label="จ่ายค่าแผงตลาด — ดูยอดค้างและจ่ายผ่าน QR หรือเงินสด"><img src="/citizen-pay/shared/img/market-pay-banner.webp" width="1672" height="941" alt="จ่ายค่าแผงตลาด" loading="lazy"></button><button class="choice-card choice-card-photo" onclick="setPage('stalls')" aria-label="จองแผง (สมัคร) — เลือกแผงว่างแล้วส่งคำขอจอง"><img src="/citizen-pay/shared/img/market-reserve-banner.webp" width="1774" height="887" alt="สมัครจองแผงตลาดออนไลน์" loading="lazy"></button></div>`; }
 function render() { saveOutsideLocations(); app.classList.remove('staff-dashboard'); renderNav(); const page = { home: choicePage, dues: searchPage, stalls: stallPage, signup: signupPage }; app.innerHTML = homeBackHTML() + (page[view] || searchPage)(); }

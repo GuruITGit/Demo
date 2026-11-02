@@ -183,6 +183,7 @@ const CITIZEN_PAY_KEY = 'market:payments';
 const MONTHS_TH = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
 /** ดึงรายการแจ้งชำระเข้าบิลเดโม่เป็น "รอตรวจ" + แจ้งเตือน (ต่อ 1 การส่ง) — บิลที่หาไม่เจอข้าม */
 function absorbPayments(db: Ctx['db']) {
+  absorbCitizen(db); // ใบสมัครแผงลอยชั่วคราวที่จ่ายตอนสมัคร ต้องมีบิลก่อนจึงจับคู่การชำระได้
   let raw: Record<string, Row>;
   try { raw = JSON.parse(localStorage.getItem(CITIZEN_PAY_KEY) || '{}'); } catch { return; }
   db.demoPayLinks ??= [];
@@ -276,10 +277,17 @@ function absorbCitizen(db: Ctx['db']) {
     const locs = db.marketOutsideLocations.filter((l) => l.active && l.organizationId === ORG_ID);
     const loc = locs[Number(String(a.locationId).replace(/\D/g, '')) - 1];
     if (!loc || db.marketOutsideApps.some((x) => x.appCode === a.appCode)) continue;
-    db.marketOutsideApps.push({
+    const app: Row = {
       id: uid(), organizationId: ORG_ID, locationId: loc.id, appCode: a.appCode, applicantName: String(a.name ?? '').slice(0, 200), phone: String(a.phone ?? '').slice(0, 20),
       idCardUrl: null, startDate: a.startDate || null, days: Number(a.days) || 1, status: 'pending', reviewNote: null, billId: null, createdAt: a.createdAt || nowIso(), tenancyType: a.tenancyType === 'temporary' ? 'temporary' : 'regular',
-    });
+    };
+    if (a.prepaid && app.tenancyType === 'temporary') { // ชั่วคราว: จ่ายตอนสมัคร → ออกบิลครบกำหนดวันนี้ รอจับคู่กับการแจ้งชำระ
+      const rate = Number(loc.rentRate);
+      const per = app.startDate ? `${Number(app.startDate.slice(0, 4)) + 543}-${app.startDate.slice(5, 7)}` : period();
+      const bill = { id: uid(), organizationId: ORG_ID, stallId: null, stallCode: app.appCode, payerName: app.applicantName, kind: 'rent', period: per, amount: (loc.rentPeriod === 'monthly' ? rate : rate * app.days).toFixed(2), dueDate: ymd(new Date()), status: 'unpaid', paidMethod: null, paidAt: null, receiptNo: null, submittedMethod: null, submittedAt: null, slipUrl: null, reviewNote: null };
+      db.marketBills.push(bill); app.billId = bill.id;
+    }
+    db.marketOutsideApps.push(app);
     notify(db, staff, { type: 'market:outside_applied', title: 'มีใบสมัครแผงลอยใหม่', body: `${a.appCode} · ${loc.name} · ${a.name} · โทร ${a.phone}`, actionUrl: '/market' });
     changed = true;
   }
@@ -344,6 +352,10 @@ post('/market/outside/applications/:id/approve', (c) => {
   if (app.status !== 'pending') throw badRequest('ใบสมัครนี้ดำเนินการไปแล้ว');
   const loc = c.db.marketOutsideLocations.find((l) => l.id === app.locationId);
   if (!loc) throw notFound('ไม่พบจุดแผงลอยนี้');
+  if (app.billId) { // ชั่วคราวที่จ่ายตอนสมัครแล้ว ใช้บิลเดิม
+    Object.assign(app, { status: 'approved', reviewNote: null });
+    return { ok: true, billId: app.billId, appCode: app.appCode, amount: Number(c.db.marketBills.find((b) => b.id === app.billId)?.amount ?? 0) };
+  }
   const rate = Number(loc.rentRate);
   const amount = loc.rentPeriod === 'monthly' ? rate : rate * app.days;
   const per = app.startDate ? `${Number(app.startDate.slice(0, 4)) + 543}-${app.startDate.slice(5, 7)}` : period();

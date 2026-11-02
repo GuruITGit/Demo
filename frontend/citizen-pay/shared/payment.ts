@@ -170,6 +170,8 @@ function openBankApp(i: number) {
   setTimeout(() => { document.removeEventListener('visibilitychange', onHide); if (!left) toast(`เปิด ${bank.name} ไม่ได้ · เครื่องอาจไม่มีแอปนี้ ลองเปิดแอปเอง`); }, 1800);
 }
 
+/** แจ้งหน้าที่เรียกใช้ว่าส่งการชำระสำเร็จแล้ว (เช่น สมัครแผงลอยชั่วคราวต้องจ่ายก่อนจึงสมัครสำเร็จ) */
+const paySubmitted = () => window.dispatchEvent(new Event('pay-submitted'));
 function clearSlip() { if (slipPreviewUrl) URL.revokeObjectURL(slipPreviewUrl); slipFile = null; slipPreviewUrl = ''; }
 function pickSlip(input: HTMLInputElement) {
   const f = input.files?.[0]; if (!f) return;
@@ -194,17 +196,17 @@ async function submitTransferPayment() {
   if (billSubmitter) {
     const res = await billSubmitter(payBillIds, 'transfer', slipFile);
     if (!res) return;
-    clearSlip(); resetSelection(); modal.close();
+    clearSlip(); resetSelection(); paySubmitted(); modal.close();
     toast(res.status === 'paid' ? 'ตรวจสลิปผ่านแล้ว · ชำระเรียบร้อย' : res.reason ? `ส่งสลิปแล้ว · ${res.reason}` : 'ส่งสลิปแล้ว · รอเจ้าหน้าที่ตรวจสอบ');
     render(); return;
   }
   recordPayment('pending', newPaymentRef('TRF'));
-  clearSlip(); resetSelection(); modal.close(); toast('ส่งสลิปแล้ว · รอเจ้าหน้าที่ตรวจสอบ'); render();
+  clearSlip(); resetSelection(); paySubmitted(); modal.close(); toast('ส่งสลิปแล้ว · รอเจ้าหน้าที่ตรวจสอบ'); render();
 }
 async function submitCashPayment() {
-  if (billSubmitter) { const total = payTotal(); const res = await billSubmitter(payBillIds, 'cash', null); if (!res) return; clearSlip(); resetSelection(); render(); showCashTicket(newPaymentRef('CSH'), total); return; }
+  if (billSubmitter) { const total = payTotal(); const res = await billSubmitter(payBillIds, 'cash', slipFile); if (!res) return; clearSlip(); resetSelection(); paySubmitted(); render(); showCashTicket(newPaymentRef('CSH'), total); return; }
   payRef = newPaymentRef('CSH'); const total = payTotal();
-  recordPayment('cash', payRef); clearSlip(); resetSelection(); render();
+  recordPayment('cash', payRef); clearSlip(); resetSelection(); paySubmitted(); render();
   showCashTicket(payRef, total);
 }
 /** ใบนัดจ่ายเงินสด — เปิดซ้ำได้จากการ์ดเดือนที่สถานะ "รอจ่ายเงินสด" */

@@ -22,6 +22,10 @@ class ApplyOutsideDto {
   @IsOptional() @IsString() @MaxLength(10) tenancyType?: string;
   @IsOptional() @IsString() org?: string;
 }
+class AbandonDto {
+  @IsString() @MaxLength(200) name: string;
+  @IsOptional() @IsString() org?: string;
+}
 class SubmitDto {
   /** รหัสบิลคั่นด้วยจุลภาค */
   @IsString() @MaxLength(2000) billIds: string;
@@ -98,6 +102,12 @@ export class CitizenPayController {
   }))
   async applyOutside(@Req() req: Request, @Param('id', ParseUUIDPipe) id: string, @UploadedFile() card: Express.Multer.File | undefined, @Body() dto: ApplyOutsideDto) {
     return this.service.applyOutside(await this.org(req, dto.org, true), id, dto.name, dto.phone, card, dto.startDate, Number(dto.days) || undefined, dto.tenancyType === 'temporary' ? 'temporary' : 'regular');
+  }
+
+  @Post('market/outside/:code/abandon')
+  @ApiOperation({ summary: 'ผู้สมัครแผงลอยแบบชั่วคราวไม่จ่ายเงิน → ยกเลิกใบสมัคร (สมัครไม่สำเร็จ)' })
+  async abandonOutside(@Req() req: Request, @Param('code') code: string, @Body() dto: AbandonDto) {
+    return this.service.abandonOutside(await this.org(req, dto.org, true), code, dto.name);
   }
 
   @Get('market/outside')

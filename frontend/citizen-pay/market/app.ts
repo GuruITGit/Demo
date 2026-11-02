@@ -122,7 +122,7 @@ async function submitStallBills(ids: string[], method: 'transfer' | 'cash', slip
     if (slip) fd.append('slip', slip, slip.name);
     const r = await payApi<{ status: 'paid' | 'pending'; reason?: string | null }>('/market/submit', { method: 'POST', body: fd });
     if (r === null) throw new Error('ส่งข้อมูลไม่ได้ ตรวจการเชื่อมต่อแล้วลองใหม่');
-    await searchStallBills(verifiedName, searchTerm);
+    if (!tempApply) await searchStallBills(verifiedName, searchTerm);
     return r;
   } catch (e) { toast((e as Error).message); return null; }
 }
@@ -228,19 +228,37 @@ async function applyOutsideOnline(form: HTMLFormElement, locationId: string) {
   fd.append('startDate', rentalStartDate);
   fd.append('days', String(rentalDays));
   fd.append('tenancyType', tenancyKind);
+  const applicantName = (form.querySelector('[name=name]') as HTMLInputElement | null)?.value.trim() || '';
   if (idCardFile) fd.append('idCard', idCardFile, idCardFile.name);
   try {
     const r = await fetch(`/v1/citizen/pay/market/outside/${encodeURIComponent(locationId)}/apply`, { method: 'POST', body: fd });
     const j = await r.json().catch(() => ({}));
     if (!r.ok || j.success === false) return toast(j?.error?.message || j?.message || 'ส่งใบสมัครไม่สำเร็จ');
     form.reset(); clearIdCard(); signupDraft.name = ''; signupDraft.phone = ''; signupLocationId = null; rentalStartDate = localISODate(); rentalDays = 1;
+    if (j.data?.payNow) { setPage('stalls'); startTempPayment({ code: j.data.appCode, name: applicantName, billId: j.data.billId, period: j.data.period, amount: Number(j.data.amount), real: true }); return; }
     toast(`ส่งใบสมัครแล้ว · รหัส ${j.data?.appCode} · จดรหัสนี้ไว้เพื่อชำระค่าเช่า`);
     setPage('stalls');
   } catch { toast('เชื่อมต่อระบบไม่ได้ ลองใหม่อีกครั้ง'); }
 }
+// ---------- สมัครแผงลอยแบบชั่วคราว: ส่งใบสมัครแล้วเปิดหน้าจ่ายเงินทันที · ปิดโดยไม่จ่าย = สมัครไม่สำเร็จ (แบบประจำจ่ายทีหลังได้) ----------
+let tempApply: { code: string; name: string; billId: string; real: boolean; done: boolean; demoApp?: object } | null = null;
+function startTempPayment(t: { code: string; name: string; billId: string; period: string; amount: number; real: boolean; demoApp?: object }) {
+  verifiedName = t.name;
+  DEMO.bills = [{ id: t.billId, payerType: 'stall', merchant: t.name, ref: t.code, stall: t.code, kind: 'ค่าเช่า', month: periodToThai(t.period), due: '', amount: t.amount, status: 'unpaid' }];
+  payBillIds = [t.billId]; payMethod = hasPromptpay() ? (isMobile() ? 'app' : 'qr') : 'cash'; clearSlip();
+  tempApply = { code: t.code, name: t.name, billId: t.billId, real: t.real, done: false, demoApp: t.demoApp };
+  renderPaymentModal(); modal.showModal();
+}
+window.addEventListener('pay-submitted', () => { const t = tempApply; if (!t) return; t.done = true; if (!t.real && t.demoApp) queueDemo('lamplaimat:demo-outside-apps', t.demoApp); });
+modal.addEventListener('close', () => {
+  const t = tempApply; tempApply = null; if (!t || t.done) return;
+  DEMO.bills = DEMO.bills.filter((b) => b.id !== t.billId);
+  if (t.real) void fetch(`/v1/citizen/pay/market/outside/${encodeURIComponent(t.code)}/abandon`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: t.name }), keepalive: true }).catch(() => {});
+  toast('สมัครไม่สำเร็จ เพราะยังไม่ได้ชำระเงิน · แผงลอยแบบชั่วคราวต้องจ่ายตอนสมัคร กรอกใบสมัครใหม่ได้');
+});
 /** เดโม่ (ไม่มี backend): ฝากรายการไว้ใน localStorage ให้หน้าเจ้าหน้าที่เดโม่ (origin เดียวกัน) หยิบไปแสดง */
 function queueDemo(key: string, item: object) { try { const list = JSON.parse(localStorage.getItem(key) || '[]'); list.push(item); localStorage.setItem(key, JSON.stringify(list)); } catch { /* เก็บไม่ได้ = ข้าม */ } }
-function submitRegistration(event){event.preventDefault();const form=event.currentTarget;if(!form.reportValidity())return;if(!idCardFile){toast('แนบรูปบัตรประชาชนก่อนส่งใบสมัครค่ะ');document.getElementById('idCardPreview')?.scrollIntoView({block:'center'});return}if(signupLocationId&&!signupStallId&&apiOnline&&/^[0-9a-f-]{36}$/i.test(signupLocationId)){void applyOutsideOnline(form,signupLocationId);return}const stallId=signupStallId;const stall=stallId&&findStall(stallId);if(stall&&!stall.outside&&apiOnline){void reserveStallOnline(form,stall);return}if(stallId&&(!stall||stall.active===false||stall.status!=='available'||(stall.outside&&!outsideLocationIsOpen(stall.locationId)))){signupStallId=null;toast('ล็อกนี้มีผู้จองแล้ว กรุณาเลือกแผงใหม่');setPage('stalls');return}const amount=stall?firstChargeAmount(stall):0;const period=stall?rentPeriodFor(stall):'monthly';const days=rentalDays;if(stall){stall.status='reserved';markDemoStall(stall.id,'reserved')}const dName=(form.querySelector('[name=name]') as HTMLInputElement|null)?.value||'',dPhone=(form.querySelector('[name=phone]') as HTMLInputElement|null)?.value||'';let demoCode='';if(stall){queueDemo('lamplaimat:demo-reservations',{stallCode:stall.id,name:dName,phone:dPhone,startDate:rentalStartDate,days:period==='daily'?days:null,reservedAt:new Date().toISOString()})}else if(signupLocationId){demoCode='OUT-'+String(Math.floor(Math.random()*9000)+1000);queueDemo('lamplaimat:demo-outside-apps',{appCode:demoCode,locationId:signupLocationId,name:dName,phone:dPhone,startDate:rentalStartDate,days,tenancyType:tenancyKind,createdAt:new Date().toISOString()})}form.reset();clearIdCard();signupDraft.name='';signupDraft.phone='';signupStallId=null;signupLocationId=null;selectedStall=null;rentalStartDate=localISODate();rentalDays=1;toast(stall?`ส่งใบสมัครและคำขอจองแล้ว · ${period==='daily'?`${days} วัน`:'เดือนแรก'} ประมาณ ${money(amount)} บาท`:demoCode?`ส่งใบสมัครแล้ว · รหัส ${demoCode} · จดรหัสนี้ไว้เพื่อชำระค่าเช่า`:'ส่งใบสมัครตัวอย่างแล้ว · เจ้าหน้าที่จะตรวจทาน');setPage('stalls')}
+function submitRegistration(event){event.preventDefault();const form=event.currentTarget;if(!form.reportValidity())return;if(!idCardFile){toast('แนบรูปบัตรประชาชนก่อนส่งใบสมัครค่ะ');document.getElementById('idCardPreview')?.scrollIntoView({block:'center'});return}if(signupLocationId&&!signupStallId&&apiOnline&&/^[0-9a-f-]{36}$/i.test(signupLocationId)){void applyOutsideOnline(form,signupLocationId);return}const stallId=signupStallId;const stall=stallId&&findStall(stallId);if(stall&&!stall.outside&&apiOnline){void reserveStallOnline(form,stall);return}if(stallId&&(!stall||stall.active===false||stall.status!=='available'||(stall.outside&&!outsideLocationIsOpen(stall.locationId)))){signupStallId=null;toast('ล็อกนี้มีผู้จองแล้ว กรุณาเลือกแผงใหม่');setPage('stalls');return}const amount=stall?firstChargeAmount(stall):0;const period=stall?rentPeriodFor(stall):'monthly';const days=rentalDays;if(stall){stall.status='reserved';markDemoStall(stall.id,'reserved')}const dName=(form.querySelector('[name=name]') as HTMLInputElement|null)?.value||'',dPhone=(form.querySelector('[name=phone]') as HTMLInputElement|null)?.value||'';let demoCode='';let tempStarted=false;let tempArgs:any=null;if(stall){queueDemo('lamplaimat:demo-reservations',{stallCode:stall.id,name:dName,phone:dPhone,startDate:rentalStartDate,days:period==='daily'?days:null,reservedAt:new Date().toISOString()})}else if(signupLocationId){demoCode='OUT-'+String(Math.floor(Math.random()*9000)+1000);const demoApp={appCode:demoCode,locationId:signupLocationId,name:dName,phone:dPhone,startDate:rentalStartDate,days,tenancyType:tenancyKind,createdAt:new Date().toISOString(),prepaid:tenancyKind==='temporary'};if(tenancyKind==='temporary'){const loc=DEMO.outsideLocations.find(l=>l.id===signupLocationId);const rate=Number(loc?.rentPeriod==='monthly'?loc.rentRate:(loc?.rentRate||0)*days);tempStarted=true;tempArgs={code:demoCode,name:dName,billId:'TMP-'+demoCode,period:`${Number(rentalStartDate.slice(0,4))+543}-${rentalStartDate.slice(5,7)}`,amount:rate,real:false,demoApp}}else queueDemo('lamplaimat:demo-outside-apps',demoApp)}form.reset();clearIdCard();signupDraft.name='';signupDraft.phone='';signupStallId=null;signupLocationId=null;selectedStall=null;rentalStartDate=localISODate();rentalDays=1;if(tempStarted){setPage('stalls');startTempPayment(tempArgs);return}toast(stall?`ส่งใบสมัครและคำขอจองแล้ว · ${period==='daily'?`${days} วัน`:'เดือนแรก'} ประมาณ ${money(amount)} บาท`:demoCode?`ส่งใบสมัครแล้ว · รหัส ${demoCode} · จดรหัสนี้ไว้เพื่อชำระค่าเช่า`:'ส่งใบสมัครตัวอย่างแล้ว · เจ้าหน้าที่จะตรวจทาน');setPage('stalls')}
 /** หน้าแรกค่าแผง — เลือกว่าจะจ่ายค่าแผงหรือจองแผง */
 function choicePage(){return `<div class="page-heading"><h1>ค่าแผงตลาด</h1><p>เลือกว่าจะทำอะไร</p></div><div class="choice-grid"><button class="choice-card choice-card-photo" onclick="setPage('dues')" aria-label="จ่ายค่าแผงตลาด — ดูยอดค้างและจ่ายผ่าน QR หรือเงินสด"><img src="/citizen-pay/shared/img/market-pay-banner.webp" width="1672" height="941" alt="จ่ายค่าแผงตลาด" loading="lazy"></button><button class="choice-card choice-card-photo" onclick="setPage('stalls')" aria-label="จองแผง (สมัคร) — เลือกแผงว่างแล้วส่งคำขอจอง"><img src="/citizen-pay/shared/img/market-reserve-banner.webp" width="1774" height="887" alt="สมัครจองแผงตลาดออนไลน์" loading="lazy"></button></div>`}
 function render(){saveOutsideLocations();app.classList.remove('staff-dashboard');renderNav();const page={home:choicePage,dues:searchPage,stalls:stallPage,signup:signupPage};app.innerHTML=homeBackHTML()+(page[view]||searchPage)()}

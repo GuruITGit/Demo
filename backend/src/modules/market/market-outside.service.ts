@@ -7,6 +7,7 @@ import { MarketBill } from '../../database/entities/market-bill.entity';
 import { OutsideCollectionDto, OutsideLocationDto, RejectBillDto } from './dto/market.dto';
 import { currentPeriod, nextReceiptNo, periodEndDate } from './receipt';
 import { StorageService } from '../storage/storage.service';
+import { cancelUnpaidTemporary, TEMP_PAY_WINDOW_MIN } from './outside-temp';
 
 /** วันนี้ (ค.ศ. YYYY-MM-DD) ตามเวลาเครื่องเซิร์ฟเวอร์ */
 const today = () => {
@@ -27,7 +28,15 @@ export class MarketOutsideService {
 
   /** ใบสมัครแผงลอยจากประชาชน (กรองตามสถานะได้: pending / approved / rejected) */
   async listApplications(orgId: string, status?: string) {
-    const rows = await this.apps.find({ where: { organizationId: orgId, ...(status ? { status } : {}) }, relations: ['location'], order: { createdAt: 'DESC' }, take: 200 });
+    await cancelUnpaidTemporary(this.ds, orgId, { staleMin: TEMP_PAY_WINDOW_MIN });
+    let rows = await this.apps.find({ where: { organizationId: orgId, ...(status ? { status } : {}) }, relations: ['location'], order: { createdAt: 'DESC' }, take: 200 });
+    // ชั่วคราวที่ยังไม่แจ้งชำระ = ยังอยู่ระหว่างจ่ายเงิน ไม่ใช่ใบสมัครที่เจ้าหน้าที่ต้องตรวจ
+    const waiting = rows.filter((a) => a.status === 'pending' && a.tenancyType === 'temporary' && a.billId);
+    if (waiting.length) {
+      const unpaid: { id: string }[] = await this.ds.query(`SELECT id FROM market_bills WHERE id = ANY($1::uuid[]) AND status = 'unpaid'`, [waiting.map((a) => a.billId)]);
+      const skip = new Set(unpaid.map((b) => b.id));
+      rows = rows.filter((a) => !(a.billId && skip.has(a.billId) && a.status === 'pending'));
+    }
     // ยอดค้างของผู้เช่าแต่ละราย (รหัสผู้เช่าคือรหัสบิล) — ลบผู้เช่าได้ก็ต่อเมื่อไม่ค้าง
     const dues: { code: string; count: number; total: number }[] = rows.length ? await this.ds.query(
       `SELECT stall_code AS "code", COUNT(*)::int AS count, COALESCE(SUM(amount),0)::float AS total FROM market_bills
@@ -56,6 +65,12 @@ export class MarketOutsideService {
     const app = await this.apps.findOne({ where: { id, organizationId: orgId }, relations: ['location'] });
     if (!app) throw new NotFoundException('ไม่พบใบสมัครนี้');
     if (app.status !== 'pending') throw new BadRequestException('ใบสมัครนี้ดำเนินการไปแล้ว');
+    if (app.billId) { // ชั่วคราวที่จ่ายตอนสมัครแล้ว → ใช้บิลเดิม ไม่ออกซ้ำ
+      const [b] = await this.ds.query(`SELECT amount::float AS amount FROM market_bills WHERE id = $1`, [app.billId]);
+      app.status = 'approved'; app.reviewNote = null;
+      await this.apps.save(app);
+      return { ok: true, billId: app.billId, appCode: app.appCode, amount: b?.amount ?? 0 };
+    }
     const rate = Number(app.location.rentRate);
     const amount = app.location.rentPeriod === 'monthly' ? rate : rate * app.days;
     // วันเริ่มเช่า (ค.ศ.) → งวดพุทธศักราช YYYY-MM
