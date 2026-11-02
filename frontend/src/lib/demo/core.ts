@@ -33,6 +33,8 @@ let timer: ReturnType<typeof setTimeout> | null = null;
 let loadFailed = false; // โหลดข้อมูลกลางไม่ได้ → ห้ามเขียนทับ
 let saving: Promise<unknown> = Promise.resolve();
 let lastSaved = ''; // JSON ของสถานะที่ส่งไปฐานกลางล่าสุด — ไม่ส่งซ้ำถ้าไม่เปลี่ยน
+let pendingWrites = 0; // จำนวนการบันทึกที่ยังส่งไม่เสร็จ — ระหว่างนั้นไม่ดึงทับ
+let pollStarted = false;
 
 export function registerSeed(part: SeedPart) { seedParts.push(part); }
 
@@ -78,7 +80,25 @@ export function ensureLoaded(): Promise<void> {
     if (!db) { db = fresh(); persist(true); }
     else if (remoteEnabled) lastSaved = JSON.stringify(db);
     await (globalThis as unknown as { smartKvInit?: (c: unknown) => Promise<void> }).smartKvInit?.(kvConfig); // คีย์ฝั่งประชาชนต้องดึงก่อน ให้เจ้าหน้าที่เห็นการจองและการชำระล่าสุด
+    if (remoteEnabled && !loadFailed) startRemotePoll();
   })());
+}
+
+/** ดึงสถานะกลางทุก 10 วินาที — เห็นเรื่องร้องเรียน/การจองที่มาจากเครื่องอื่นโดยไม่ต้องรีเฟรช */
+function startRemotePoll() {
+  if (pollStarted) return;
+  pollStarted = true;
+  setInterval(async () => {
+    if (loadFailed || timer || pendingWrites > 0) return;
+    try {
+      const r = await remoteLoad();
+      if ((r as Row | null)?._meta?.[0]?.version !== DB_VERSION) return;
+      const json = JSON.stringify(r);
+      if (json === lastSaved || timer || pendingWrites > 0) return;
+      db = r as Db;
+      lastSaved = json;
+    } catch { /* เชื่อมไม่ได้รอบนี้ ลองใหม่รอบหน้า */ }
+  }, 10_000);
 }
 
 export function getDb(): Db {
@@ -91,12 +111,13 @@ export function persist(now = false) {
   // ต่อคิวทีละงาน และอ่าน db ตอนถึงคิว → ข้อมูลล่าสุดเสมอ ไม่ให้คำขอเก่าที่เสร็จทีหลังทับของใหม่
   const write = () => {
     if (loadFailed) return;
+    pendingWrites++;
     saving = saving.then(() => {
       if (!remoteEnabled) return idbSet(KEY, db);
       const json = JSON.stringify(db);
       if (json === lastSaved) return;
       return remoteSave(json).then(() => { lastSaved = json; });
-    }).catch(() => { /* เก็บไม่ได้ก็ยังใช้ได้ในหน้านี้ */ });
+    }).catch(() => { /* เก็บไม่ได้ก็ยังใช้ได้ในหน้านี้ */ }).finally(() => { pendingWrites--; });
   };
   if (timer) clearTimeout(timer);
   if (now) write(); else timer = setTimeout(write, 150);
