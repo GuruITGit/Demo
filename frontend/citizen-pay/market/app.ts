@@ -55,7 +55,7 @@ function toStallBill(x: any): Bill {
 }
 /** บิลแผงลอยที่เจ้าหน้าที่ออกไว้ (เดโม่: ซิงก์ผ่านฐานกลาง) */
 function readOutsideBills(): any[] {
-  try { const v = JSON.parse(localStorage.getItem('lamplaimat:demo-outside-bills') || '[]'); return Array.isArray(v) ? v : []; } catch { return []; }
+  try { const v = JSON.parse(localStorage.getItem('lamplaimat:demo-outside-bills') || '[]'); return Array.isArray(v) ? v.filter((x) => String(x?.stallCode || '').startsWith('OUT-')) : []; } catch { return []; }
 }
 let emptyNote = '';
 async function searchStallBills(name: string, stall: string) {

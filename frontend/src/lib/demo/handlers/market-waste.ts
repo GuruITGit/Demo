@@ -141,7 +141,10 @@ function syncCitizenOutsideBills(db: Ctx['db']) {
     const rows = db.marketBills
       .filter((b) => b.organizationId === ORG_ID && String(b.stallCode).startsWith('OUT-'))
       .map((b) => ({ id: b.id, stallCode: b.stallCode, payerName: b.payerName, kind: b.kind, period: b.period, amount: b.amount, status: b.status, submittedMethod: b.submittedMethod ?? null, dueDate: b.dueDate ?? null, reviewNote: b.reviewNote ?? null }));
-    localStorage.setItem('lamplaimat:demo-outside-bills', JSON.stringify(rows));
+    // ค่าขยะบ้านทุกครัวเรือนที่ยังค้าง ใส่คีย์เดียวกัน (hh:true) ให้หน้าประชาชนเดโม่ค้นได้ครบเหมือนที่เจ้าหน้าที่เห็น — คีย์ใหม่ต้องแก้นโยบาย Supabase
+    const hh = db.wasteBills.filter((b) => b.organizationId === ORG_ID && ['unpaid', 'pending', 'mismatch'].includes(b.status))
+      .map((b) => ({ hh: true, id: b.id, householdRef: b.householdRef, holderName: b.holderName, houseNo: b.houseNo, moo: b.moo, phone: b.phone ?? '', period: b.period, amount: b.amount, status: b.status, submittedMethod: b.submittedMethod ?? null, dueDate: b.dueDate ?? null, reviewNote: b.reviewNote ?? null }));
+    localStorage.setItem('lamplaimat:demo-outside-bills', JSON.stringify([...rows, ...hh]));
   } catch { /* เขียนไม่ได้ = ข้าม */ }
 }
 
@@ -212,6 +215,7 @@ function absorbPayments(db: Ctx['db']) {
     });
   }
   if (changed) persist();
+  syncCitizenOutsideBills(db);
 }
 /** เจ้าหน้าที่ยืนยัน/ปฏิเสธบิลที่ประชาชนแจ้งมา → เขียนผลกลับให้หน้าประชาชนเห็น */
 function syncPayBack(db: Ctx['db'], billId: string, status: 'confirmed' | 'rejected', note?: string) {
@@ -232,6 +236,7 @@ function payBill(c: Ctx, list: Row[], prefix: string, notFoundMsg: string) {
   const method = METHODS.includes(c.body?.method) ? c.body.method : 'cash';
   Object.assign(bill, { status: 'paid', paidMethod: method, paidAt: nowIso(), reviewNote: null, receiptNo: nextReceipt(c, prefix) });
   syncPayBack(c.db, bill.id, 'confirmed');
+  syncCitizenOutsideBills(c.db);
   return bill;
 }
 
@@ -242,6 +247,7 @@ function rejectBill(c: Ctx, list: Row[], notFoundMsg: string, status: string) {
   bill.status = status;
   bill.reviewNote = String(c.body?.note ?? '').trim().slice(0, 300) || 'เจ้าหน้าที่ตรวจแล้วไม่ตรง กรุณาแจ้งชำระใหม่';
   syncPayBack(c.db, bill.id, 'rejected', bill.reviewNote);
+  syncCitizenOutsideBills(c.db);
   return bill;
 }
 
@@ -732,7 +738,7 @@ function householdsOf(c: Ctx, qRaw?: string) {
     return { ...h, qrKey: 'demo', owedMonths: owed.length, owedTotal: owed.reduce((s, b) => s + Number(b.amount), 0) };
   });
 }
-get('/waste/households', (c) => { needPerm(c, 'waste:read:WasteBill'); return householdsOf(c, c.query.q); });
+get('/waste/households', (c) => { needPerm(c, 'waste:read:WasteBill'); syncCitizenOutsideBills(c.db); return householdsOf(c, c.query.q); });
 
 function nextHouseRef(c: Ctx): string {
   const n = c.db.wasteHouseholds.reduce((m, h) => { const x = /^HH-(\d+)$/.exec(h.householdRef); return x ? Math.max(m, Number(x[1])) : m; }, 0);
