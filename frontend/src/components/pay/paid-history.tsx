@@ -6,7 +6,7 @@ import { toast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { periodLabel, money } from '@/lib/payment-labels';
 import { Empty, Field, MethodChip, Metric, Panel, SlipButton, inputCls, recentPeriods, useOrgName } from '@/components/pay/pay-ui';
-import { printReceipt } from '@/components/pay/receipt-print';
+import { printReceipt, printReport } from '@/components/pay/receipt-print';
 
 /** บิลที่ชำระแล้ว (ค่าแผง/ค่าขยะ) — ใช้ฟิลด์ร่วมของทั้งสองประเภท */
 type PaidBill = {
@@ -79,6 +79,11 @@ export function PaidHistory({ kind }: { kind: 'market' | 'waste' }) {
     if (!ok) toast.error('เปิดหน้าพิมพ์ไม่ได้ — อนุญาตป็อปอัปของเว็บนี้แล้วลองใหม่');
   };
 
+  const printList = () => {
+    const ok = printReport({ orgName, title: kind === 'market' ? 'รายงานการรับชำระค่าแผงตลาด' : 'รายงานการรับชำระค่าธรรมเนียมเก็บขยะ', subtitle: `งวด: ${period ? periodLabel(period) : 'ทุกงวด'} · ผู้ตรวจ/วิธีรับ: ${how ? HOW_LABEL[how] : 'ทั้งหมด'}${q ? ` · ค้นหา “${q}”` : ''}`, columns: [{ label: 'วันเวลาชำระ' }, { label: kind === 'market' ? 'ผู้เช่า' : 'ผู้รับบิล' }, { label: kind === 'market' ? 'แผง' : 'บ้านเลขที่' }, { label: 'รายการ/งวด' }, { label: 'วิธีชำระ' }, { label: 'ผู้ตรวจ' }, { label: 'เลขใบเสร็จ' }, { label: 'จำนวนเงิน (บาท)', align: 'right' }], rows: shown.map((r) => [fmtTime(r.paidAt), r.who, r.place, `${r.item} ${periodLabel(r.period)}`, r.paidMethod === 'cash' ? 'เงินสด' : 'โอน', HOW_LABEL[r.how], r.receiptNo ?? '—', money(r.amount)]), totalRow: ['', '', '', '', '', '', 'รวมทั้งสิ้น', money(total)], signers: ['ผู้จัดทำรายงาน', 'เจ้าหน้าที่การเงิน', 'ผู้อนุมัติ'] });
+    if (!ok) toast.error('เปิดหน้าพิมพ์ไม่ได้ — อนุญาตป็อปอัปของเว็บนี้แล้วลองใหม่');
+  };
+
   return (
     <div className="space-y-5">
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -88,7 +93,7 @@ export function PaidHistory({ kind }: { kind: 'market' | 'waste' }) {
         <Metric label="เจ้าหน้าที่ยืนยัน / เงินสด" value={`${count('staff')} / ${count('cash')}`} />
       </div>
 
-      <Panel title="รายการที่ชำระแล้ว">
+      <Panel title="รายการที่ชำระแล้ว" actions={<Button size="sm" variant="outline" onClick={printList}>พิมพ์รายงาน</Button>}>
         <div className="flex flex-wrap items-end gap-3 border-b border-gray-100 p-4">
           <Field label="ค้นหา" className="min-w-52 flex-1">
             <input className={inputCls} value={q} onChange={(e) => setQ(e.target.value)} placeholder={kind === 'market' ? 'ชื่อ / รหัสแผง / เลขใบเสร็จ' : 'ชื่อ / บ้านเลขที่ / เลขใบเสร็จ'} />

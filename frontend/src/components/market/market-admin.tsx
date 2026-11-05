@@ -5,6 +5,7 @@ import { PaidHistory } from '@/components/pay/paid-history';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, getErrorMessage } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
+import { printReport } from '@/components/pay/receipt-print';
 import { useAuthStore } from '@/stores/auth.store';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/shared/confirm-dialog';
@@ -345,10 +346,12 @@ function Dues({ sum, onBills }: { sum?: Summary; onBills: (code: string) => void
   const [place, setPlace] = useState<PlaceKind>('all');
   const rows = filterDues((sum?.arrears ?? []).filter((r) => placeMatch(place, r.stallCode)), min, q, (r) => `${r.stallCode} ${r.payerName}`);
   const total = rows.reduce((s, r) => s + r.total, 0);
+  const orgName = useOrgName();
+  const printDues = () => { if (!printReport({ orgName, title: 'รายงานผู้ค้างชำระค่าแผงตลาด', subtitle: `ข้อมูล ณ วันที่พิมพ์ · ผู้ค้างชำระ ${rows.length} แผง${min ? ` · ค้างตั้งแต่ ${min} เดือนขึ้นไป` : ''}${q ? ` · ค้นหา “${q}”` : ''}`, columns: [{ label: 'รหัสแผง' }, { label: 'ผู้เช่า' }, { label: 'ค้างมา (เดือน)', align: 'right' }, { label: 'ค้างตั้งแต่' }, { label: 'ยอดค้าง (บาท)', align: 'right' }], rows: rows.map((r) => [r.stallCode, r.payerName, r.months, r.oldest ? periodLabel(r.oldest) : '—', money(r.total)]), totalRow: ['', 'รวมทั้งสิ้น', '', '', money(total)] })) toast.error('เปิดหน้าพิมพ์ไม่ได้ — อนุญาตป็อปอัปของเว็บนี้แล้วลองใหม่'); };
   return (
     <Panel
       title={<>ผู้ค้างชำระ <span className="text-sm font-normal text-gray-500">{rows.length} แผง · รวม {money(total)} บาท</span></>}
-      actions={<Button size="sm" variant="outline" onClick={() => window.print()}>พิมพ์รายงาน</Button>}
+      actions={<Button size="sm" variant="outline" onClick={printDues}>พิมพ์รายงาน</Button>}
     >
       <div className="mb-2"><PlaceFilter value={place} onChange={setPlace} /></div>
       <DuesFilter min={min} setMin={setMin} q={q} setQ={setQ} placeholder="ค้นหาแผงหรือชื่อผู้เช่า" />
@@ -497,10 +500,12 @@ function TenantsStalls({ sum }: { sum?: Summary }) {
   const key = q.trim().toLowerCase();
   const rows = stalls.filter((s) => (st === 'all' || s.status === st) && (!key || `${s.stallCode} ${s.tenantName ?? ''} ${s.contactPhone ?? ''}`.toLowerCase().includes(key)));
   const fmtDate = (d: string) => new Date(d).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' });
+  const orgName = useOrgName();
+  const printTenants = () => { if (!printReport({ orgName, title: 'รายงานทะเบียนผู้เช่าแผงตลาด', subtitle: `สถานะ: ${st === 'all' ? 'ทั้งหมด' : STALL_LABEL[st]}${q ? ` · ค้นหา “${q}”` : ''}`, columns: [{ label: 'แผง' }, { label: 'โซน', align: 'center' }, { label: 'สถานะ' }, { label: 'ผู้เช่า' }, { label: 'เบอร์ติดต่อ' }, { label: 'ค่าเช่า/เดือน (บาท)', align: 'right' }, { label: 'ยอดค้างชำระ', align: 'right' }], rows: rows.map((s) => { const a = arrears.get(s.stallCode); return [s.stallCode, s.zone, STALL_LABEL[s.status], s.tenantName || '—', s.contactPhone || '—', money(Number(s.monthlyRate)), a ? `${a.months} เดือน · ${money(a.total)}` : '—']; }), totalRow: ['', '', '', '', 'รวมค่าเช่า/เดือน', money(rows.reduce((n, s) => n + (s.status === 'available' ? 0 : Number(s.monthlyRate)), 0)), ''] })) toast.error('เปิดหน้าพิมพ์ไม่ได้ — อนุญาตป็อปอัปของเว็บนี้แล้วลองใหม่'); };
   return (
     <Panel
       title={<>ผู้เช่าทั้งหมด <span className="text-sm font-normal text-gray-500">{rows.length} แผง</span></>}
-      actions={<Button size="sm" variant="outline" onClick={() => window.print()}>พิมพ์รายงาน</Button>}
+      actions={<Button size="sm" variant="outline" onClick={printTenants}>พิมพ์รายงาน</Button>}
     >
       <ConfirmDialog
         open={!!cancelling}

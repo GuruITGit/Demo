@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, getErrorMessage } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
+import { printReport } from '@/components/pay/receipt-print';
 import { useAuthStore } from '@/stores/auth.store';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/shared/confirm-dialog';
@@ -405,10 +406,12 @@ function Dues({ onBills }: { onBills: (ref: string) => void }) {
   const [q, setQ] = useState('');
   const rows = filterDues(data, min, q, (r) => `${r.householdRef} ${r.holderName} ${r.houseNo} หมู่ ${Number(r.moo)} ${r.phone ?? ''}`);
   const total = rows.reduce((s, r) => s + r.total, 0);
+  const orgName = useOrgName();
+  const printDues = () => { if (!printReport({ orgName, title: 'รายงานผู้ค้างชำระค่าธรรมเนียมเก็บขยะ', subtitle: `ผู้ค้างชำระ ${rows.length} หลังคาเรือน${min ? ` · ค้างตั้งแต่ ${min} เดือนขึ้นไป` : ''}${q ? ` · ค้นหา “${q}”` : ''}`, columns: [{ label: 'รหัส' }, { label: 'ผู้รับบิล' }, { label: 'บ้านเลขที่' }, { label: 'เบอร์โทร' }, { label: 'ค้างมา (เดือน)', align: 'right' }, { label: 'ค้างตั้งแต่' }, { label: 'ยอดค้าง (บาท)', align: 'right' }], rows: rows.map((r) => [r.householdRef, r.holderName, `${r.houseNo} หมู่ ${Number(r.moo)}`, r.phone || '—', r.months, r.oldest ? periodLabel(r.oldest) : '—', money(r.total)]), totalRow: ['', '', '', '', '', 'รวมทั้งสิ้น', money(total)] })) toast.error('เปิดหน้าพิมพ์ไม่ได้ — อนุญาตป็อปอัปของเว็บนี้แล้วลองใหม่'); };
   return (
     <Panel
       title={<>ผู้ค้างชำระ <span className="text-sm font-normal text-gray-500">{rows.length} หลัง · รวม {money(total)} บาท</span></>}
-      actions={<Button size="sm" variant="outline" onClick={() => window.print()}>พิมพ์รายงาน</Button>}
+      actions={<Button size="sm" variant="outline" onClick={printDues}>พิมพ์รายงาน</Button>}
     >
       <DuesFilter min={min} setMin={setMin} q={q} setQ={setQ} placeholder="ค้นหาชื่อ บ้านเลขที่ หมู่ หรือเบอร์" />
       <div className="overflow-x-auto">
