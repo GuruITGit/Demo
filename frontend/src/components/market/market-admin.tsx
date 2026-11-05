@@ -548,7 +548,7 @@ function TenantsStalls({ sum }: { sum?: Summary }) {
                 <tr key={s.id} className="border-t border-gray-100">
                   <td className="px-4 py-2 font-medium">{s.stallCode}</td>
                   <td className="px-4 py-2">{s.zone}</td>
-                  <td className="px-4 py-2"><span className={cn('rounded-full border px-2 py-0.5 text-xs', STALL_TONE[s.status])}>{STALL_LABEL[s.status]}</span></td>
+                  <td className="px-4 py-2"><span className={cn('inline-block whitespace-nowrap rounded-full border px-2 py-0.5 text-xs', STALL_TONE[s.status])}>{STALL_LABEL[s.status]}</span></td>
                   <td className="px-4 py-2">{s.tenantName || '—'}</td>
                   <td className="px-4 py-2">{s.contactPhone || '—'}</td>
                   <td className="px-4 py-2 text-right">{money(Number(s.monthlyRate))}</td>
