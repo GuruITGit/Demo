@@ -92,6 +92,9 @@ async function verifySlip2Go(token: string, image: Buffer, mime: string): Promis
     '200401': 'บัญชีผู้รับไม่ตรง', '200402': 'ยอดโอนไม่ตรงเงื่อนไข', '200403': 'วันที่โอนไม่ตรง',
     '200404': 'ไม่พบสลิปในระบบธนาคาร', '200500': 'สลิปเสีย/ปลอม', '200501': 'สลิปซ้ำ', '200502': 'ธนาคารขัดข้อง ลองใหม่',
   };
+  if (res.status === 401 || res.status === 403 || code.startsWith('401')) { // โทเคนผิด/ร้านไม่พบ/หมดอายุ — ใช้ไม่ได้ ให้ลองเจ้าถัดไป/ส่งเจ้าหน้าที่ตรวจ
+    return { ok: false, amount: null, transRef: null, receiverName: null, receiverId: null, error: 'โทเคน Slip2Go ไม่ถูกต้องหรือหมดอายุ (' + (pick(j, ['message']) || res.status) + ')', raw: j };
+  }
   if (!res.ok || !(code === '200000' || code === '200200')) {
     return { ok: false, amount: null, transRef: null, receiverName: null, receiverId: null,
       error: CODE_MSG[code] || pick(j, ['message']) || `code ${code || res.status}`, raw: j };
