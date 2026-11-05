@@ -129,12 +129,12 @@ const PAYMENT = {
     contactPhone: '044-000-000',
     // URL scheme เปิดแอปธนาคาร — แอปเปิดขึ้นมาเฉยๆ ไม่กรอกยอดให้ (ธนาคารไม่มี deeplink กลาง) · ต้องทดสอบบนมือถือจริงทุกตัว
     banks: [
-        { name: 'กสิกรไทย', short: 'K+', color: '#138F2D', scheme: 'kplus://' },
-        { name: 'ไทยพาณิชย์', short: 'SCB', color: '#4E2A84', scheme: 'scbeasy://' },
-        { name: 'กรุงไทย', short: 'KTB', color: '#1BA5E1', scheme: 'ktbnext://' },
-        { name: 'กรุงเทพ', short: 'BBL', color: '#1E4598', scheme: 'bualuang://' },
-        { name: 'กรุงศรี', short: 'KMA', color: '#FEC43B', ink: '#4A3B00', scheme: 'kma://' },
-        { name: 'ออมสิน', short: 'GSB', color: '#EB198D', scheme: 'mymo://' },
+        { name: 'กสิกรไทย', short: 'K+', color: '#138F2D', scheme: 'kplus://', pkg: 'com.kasikorn.retail.mbanking.wap' },
+        { name: 'ไทยพาณิชย์', short: 'SCB', color: '#4E2A84', scheme: 'scbeasy://', pkg: 'com.scb.phone' },
+        { name: 'กรุงไทย', short: 'KTB', color: '#1BA5E1', scheme: 'ktbnext://', pkg: 'com.ktb.customer.qr' },
+        { name: 'กรุงเทพ', short: 'BBL', color: '#1E4598', scheme: 'bualuang://', pkg: 'com.bbl.mobilebanking' },
+        { name: 'กรุงศรี', short: 'KMA', color: '#FEC43B', ink: '#4A3B00', scheme: 'kma://', pkg: 'com.krungsri.kma' },
+        { name: 'ออมสิน', short: 'GSB', color: '#EB198D', scheme: 'mymo://', pkg: 'com.GSB.mymo' },
     ],
 };
 // เชื่อมหน้าประชาชน (static) กับ API จริง: /v1/citizen/pay/* (สาธารณะ ไม่ต้องล็อกอิน)
@@ -410,7 +410,8 @@ function openBankApp(i) {
     const name = bank.scheme.replace('://', '');
     // Android: intent URL เปิดแอปที่รับ scheme นี้ ถ้าไม่มีแอปให้ไปค้นหาใน Play Store · iPhone: เปิดด้วย scheme ตรง ๆ
     const store = 'https://play.google.com/store/search?c=apps&q=' + encodeURIComponent(bank.name + ' mobile banking');
-    const url = /Android/i.test(navigator.userAgent) ? `intent://#Intent;scheme=${name};S.browser_fallback_url=${encodeURIComponent(store)};end` : bank.scheme;
+    // Android: เปิดแอปตามชื่อแพ็กเกจ (แม่นกว่า scheme) ไม่มีแอป/แพ็กเกจผิด -> ไป Play Store
+    const url = /Android/i.test(navigator.userAgent) ? (bank.pkg ? `intent:#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=${bank.pkg};S.browser_fallback_url=${encodeURIComponent(bank.pkg ? "https://play.google.com/store/apps/details?id=" + bank.pkg : store)};end` : `intent://#Intent;scheme=${name};S.browser_fallback_url=${encodeURIComponent(store)};end`) : bank.scheme;
     let left = false;
     const onHide = () => { if (document.hidden)
         left = true; };

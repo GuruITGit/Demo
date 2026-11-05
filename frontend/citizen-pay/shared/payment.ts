@@ -169,7 +169,8 @@ function openBankApp(i: number) {
   const name = bank.scheme.replace('://', '');
   // Android: intent URL เปิดแอปที่รับ scheme นี้ ถ้าไม่มีแอปให้ไปค้นหาใน Play Store · iPhone: เปิดด้วย scheme ตรง ๆ
   const store = 'https://play.google.com/store/search?c=apps&q=' + encodeURIComponent(bank.name + ' mobile banking');
-  const url = /Android/i.test(navigator.userAgent) ? `intent://#Intent;scheme=${name};S.browser_fallback_url=${encodeURIComponent(store)};end` : bank.scheme;
+  // Android: เปิดแอปตามชื่อแพ็กเกจ (แม่นกว่า scheme) ไม่มีแอป/แพ็กเกจผิด -> ไป Play Store
+  const url = /Android/i.test(navigator.userAgent) ? (bank.pkg ? `intent:#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=${bank.pkg};S.browser_fallback_url=${encodeURIComponent(bank.pkg ? "https://play.google.com/store/apps/details?id=" + bank.pkg : store)};end` : `intent://#Intent;scheme=${name};S.browser_fallback_url=${encodeURIComponent(store)};end`) : bank.scheme;
   let left = false; const onHide = () => { if (document.hidden) left = true; };
   document.addEventListener('visibilitychange', onHide); window.addEventListener('pagehide', onHide);
   const link = document.createElement('a'); link.href = url; link.rel = 'noopener'; document.body.appendChild(link); link.click(); link.remove(); // คลิกจริงจากการแตะ — เบราว์เซอร์ยอมให้เปิดแอป
