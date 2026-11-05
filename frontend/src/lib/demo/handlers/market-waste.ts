@@ -211,7 +211,7 @@ function absorbPayments(db: Ctx['db']) {
     changed = true;
     if (bill.status === 'paid') continue;
     if (auto) {
-      Object.assign(bill, { status: 'paid', paidMethod: 'transfer', paidAt: r.at, submittedMethod: 'transfer', submittedAt: r.at, slipUrl: null, reviewNote: null, receiptNo: nextReceipt({ db } as Ctx, household ? 'WS' : 'MK'), slipTransRef: r.transRef ?? null });
+      Object.assign(bill, { status: 'paid', paidMethod: 'transfer', paidAt: r.at, submittedMethod: 'transfer', submittedAt: r.at, slipUrl: r.slipImg || null, reviewNote: null, receiptNo: nextReceipt({ db } as Ctx, household ? 'WS' : 'MK'), slipTransRef: r.transRef ?? null });
       notify(db, db.users.map((u: Row) => u.id), { type: household ? 'waste:paid' : 'market:paid', title: 'ตรวจสลิปผ่านและชำระแล้ว', body: `${bill.payerName ?? bill.holderName ?? ''} · ${household ? 'บ้าน ' : 'แผง '}${r.meta.s} · ${Number(r.amount).toLocaleString('th-TH')} บาท`, actionUrl: household ? '/waste?tab=paid' : '/market?tab=paid' });
       continue;
     }

@@ -46,7 +46,7 @@ export function PaidHistory({ kind }: { kind: 'market' | 'waste' }) {
     const autoSlips = new Set(data.filter((b) => b.slipTransRef && b.slipUrl).map((b) => base(b.slipUrl as string)));
     return data.map((b) => {
       const transfer = b.paidMethod === 'transfer' || b.paidMethod === 'qr';
-      const auto = transfer && !!b.slipUrl && autoSlips.has(base(b.slipUrl));
+      const auto = transfer && (!!b.slipTransRef || (!!b.slipUrl && autoSlips.has(base(b.slipUrl))));
       return {
         ...b,
         who: (kind === 'market' ? b.payerName : b.holderName) ?? '—',
