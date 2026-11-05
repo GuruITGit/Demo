@@ -155,7 +155,6 @@ function Plan({ canManage, onBills }: { canManage: boolean; onBills: (code: stri
     for (const s of stalls) c[s.status] += 1;
     return c;
   }, [stalls]);
-  const reservedList = stalls.filter((s) => s.status === 'reserved');
 
   const save = useMutation({
     mutationFn: ({ id, body }: { id: string; body: object }) => api.patch(`/market/stalls/${id}`, body),
@@ -238,26 +237,6 @@ function Plan({ canManage, onBills }: { canManage: boolean; onBills: (code: stri
         </Panel>
       )}
 
-      {reservedList.length > 0 && (
-        <Panel title={<>แผงที่ประชาชนจองมา <span className="text-sm font-normal text-gray-500">({reservedList.length})</span></>}>
-          <ul>
-            {reservedList.map((s) => (
-              <li key={s.id} className="flex flex-wrap items-center gap-3 border-t border-gray-100 px-4 py-3 first:border-t-0">
-                <div className="min-w-0 flex-1">
-                  <p className="font-semibold">แผง {s.stallCode} <span className="font-normal text-gray-500">· {s.tenantName}</span></p>
-                  <p className="text-sm text-gray-500">โทร {s.contactPhone || '—'}{s.reserveCardUrl ? <> · <a href={s.reserveCardUrl} target="_blank" rel="noreferrer" className="text-sky-700 underline">ดูรูปบัตรประชาชน</a></> : ' · ไม่ได้แนบบัตร'}{s.reservedAt ? ` · จองเมื่อ ${new Date(s.reservedAt).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' })}` : ''}</p>
-                </div>
-                {canManage && (
-                  <div className="flex gap-2">
-                    <Button size="sm" variant="success" onClick={() => save.mutate({ id: s.id, body: { status: 'occupied' } })}>ยืนยันเป็นผู้เช่า</Button>
-                    <Button size="sm" variant="outline" onClick={() => save.mutate({ id: s.id, body: { status: 'available' } })}>ปฏิเสธการจอง</Button>
-                  </div>
-                )}
-              </li>
-            ))}
-          </ul>
-        </Panel>
-      )}
 
       {editing && (
         <StallEditor
