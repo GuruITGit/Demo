@@ -17,6 +17,15 @@ async function payApi<T>(path: string, init?: RequestInit): Promise<T | null> {
 }
 
 /** ใช้ค่าช่องทางรับเงิน/ราคาจากระบบจริง เขียนทับค่าตั้งต้นใน PAYMENT */
+/** เดโม่ (ไม่มี backend): ใช้ช่องทางรับเงินที่เจ้าหน้าที่เดโม่ตั้งไว้ (ซิงก์มาในคีย์เดียวกับบิลแผงลอย แถว payCfg) · ยังไม่ตั้งเลขพร้อมเพย์ = ใช้ข้อมูลตัวอย่าง */
+function applyDemoPayConfig(): void {
+  try {
+    const v = JSON.parse(localStorage.getItem('lamplaimat:demo-outside-bills') || '[]');
+    const c = (Array.isArray(v) ? v : []).find((x: any) => x && x.payCfg);
+    if (!c || !c.promptpayId) return;
+    Object.assign(PAYMENT, { promptpayId: c.promptpayId, promptpayType: c.promptpayType || 'mobile', payeeName: c.payeeName || '', accountBank: c.accountBank || '', accountNo: c.accountNo || '', cashPlace: c.cashPlace || PAYMENT.cashPlace, cashHours: c.cashHours || PAYMENT.cashHours, contactPhone: c.contactPhone || PAYMENT.contactPhone });
+  } catch { /* อ่านไม่ได้ = ใช้ตัวอย่าง */ }
+}
 function applyPayConfig(c: any): void {
   Object.assign(PAYMENT, {
     promptpayId: c.promptpayId || '', promptpayType: c.promptpayType || 'mobile', payeeName: c.payeeName || '',
