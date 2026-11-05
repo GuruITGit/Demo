@@ -5,7 +5,7 @@ import { api, getErrorMessage } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/shared/confirm-dialog';
-import { Empty, Panel } from '@/components/pay/pay-ui';
+import { Empty, MethodChip, Panel, SlipButton } from '@/components/pay/pay-ui';
 
 type Status = 'pending' | 'approved' | 'rejected' | 'cancelled';
 type Application = {
@@ -37,6 +37,10 @@ export function OutsideApplications({ canManage, locationId, filter: shared }: {
     queryFn: async () => (await api.get('/market/outside/applications', { params: filter === 'all' ? {} : { status: filter } })).data.data,
     refetchInterval: 10_000,
   });
+  // บิลของใบสมัคร (รหัส OUT-xxxx = stallCode) — แสดงสถานะจ่าย/วิธี/สลิปบนการ์ดใบสมัครเลย
+  type AppBill = { stallCode: string; status: string; paidMethod: string | null; submittedMethod: string | null; slipUrl: string | null };
+  const { data: bills = [] } = useQuery<AppBill[]>({ queryKey: ['market', 'bills', 'outside-apps'], queryFn: async () => (await api.get('/market/bills')).data.data, refetchInterval: 10_000 });
+  const billOf = (code: string) => { const l = bills.filter((b) => b.stallCode === code); return l.find((b) => b.slipUrl) ?? l[0]; };
   const rows = (locationId ? all.filter((a) => a.locationId === locationId) : all).filter((a) => kindFilter === 'all' || a.tenancyType === kindFilter);
   const refresh = () => qc.invalidateQueries({ queryKey: ['market', 'outside', 'apps'] });
 
@@ -97,6 +101,13 @@ export function OutsideApplications({ canManage, locationId, filter: shared }: {
                     ? <a href={a.idCardUrl} target="_blank" rel="noreferrer" className="text-sky-700 underline">ดูรูปบัตรประชาชน</a>
                     : 'ไม่ได้แนบบัตร'}
                 </p>
+                {(() => { const b = billOf(a.appCode); if (!b) return null; const m = b.paidMethod ?? b.submittedMethod; return (
+                  <p className="mt-1 flex flex-wrap items-center gap-2 text-sm">
+                    <span className="text-gray-500">การชำระเงิน:</span>
+                    {b.status === 'paid' ? <span className="font-medium text-green-700">ชำระแล้ว</span> : b.status === 'pending' ? <span className="font-medium text-blue-700">แจ้งชำระแล้ว · รอตรวจ</span> : <span className="font-medium text-amber-700">ยังไม่ชำระ</span>}
+                    {m && <MethodChip method={m} />}
+                    <SlipButton url={b.slipUrl} method={m} />
+                  </p>); })()}
               </div>
               {canManage && a.status === 'pending' && (
                 <div className="flex gap-2">
