@@ -444,6 +444,23 @@ function recordPayment(status, ref, extra = {}) {
     writePaymentRecords(all);
 }
 /** เดโม่: ส่งสลิปให้ /api/demo-slip ตรวจกับ Slip2Go · null = ตรวจไม่ได้ (ไม่ตั้งโทเคน/ล่ม) */
+/** เดโม่: ย่อรูปสลิปเป็น JPEG เล็ก ๆ (data URL) ให้เจ้าหน้าที่เดโมเห็นรูปและกด "ตรวจสลิปทั้งหมด" ได้ */
+async function slipThumb(file) {
+    try {
+        const url = URL.createObjectURL(file);
+        const img = await new Promise((ok, fail) => { const el = new Image(); el.onload = () => ok(el); el.onerror = () => fail(new Error('img')); el.src = url; });
+        const k = Math.min(1, 1000 / Math.max(img.width, img.height));
+        const c = document.createElement('canvas');
+        c.width = Math.round(img.width * k);
+        c.height = Math.round(img.height * k);
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(url);
+        return c.toDataURL('image/jpeg', 0.6);
+    }
+    catch {
+        return '';
+    }
+}
 async function demoVerifySlip() {
     try {
         const fd = new FormData();
@@ -479,7 +496,7 @@ async function submitTransferPayment() {
     const v = await demoVerifySlip();
     if (v?.ok && v.transRef) {
         if (Object.values(loadPaymentRecords()).some(r => r.transRef === v.transRef)) {
-            recordPayment('pending', newPaymentRef('TRF'), { note: 'สลิปนี้ถูกใช้ชำระไปแล้ว' });
+            recordPayment('pending', newPaymentRef('TRF'), { note: 'สลิปนี้ถูกใช้ชำระไปแล้ว (ตรงกับรายการที่ชำระแล้วในระบบ)' });
             clearSlip();
             resetSelection();
             paySubmitted();
@@ -497,7 +514,8 @@ async function submitTransferPayment() {
         render();
         return;
     }
-    recordPayment('pending', newPaymentRef('TRF'), v?.reason ? { note: v.reason } : {});
+    const slipImg = slipFile ? await slipThumb(slipFile) : '';
+    recordPayment('pending', newPaymentRef('TRF'), { ...(v?.reason ? { note: v.reason } : {}), ...(slipImg ? { slipImg } : {}) });
     clearSlip();
     resetSelection();
     paySubmitted();
