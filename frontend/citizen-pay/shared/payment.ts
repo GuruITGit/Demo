@@ -163,11 +163,17 @@ async function saveQrImage() {
 
 function openBankApp(i: number) {
   const bank = PAYMENT.banks[i]; if (!bank) return;
-  if (!isMobile()) return toast('เปิดแอปธนาคารได้บนมือถือเท่านั้น');
+  if (!isMobile()) return toast('เปิดแอปธนาคารได้บนมือถือเท่านั้น · บนคอมพิวเตอร์ให้ใช้แท็บ “สแกน QR”');
+  // เบราว์เซอร์ในแอป (LINE/Facebook) บล็อกการเปิดแอปอื่น → ให้เปิดในเบราว์เซอร์ปกติก่อน
+  if (/Line\/|FBAN|FBAV|Instagram/i.test(navigator.userAgent)) return toast('เปิดแอปธนาคารจากในแอปนี้ไม่ได้ · กด ⋮ แล้วเลือก “เปิดในเบราว์เซอร์” หรือบันทึกรูป QR ไปสแกนในแอปธนาคาร');
+  const name = bank.scheme.replace('://', '');
+  // Android: intent URL เปิดแอปที่รับ scheme นี้ ถ้าไม่มีแอปให้ไปค้นหาใน Play Store · iPhone: เปิดด้วย scheme ตรง ๆ
+  const store = 'https://play.google.com/store/search?c=apps&q=' + encodeURIComponent(bank.name + ' mobile banking');
+  const url = /Android/i.test(navigator.userAgent) ? `intent://#Intent;scheme=${name};S.browser_fallback_url=${encodeURIComponent(store)};end` : bank.scheme;
   let left = false; const onHide = () => { if (document.hidden) left = true; };
-  document.addEventListener('visibilitychange', onHide);
-  window.location.href = bank.scheme;
-  setTimeout(() => { document.removeEventListener('visibilitychange', onHide); if (!left) toast(`เปิด ${bank.name} ไม่ได้ · เครื่องอาจไม่มีแอปนี้ ลองเปิดแอปเอง`); }, 1800);
+  document.addEventListener('visibilitychange', onHide); window.addEventListener('pagehide', onHide);
+  const link = document.createElement('a'); link.href = url; link.rel = 'noopener'; document.body.appendChild(link); link.click(); link.remove(); // คลิกจริงจากการแตะ — เบราว์เซอร์ยอมให้เปิดแอป
+  setTimeout(() => { document.removeEventListener('visibilitychange', onHide); window.removeEventListener('pagehide', onHide); if (!left) toast(`เปิด ${bank.name} ไม่ได้ · เปิดแอปเอง แล้วสแกนรูป QR ที่บันทึกไว้ (แตะ “บันทึกรูป QR ลงเครื่อง”)`); }, 2200);
 }
 
 /** แจ้งหน้าที่เรียกใช้ว่าส่งการชำระสำเร็จแล้ว (เช่น สมัครแผงลอยชั่วคราวต้องจ่ายก่อนจึงสมัครสำเร็จ) */
