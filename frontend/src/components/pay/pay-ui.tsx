@@ -1,5 +1,5 @@
 'use client';
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth.store';
@@ -121,4 +121,28 @@ export function recentPeriods(n = 12): string[] {
     d.setMonth(d.getMonth() - 1);
   }
   return out;
+}
+
+/** ป้ายวิธีชำระ: โอน / เงินสด / สแกนจ่าย — เห็นชัดทุกที่ที่แสดงบิลที่ชำระแล้ว */
+export function MethodChip({ method }: { method: string | null | undefined }) {
+  const label = method === 'cash' ? 'เงินสด' : method === 'transfer' ? 'โอน' : method === 'qr' ? 'สแกนจ่าย' : '—';
+  const tone = method === 'cash' ? 'bg-amber-50 text-amber-800 border-amber-200' : 'bg-sky-50 text-sky-800 border-sky-200';
+  return <span className={cn('inline-block rounded-md border px-2 py-0.5 text-xs font-semibold', tone)}>{label}</span>;
+}
+
+/** ปุ่มดูสลิป (เปิดรูปเต็มจอ) — โอนแต่ไม่มีรูปเก็บไว้ (เช่น ข้อมูลเดโมเก่า) จะบอกชัดว่าไม่มีรูป · เงินสดไม่แสดงอะไร */
+export function SlipButton({ url, method }: { url?: string | null; method?: string | null }) {
+  const [open, setOpen] = useState(false);
+  if (!url) return method === 'transfer' || method === 'qr' ? <span className="text-xs text-gray-400">ไม่มีรูปสลิปเก็บไว้</span> : null;
+  return (
+    <>
+      <button type="button" onClick={() => setOpen(true)} className="rounded-md border border-gray-300 bg-white px-2 py-0.5 text-xs font-medium text-gray-700 hover:bg-gray-50">ดูสลิป</button>
+      {open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={() => setOpen(false)} role="dialog" aria-label="รูปสลิป">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={url} alt="สลิปโอนเงิน" className="max-h-full max-w-full rounded-lg bg-white" />
+        </div>
+      )}
+    </>
+  );
 }

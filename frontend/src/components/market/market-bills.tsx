@@ -7,12 +7,12 @@ import { toast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/shared/confirm-dialog';
 import { BILL_STATUS, PAY_METHOD, periodLabel, money } from '@/lib/payment-labels';
-import { Empty, Field, Panel, inputCls, recentPeriods } from '@/components/pay/pay-ui';
+import { MethodChip, SlipButton, Empty, Field, Panel, inputCls, recentPeriods } from '@/components/pay/pay-ui';
 import { printReceipt } from '@/components/pay/receipt-print';
 
 export type Bill = {
   id: string; stallCode: string; payerName: string; kind: 'rent' | 'waste'; period: string; amount: string; status: string;
-  paidMethod: string | null; paidAt: string | null; receiptNo: string | null; submittedMethod: string | null; reviewNote: string | null;
+  paidMethod: string | null; paidAt: string | null; receiptNo: string | null; submittedMethod: string | null; reviewNote: string | null; slipUrl?: string | null;
 };
 export const KIND_LABEL: Record<Bill['kind'], string> = { rent: 'ค่าเช่าแผง', waste: 'ค่าขยะแผง' };
 
@@ -144,7 +144,7 @@ export function MarketBills({ canManage, orgName, initialStall, initialStatus }:
                   <td className="px-4 py-2 text-right">{money(b.amount)}</td>
                   <td className="px-4 py-2">
                     <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_TONE[b.status] ?? 'bg-gray-100 text-gray-600'}`}>{BILL_STATUS[b.status] ?? b.status}</span>
-                    {b.status === 'paid' && <span className="mt-1 block text-xs text-gray-500">{b.paidMethod ? PAY_METHOD[b.paidMethod] : ''} · {b.receiptNo}</span>}
+                    {b.status === 'paid' && <span className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-gray-500"><MethodChip method={b.paidMethod} /><span>{b.receiptNo}</span><SlipButton url={b.slipUrl} method={b.paidMethod} /></span>}
                     {b.status === 'mismatch' && b.reviewNote && <span className="mt-1 block text-xs text-orange-700">{b.reviewNote}</span>}
                   </td>
                   <td className="px-4 py-2">

@@ -7,7 +7,7 @@ import { useAuthStore } from '@/stores/auth.store';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/shared/confirm-dialog';
 import { BILL_STATUS, PAY_METHOD, periodLabel, money } from '@/lib/payment-labels';
-import { DuesFilter, Empty, Field, Metric, Panel, PayTabs, dueTone, filterDues, inputCls, recentPeriods, useOrgName } from '@/components/pay/pay-ui';
+import { MethodChip, SlipButton, DuesFilter, Empty, Field, Metric, Panel, PayTabs, dueTone, filterDues, inputCls, recentPeriods, useOrgName } from '@/components/pay/pay-ui';
 import { cn } from '@/lib/utils';
 import { QrSvg, downloadQrPng, printQrSheet, houseQrUrl, type QrItem } from '@/components/pay/qr';
 import { SlipQueue } from '@/components/pay/slip-queue';
@@ -22,7 +22,7 @@ type Household = {
 };
 type WasteBill = {
   id: string; householdRef: string; holderName: string; houseNo: string; moo: string; phone: string | null; period: string; amount: string; status: string;
-  paidMethod: string | null; paidAt: string | null; receiptNo: string | null; submittedMethod: string | null; reviewNote: string | null;
+  paidMethod: string | null; paidAt: string | null; receiptNo: string | null; submittedMethod: string | null; reviewNote: string | null; slipUrl?: string | null;
 };
 type Summary = {
   householdCount: number; unpaidCount: number; unpaidTotal: number;
@@ -367,7 +367,7 @@ function Bills({ canManage, orgName, seedQ, seedStatus }: { canManage: boolean; 
                   <td className="px-4 py-2 text-right">{money(b.amount)}</td>
                   <td className="px-4 py-2">
                     <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_TONE[b.status] ?? 'bg-gray-100 text-gray-600'}`}>{BILL_STATUS[b.status] ?? b.status}</span>
-                    {b.status === 'paid' && <span className="mt-1 block text-xs text-gray-500">{b.paidMethod ? PAY_METHOD[b.paidMethod] : ''} · {b.receiptNo}</span>}
+                    {b.status === 'paid' && <span className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-gray-500"><MethodChip method={b.paidMethod} /><span>{b.receiptNo}</span><SlipButton url={b.slipUrl} method={b.paidMethod} /></span>}
                     {b.status === 'mismatch' && b.reviewNote && <span className="mt-1 block text-xs text-orange-700">{b.reviewNote}</span>}
                   </td>
                   <td className="px-4 py-2">

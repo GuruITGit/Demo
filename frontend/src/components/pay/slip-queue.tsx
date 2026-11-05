@@ -75,7 +75,7 @@ export function SlipQueue({ kind, canManage }: { kind: 'market' | 'waste'; canMa
           // eslint-disable-next-line @next/next/no-img-element
           <img src={b.slipUrl} alt="สลิปโอนเงิน" onClick={() => setZoom(b.slipUrl)} className="h-24 w-24 shrink-0 cursor-zoom-in rounded-lg border border-gray-200 object-cover" />
         ) : (
-          <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-lg border border-dashed border-gray-300 px-2 text-center text-xs text-gray-400">ไม่มีสลิป<br />(จ่ายเงินสด)</div>
+          <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-lg border border-dashed border-gray-300 px-2 text-center text-xs text-gray-400">{b.submittedMethod === 'cash' ? <>ไม่มีสลิป<br />(จ่ายเงินสด)</> : <>โอน<br />ไม่มีรูปสลิป</>}</div>
         )}
         <div className="min-w-0 flex-1">
           <p className="font-semibold text-gray-900">{who}</p>

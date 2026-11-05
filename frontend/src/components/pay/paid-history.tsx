@@ -4,8 +4,8 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import { PAY_METHOD, periodLabel, money } from '@/lib/payment-labels';
-import { Empty, Field, Metric, Panel, inputCls, recentPeriods, useOrgName } from '@/components/pay/pay-ui';
+import { periodLabel, money } from '@/lib/payment-labels';
+import { Empty, Field, MethodChip, Metric, Panel, SlipButton, inputCls, recentPeriods, useOrgName } from '@/components/pay/pay-ui';
 import { printReceipt } from '@/components/pay/receipt-print';
 
 /** บิลที่ชำระแล้ว (ค่าแผง/ค่าขยะ) — ใช้ฟิลด์ร่วมของทั้งสองประเภท */
@@ -41,6 +41,15 @@ export function PaidHistory({ kind }: { kind: 'market' | 'waste' }) {
     refetchInterval: 20_000,
   });
 
+  // ชื่อแผง: แผงประจำ = โซน · แผงลอย = ชื่อจุดที่เช่า (บิลมีแต่รหัส OUT-xxxx / รหัสแผง)
+  const { data: stalls = [] } = useQuery<{ stallCode: string; zone: string }[]>({ queryKey: ['market', 'stalls'], queryFn: async () => (await api.get('/market/stalls')).data.data, enabled: kind === 'market', staleTime: 60_000 });
+  const { data: outside = [] } = useQuery<{ appCode: string; location?: { name?: string } }[]>({ queryKey: ['market', 'outside', 'apps', 'all-names'], queryFn: async () => (await api.get('/market/outside/applications')).data.data, enabled: kind === 'market', staleTime: 60_000 });
+  const placeOf = (code: string) => {
+    const o = outside.find((x) => x.appCode === code);
+    if (o) return `แผงลอย ${code}${o.location?.name ? ' · ' + o.location.name : ''}`;
+    const st = stalls.find((x) => x.stallCode === code);
+    return `แผง ${code}${st ? ' · โซน ' + st.zone : ''}`;
+  };
   const rows = useMemo<Row[]>(() => {
     const base = (u: string) => u.split('?')[0]; // URL สลิปที่เซ็นแล้วต่างกันต่อบิล — เทียบเฉพาะพาธ
     const autoSlips = new Set(data.filter((b) => b.slipTransRef && b.slipUrl).map((b) => base(b.slipUrl as string)));
@@ -50,12 +59,12 @@ export function PaidHistory({ kind }: { kind: 'market' | 'waste' }) {
       return {
         ...b,
         who: (kind === 'market' ? b.payerName : b.holderName) ?? '—',
-        place: kind === 'market' ? `แผง ${b.stallCode}` : `บ้านเลขที่ ${b.houseNo} หมู่ ${Number(b.moo)} · ${b.householdRef}`,
+        place: kind === 'market' ? placeOf(b.stallCode ?? '') : `บ้านเลขที่ ${b.houseNo} หมู่ ${Number(b.moo)} · ${b.householdRef}`,
         item: kind === 'market' ? (b.kind === 'waste' ? 'ค่าขยะแผง' : 'ค่าเช่าแผง') : 'ค่าเก็บขยะ',
         how: auto ? 'auto' : transfer ? 'staff' : 'cash',
       } as Row;
     }).sort((a, b) => (b.paidAt ?? '').localeCompare(a.paidAt ?? ''));
-  }, [data, kind]);
+  }, [data, kind, stalls, outside]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const key = q.trim().toLowerCase();
   const shown = rows.filter((r) => (!how || r.how === how) && (!key || `${r.who} ${r.place} ${r.receiptNo ?? ''}`.toLowerCase().includes(key)));
@@ -108,22 +117,23 @@ export function PaidHistory({ kind }: { kind: 'market' | 'waste' }) {
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={r.slipUrl} alt="สลิปโอนเงิน" onClick={() => setZoom(r.slipUrl)} className="h-16 w-16 shrink-0 cursor-zoom-in rounded-lg border border-gray-200 object-cover" />
                 ) : (
-                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg border border-dashed border-gray-300 px-1 text-center text-[11px] text-gray-400">ไม่มีสลิป</div>
+                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg border border-dashed border-gray-300 px-1 text-center text-[11px] text-gray-400">{r.paidMethod === 'cash' ? 'เงินสด' : 'ไม่มีรูปสลิป'}</div>
                 )}
                 <div className="min-w-0 flex-1">
                   <p className="font-semibold text-gray-900">{r.who}</p>
                   <p className="text-sm text-gray-600">{r.place}</p>
                   <p className="text-sm text-gray-500">{r.item} · งวด {periodLabel(r.period)}</p>
                   <div className="mt-1 flex flex-wrap items-center gap-2 text-xs">
+                    <MethodChip method={r.paidMethod} />
                     <span className={`rounded-full px-2 py-0.5 font-medium ${HOW_TONE[r.how]}`}>{HOW_LABEL[r.how]}</span>
-                    <span className="text-gray-500">{PAY_METHOD[r.paidMethod ?? ''] ?? r.paidMethod ?? '—'} · {fmtTime(r.paidAt)}</span>
+                    <span className="text-gray-500">{fmtTime(r.paidAt)}</span>
                     {r.receiptNo && <span className="text-gray-500">ใบเสร็จ {r.receiptNo}</span>}
                     {r.slipTransRef && <span className="text-gray-400">อ้างอิงสลิป {r.slipTransRef}</span>}
                   </div>
                 </div>
                 <div className="flex shrink-0 flex-col items-end gap-2">
                   <p className="text-lg font-bold text-green-700">{money(r.amount)} บาท</p>
-                  <Button size="sm" variant="outline" onClick={() => print(r)}>พิมพ์ใบเสร็จ</Button>
+                  <div className="flex items-center gap-2"><SlipButton url={r.slipUrl} method={r.paidMethod} /><Button size="sm" variant="outline" onClick={() => print(r)}>พิมพ์ใบเสร็จ</Button></div>
                 </div>
               </li>
             ))}
