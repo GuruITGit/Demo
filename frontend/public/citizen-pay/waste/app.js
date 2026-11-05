@@ -337,7 +337,7 @@ function openPayment() {
 function setPayMethod(m) { payMethod = m; renderPaymentModal(); }
 function slipBoxHTML(optional) {
     const label = slipFile ? 'เปลี่ยนรูปสลิป' : optional ? 'แนบรูปสลิป (ถ้ามี)' : 'แนบรูปสลิป (จำเป็น)';
-    return `<div class="slip-box"><label class="upload scan-upload">${label}<input type="file" accept="image/*" onchange="pickSlip(this)"></label>${slipFile ? `<div class="slip-preview"><img src="${slipPreviewUrl}" alt="สลิปที่แนบ"><span>${escapeHTML(slipFile.name)}</span></div>` : ''}</div>`;
+    return `<div class="slip-box"><label class="upload scan-upload">${label}<input type="file" accept="image/*" onchange="pickSlip(this)"></label>${slipFile ? `<div style="margin-top:8px;padding:8px 10px;border-radius:8px;background:#e8f6ee;color:#146c3b;font-weight:600;font-size:14px">✓ แนบสลิปแล้ว · พร้อมส่ง</div><div class="slip-preview"><img src="${slipPreviewUrl}" alt="สลิปที่แนบ"><span>${escapeHTML(slipFile.name)}</span></div>` : ''}</div>`;
 }
 function renderPaymentModal() {
     const items = DEMO.bills.filter(b => payBillIds.includes(b.id));
@@ -442,6 +442,7 @@ function pickSlip(input) {
     slipFile = f;
     slipPreviewUrl = URL.createObjectURL(f);
     renderPaymentModal();
+    toast("แนบสลิปแล้ว ✓ กด “ส่ง” เพื่อยืนยันการชำระ");
 }
 let billSubmitter = null;
 function recordPayment(status, ref, extra = {}) {
