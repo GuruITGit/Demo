@@ -444,3 +444,8 @@ html { transition: font-size 0.15s ease; }
 
 /* รายการในเมนูดรอปดาวน์ของ select: อ่านออกทุกโหมด (ไม่ขึ้นตัวอักษรขาวบนพื้นขาว) */
 select option { background-color: #ffffff; color: #111827; }
+
+/* ตัวหนังสือไทยไม่ขาดกลางคำ: แถวที่ข้อความ + ปุ่มอยู่ด้วยกัน ให้ปุ่มตกลงบรรทัดใหม่แทนการบีบข้อความจนคำขาด */
+.flex-wrap > .min-w-0.flex-1 { min-width: min(100%, 16rem); }
+/* ชื่อคน/รหัสไม่ตัดกลางชื่อ */
+.keep-name { white-space: nowrap; }

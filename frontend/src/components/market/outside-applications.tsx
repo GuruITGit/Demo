@@ -86,7 +86,7 @@ export function OutsideApplications({ canManage, locationId, filter: shared }: {
           {rows.map((a) => (
             <li key={a.id} className="flex flex-wrap items-center gap-3 border-t border-gray-100 px-4 py-3 first:border-t-0">
               <div className="min-w-0 flex-1">
-                <p className="font-semibold">{a.appCode} <span className="font-normal text-gray-500">· {a.applicantName}</span> <span className="ml-1 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-normal text-gray-700">{a.tenancyType === 'temporary' ? 'ชั่วคราว' : 'ประจำ'}</span></p>
+                <p className="font-semibold">{a.appCode} <span className="keep-name font-normal text-gray-500">· {a.applicantName}</span> <span className="ml-1 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-normal text-gray-700">{a.tenancyType === 'temporary' ? 'ชั่วคราว' : 'ประจำ'}</span></p>
                 <p className="text-sm text-gray-500">
                   {a.location?.name ?? '—'} · โทร {a.phone} · {a.startDate ? `เริ่ม ${thDate(a.startDate)}` : 'ไม่ระบุวันเริ่ม'} · {a.days} วัน
                 </p>
