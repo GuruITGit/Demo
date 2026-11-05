@@ -1520,6 +1520,7 @@ void refreshStalls();
 }
 else {
     applyDemoPayConfig();
+    applyDemoWasteFee();
     render();
 } })();
 (() => { const p = new URLSearchParams(location.search); const q = (p.get('stall') || '').trim().toUpperCase(); const k = (p.get('k') || '').trim(); if (q && k) {
@@ -1533,3 +1534,16 @@ else {
 }
 else
     findPaymentByQr(q); })();
+/** เดโม่: ค่าขยะแผงที่เจ้าหน้าที่ตั้งในหน้าตั้งค่า (ซิงก์มากับแถว payCfg) ใช้คิดค่าแรกเข้าแทนค่าตั้งต้น 30 บาท */
+function applyDemoWasteFee() {
+    try {
+        const v = JSON.parse(localStorage.getItem('lamplaimat:demo-outside-bills') || '[]');
+        const c = (Array.isArray(v) ? v : []).find((x) => x && x.payCfg);
+        const w = Number(c?.wasteStallFee);
+        if (c && c.wasteStallFee != null && Number.isFinite(w) && w >= 0) {
+            DEMO.rates.stallWaste = w;
+            render();
+        }
+    }
+    catch { /* ใช้ค่าตั้งต้น */ }
+}

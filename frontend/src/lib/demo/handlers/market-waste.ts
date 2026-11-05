@@ -146,7 +146,7 @@ function syncCitizenOutsideBills(db: Ctx['db']) {
       .map((b) => ({ hh: true, id: b.id, householdRef: b.householdRef, holderName: b.holderName, houseNo: b.houseNo, moo: b.moo, phone: b.phone ?? '', period: b.period, amount: b.amount, status: b.status, submittedMethod: b.submittedMethod ?? null, dueDate: b.dueDate ?? null, reviewNote: b.reviewNote ?? null }));
     // ช่องทางรับเงินที่เจ้าหน้าที่ตั้งในหน้าตั้งค่า → หน้าประชาชนเดโม่ใช้ตาม (payCfg)
     const p = db.payConfig?.[0];
-    const payCfg = p ? [{ payCfg: true, promptpayId: p.promptpayId, promptpayType: p.promptpayType, payeeName: p.payeeName, accountBank: p.accountBank, accountNo: p.accountNo, cashPlace: p.cashPlace, cashHours: p.cashHours, contactPhone: p.contactPhone ?? '' }] : [];
+    const payCfg = p ? [{ payCfg: true, promptpayId: p.promptpayId, promptpayType: p.promptpayType, payeeName: p.payeeName, accountBank: p.accountBank, accountNo: p.accountNo, cashPlace: p.cashPlace, cashHours: p.cashHours, contactPhone: p.contactPhone ?? '', wasteStallFee: p.wasteStallFee, householdFee: p.householdFee }] : [];
     localStorage.setItem('lamplaimat:demo-outside-bills', JSON.stringify([...rows, ...hh, ...payCfg]));
   } catch { /* เขียนไม่ได้ = ข้าม */ }
 }
