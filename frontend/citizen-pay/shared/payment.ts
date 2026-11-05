@@ -3,7 +3,7 @@
 declare const qrcode: (typeNumber: number, level: string) => { addData(s: string): void; make(): void; getModuleCount(): number; isDark(r: number, c: number): boolean };
 
 type PayMethod = 'qr' | 'app' | 'cash';
-interface PaymentRecord { status: 'pending' | 'cash' | 'confirmed' | 'rejected'; method: PayMethod; ref: string; at: string; amount: number; slipName?: string; note?: string; meta?: { t: string; s: string; k: string; m: string } }
+interface PaymentRecord { transRef?: string; auto?: boolean; status: 'pending' | 'cash' | 'confirmed' | 'rejected'; method: PayMethod; ref: string; at: string; amount: number; slipName?: string; note?: string; meta?: { t: string; s: string; k: string; m: string } }
 
 const PAY_STORE = 'market:payments';
 let payMethod: PayMethod = 'qr';
@@ -183,13 +183,22 @@ function pickSlip(input: HTMLInputElement) {
 /** หน้าที่ต่อ API จริงตั้งค่านี้: ส่งการแจ้งชำระของบิลที่เลือก · คืน null = ไม่สำเร็จ · ไม่ตั้ง = ใช้ข้อมูลตัวอย่างในเครื่อง */
 type SubmitResult = { status: 'paid' | 'pending'; reason?: string | null };
 let billSubmitter: ((ids: string[], method: 'transfer' | 'cash', slip: File | null) => Promise<SubmitResult | null>) | null = null;
-function recordPayment(status: 'pending' | 'cash', ref: string) {
+function recordPayment(status: 'pending' | 'cash' | 'confirmed', ref: string, extra: { transRef?: string; auto?: boolean; note?: string } = {}) {
   const all = loadPaymentRecords(); const at = new Date().toISOString(); const amount = payTotal();
   for (const id of payBillIds) {
     const b = DEMO.bills.find(x => x.id === id); if (!b) continue;
-    b.status = status; all[id] = { status, method: payMethod, ref, at, amount, slipName: slipFile?.name, meta: { t: b.payerType, s: b.stall || b.ref, k: b.kind, m: b.month } };
+    b.status = status; all[id] = { ...extra, status, method: payMethod, ref, at, amount, slipName: slipFile?.name, meta: { t: b.payerType, s: b.stall || b.ref, k: b.kind, m: b.month } };
   }
   writePaymentRecords(all);
+}
+/** เดโม่: ส่งสลิปให้ /api/demo-slip ตรวจกับ Slip2Go · null = ตรวจไม่ได้ (ไม่ตั้งโทเคน/ล่ม) */
+async function demoVerifySlip(): Promise<{ ok: boolean; reason: string; transRef?: string } | null> {
+  try {
+    const fd = new FormData(); fd.append('file', slipFile as File); fd.append('amount', String(payTotal())); fd.append('payee', PAYMENT.payeeName || '');
+    const r = await fetch('/api/demo-slip', { method: 'POST', body: fd });
+    if (!r.ok) return null;
+    const j = await r.json(); return j.unavailable ? null : j;
+  } catch { return null; }
 }
 async function submitTransferPayment() {
   if (!slipFile) return toast('แนบรูปสลิปก่อนส่งค่ะ');
@@ -200,8 +209,15 @@ async function submitTransferPayment() {
     toast(res.status === 'paid' ? 'ตรวจสลิปผ่านแล้ว · ชำระเรียบร้อย' : res.reason ? `ส่งสลิปแล้ว · ${res.reason}` : 'ส่งสลิปแล้ว · รอเจ้าหน้าที่ตรวจสอบ');
     render(); return;
   }
-  recordPayment('pending', newPaymentRef('TRF'));
-  clearSlip(); resetSelection(); paySubmitted(); modal.close(); toast('ส่งสลิปแล้ว · รอเจ้าหน้าที่ตรวจสอบ'); render();
+  // เดโม่: ตรวจสลิปจริงกับ Slip2Go ผ่านเซิร์ฟเวอร์เดโม่ (ถ้าตั้งโทเคนไว้) ผ่าน = ชำระแล้วทันที · ไม่ผ่าน/ตรวจไม่ได้ = รอเจ้าหน้าที่
+  const v = await demoVerifySlip();
+  if (v?.ok && v.transRef) {
+    if (Object.values(loadPaymentRecords()).some(r => r.transRef === v.transRef)) { recordPayment('pending', newPaymentRef('TRF'), { note: 'สลิปนี้ถูกใช้ชำระไปแล้ว' }); clearSlip(); resetSelection(); paySubmitted(); modal.close(); toast('สลิปนี้ถูกใช้ชำระไปแล้ว · รอเจ้าหน้าที่ตรวจสอบ'); render(); return; }
+    recordPayment('confirmed', newPaymentRef('TRF'), { transRef: v.transRef, auto: true });
+    clearSlip(); resetSelection(); paySubmitted(); modal.close(); toast('ตรวจสลิปผ่านแล้ว · ชำระเรียบร้อย'); render(); return;
+  }
+  recordPayment('pending', newPaymentRef('TRF'), v?.reason ? { note: v.reason } : {});
+  clearSlip(); resetSelection(); paySubmitted(); modal.close(); toast(v?.reason ? `ส่งสลิปแล้ว · ${v.reason}` : 'ส่งสลิปแล้ว · รอเจ้าหน้าที่ตรวจสอบ'); render();
 }
 async function submitCashPayment() {
   if (billSubmitter) { const total = payTotal(); const res = await billSubmitter(payBillIds, 'cash', slipFile); if (!res) return; clearSlip(); resetSelection(); paySubmitted(); render(); showCashTicket(newPaymentRef('CSH'), total); return; }

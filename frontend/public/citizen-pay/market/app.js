@@ -430,7 +430,7 @@ function pickSlip(input) {
     renderPaymentModal();
 }
 let billSubmitter = null;
-function recordPayment(status, ref) {
+function recordPayment(status, ref, extra = {}) {
     const all = loadPaymentRecords();
     const at = new Date().toISOString();
     const amount = payTotal();
@@ -439,9 +439,26 @@ function recordPayment(status, ref) {
         if (!b)
             continue;
         b.status = status;
-        all[id] = { status, method: payMethod, ref, at, amount, slipName: slipFile?.name, meta: { t: b.payerType, s: b.stall || b.ref, k: b.kind, m: b.month } };
+        all[id] = { ...extra, status, method: payMethod, ref, at, amount, slipName: slipFile?.name, meta: { t: b.payerType, s: b.stall || b.ref, k: b.kind, m: b.month } };
     }
     writePaymentRecords(all);
+}
+/** เดโม่: ส่งสลิปให้ /api/demo-slip ตรวจกับ Slip2Go · null = ตรวจไม่ได้ (ไม่ตั้งโทเคน/ล่ม) */
+async function demoVerifySlip() {
+    try {
+        const fd = new FormData();
+        fd.append('file', slipFile);
+        fd.append('amount', String(payTotal()));
+        fd.append('payee', PAYMENT.payeeName || '');
+        const r = await fetch('/api/demo-slip', { method: 'POST', body: fd });
+        if (!r.ok)
+            return null;
+        const j = await r.json();
+        return j.unavailable ? null : j;
+    }
+    catch {
+        return null;
+    }
 }
 async function submitTransferPayment() {
     if (!slipFile)
@@ -458,12 +475,34 @@ async function submitTransferPayment() {
         render();
         return;
     }
-    recordPayment('pending', newPaymentRef('TRF'));
+    // เดโม่: ตรวจสลิปจริงกับ Slip2Go ผ่านเซิร์ฟเวอร์เดโม่ (ถ้าตั้งโทเคนไว้) ผ่าน = ชำระแล้วทันที · ไม่ผ่าน/ตรวจไม่ได้ = รอเจ้าหน้าที่
+    const v = await demoVerifySlip();
+    if (v?.ok && v.transRef) {
+        if (Object.values(loadPaymentRecords()).some(r => r.transRef === v.transRef)) {
+            recordPayment('pending', newPaymentRef('TRF'), { note: 'สลิปนี้ถูกใช้ชำระไปแล้ว' });
+            clearSlip();
+            resetSelection();
+            paySubmitted();
+            modal.close();
+            toast('สลิปนี้ถูกใช้ชำระไปแล้ว · รอเจ้าหน้าที่ตรวจสอบ');
+            render();
+            return;
+        }
+        recordPayment('confirmed', newPaymentRef('TRF'), { transRef: v.transRef, auto: true });
+        clearSlip();
+        resetSelection();
+        paySubmitted();
+        modal.close();
+        toast('ตรวจสลิปผ่านแล้ว · ชำระเรียบร้อย');
+        render();
+        return;
+    }
+    recordPayment('pending', newPaymentRef('TRF'), v?.reason ? { note: v.reason } : {});
     clearSlip();
     resetSelection();
     paySubmitted();
     modal.close();
-    toast('ส่งสลิปแล้ว · รอเจ้าหน้าที่ตรวจสอบ');
+    toast(v?.reason ? `ส่งสลิปแล้ว · ${v.reason}` : 'ส่งสลิปแล้ว · รอเจ้าหน้าที่ตรวจสอบ');
     render();
 }
 async function submitCashPayment() {
