@@ -341,7 +341,7 @@ function absorbCitizen(db: Ctx['db']) {
       db.marketBills.push(bill); app.billId = bill.id;
     }
     db.marketOutsideApps.push(app);
-    notify(db, staff, { type: 'market:outside_applied', title: 'มีใบสมัครแผงลอยใหม่', body: `${a.appCode} · ${loc.name} · ${a.name} · โทร ${a.phone}`, actionUrl: '/market' });
+    notify(db, staff, { type: 'market:outside_applied', title: 'มีใบสมัครแผงลอยใหม่', body: `${a.appCode} · ${loc.name} · ${a.name} · โทร ${a.phone}`, actionUrl: '/market?tab=reserve' });
     changed = true;
   }
   if (changed) { persist(); syncCitizenStalls(db); }

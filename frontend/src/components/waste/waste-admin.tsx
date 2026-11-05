@@ -44,9 +44,11 @@ export function WasteAdmin() {
   const orgName = useOrgName();
   const sp = useSearchParams();
   const urlTab = sp.get('tab');
-  const [tab, setTab] = useState<Tab>(TABS.includes(urlTab as Tab) ? (urlTab as Tab) : 'overview');
+  const [tab, setTabRaw] = useState<Tab>(TABS.includes(urlTab as Tab) ? (urlTab as Tab) : 'overview');
+  // เปลี่ยนแท็บแล้วอัปเดต URL ด้วย — ไม่งั้นกดลิงก์แจ้งเตือนที่ URL เท่าเดิมแล้วไม่มีอะไรเกิดขึ้น
+  const setTab = (t: Tab) => { setTabRaw(t); try { window.history.replaceState(null, '', '?tab=' + t); } catch { /* ไม่เป็นไร */ } };
   // กด "ดูรายละเอียด" ในการแจ้งเตือน (ลิงก์ ?tab=...) ขณะอยู่หน้านี้แล้ว ให้สลับแท็บตาม
-  useEffect(() => { if (TABS.includes(urlTab as Tab)) setTab(urlTab as Tab); }, [urlTab]);
+  useEffect(() => { if (TABS.includes(urlTab as Tab)) setTabRaw(urlTab as Tab); }, [urlTab]);
   const [billSeed, setBillSeed] = useState<{ q: string; status: string; n: number }>({ q: '', status: '', n: 0 });
   const { data: sum } = useQuery<Summary>({ queryKey: ['waste', 'summary'], queryFn: async () => (await api.get('/waste/summary')).data.data, refetchInterval: 60_000 });
   const pending = sum?.byStatus.find((s) => s.status === 'pending')?.count ?? 0;

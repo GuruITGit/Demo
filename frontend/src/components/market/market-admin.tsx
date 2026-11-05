@@ -51,9 +51,11 @@ export function MarketAdmin() {
   const orgName = useOrgName();
   const sp = useSearchParams();
   const urlTab = sp.get('tab');
-  const [tab, setTab] = useState<Tab>(TABS.includes(urlTab as Tab) ? (urlTab as Tab) : 'overview');
+  const [tab, setTabRaw] = useState<Tab>(TABS.includes(urlTab as Tab) ? (urlTab as Tab) : 'overview');
+  // เปลี่ยนแท็บแล้วอัปเดต URL ด้วย — ไม่งั้นกดลิงก์แจ้งเตือนที่ URL เท่าเดิมแล้วไม่มีอะไรเกิดขึ้น
+  const setTab = (t: Tab) => { setTabRaw(t); try { window.history.replaceState(null, '', '?tab=' + t); } catch { /* ไม่เป็นไร */ } };
   // กด "ดูรายละเอียด" ในการแจ้งเตือน (ลิงก์ ?tab=...) ขณะอยู่หน้านี้แล้ว ให้สลับแท็บตาม
-  useEffect(() => { if (TABS.includes(urlTab as Tab)) setTab(urlTab as Tab); }, [urlTab]);
+  useEffect(() => { if (TABS.includes(urlTab as Tab)) setTabRaw(urlTab as Tab); }, [urlTab]);
   const [billFilter, setBillFilter] = useState<{ stall?: string; status?: string; n: number }>({ n: 0 });
   const [reserveFilter, setReserveFilter] = useState<'pending' | 'approved' | 'rejected' | 'cancelled' | 'all'>('pending');
 

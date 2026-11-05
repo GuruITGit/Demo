@@ -315,7 +315,7 @@ export class CitizenPayService {
     }
     await notifyUsersWithPermission(this.ds, this.notifications, orgId, { module: 'market', action: 'manage', subject: 'MarketStall' }, {
       type: 'market:outside_applied', title: 'มีใบสมัครแผงลอยใหม่', body: `${code} · ${loc.name} · ${n} · โทร ${p}`,
-      actionUrl: '/market', refType: 'market_outside_application', refId: row.id,
+      actionUrl: '/market?tab=reserve', refType: 'market_outside_application', refId: row.id,
     });
     return { ok: true, appCode: code };
   }
