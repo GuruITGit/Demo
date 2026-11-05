@@ -215,7 +215,7 @@ function absorbPayments(db: Ctx['db']) {
       notify(db, db.users.map((u: Row) => u.id), { type: household ? 'waste:paid' : 'market:paid', title: 'ตรวจสลิปผ่านและชำระแล้ว', body: `${household ? 'บ้าน ' : 'แผง '}${r.meta.s} · ${Number(r.amount).toLocaleString('th-TH')} บาท`, actionUrl: household ? '/waste' : '/market' });
       continue;
     }
-    Object.assign(bill, { status: 'pending', submittedMethod: r.method === 'cash' ? 'cash' : 'transfer', submittedAt: r.at, slipUrl: null, reviewNote: r.method === 'cash' ? null : (r.note || 'เดโม่: ไม่มีรูปสลิปจริง') });
+    Object.assign(bill, { status: 'pending', submittedMethod: r.method === 'cash' ? 'cash' : 'transfer', submittedAt: r.at, slipUrl: r.slipImg || null, reviewNote: r.method === 'cash' ? null : (r.note || (r.slipImg ? null : 'เดโม่: ไม่มีรูปสลิปจริง')) });
     if (told.has(r.ref)) continue;
     told.add(r.ref);
     notify(db, db.users.map((u: Row) => u.id), {
@@ -237,6 +237,44 @@ function syncPayBack(db: Ctx['db'], billId: string, status: 'confirmed' | 'rejec
     db.demoPayLinks = db.demoPayLinks.filter((l) => l.billId !== billId);
   } catch { /* เขียนไม่ได้ = ข้าม */ }
 }
+
+/** เดโม่: "ตรวจสลิปทั้งหมด" — ส่งรูปสลิปที่ประชาชนแนบ (เก็บเป็นรูปย่อ) ไปตรวจกับ Slip2Go จริงผ่าน /api/demo-slip · สลิปเดียวหลายบิลรวมยอดตรวจครั้งเดียว */
+async function verifyDemoSlips(c: Ctx, bills: Row[], prefix: 'MK' | 'WS', label: (b: Row) => string) {
+  absorbPayments(c.db);
+  if (!cfg(c).slipTokenSet || !cfg(c).slipProvider) throw badRequest('ยังไม่ได้ผูกโทเคนตรวจสลิป — ตั้งค่าที่แท็บ "ตั้งค่า" ก่อน');
+  const pend = bills.filter((b) => b.organizationId === ORG_ID && b.status === 'pending' && b.submittedMethod === 'transfer' && typeof b.slipUrl === 'string' && b.slipUrl.startsWith('data:'));
+  if (!pend.length) throw badRequest('ไม่มีสลิปที่ตรวจอัตโนมัติได้ (สลิปที่ส่งก่อนอัปเดตไม่มีรูปเก็บไว้ ให้กดยืนยันรับเงินเอง หรือให้ประชาชนส่งสลิปใหม่)');
+  const groups = new Map<string, Row[]>();
+  for (const b of pend) groups.set(b.slipUrl, [...(groups.get(b.slipUrl) ?? []), b]);
+  const entries = [...groups.entries()];
+  const results: Row[] = [];
+  for (const [url, list] of entries.slice(0, 10)) {
+    const amount = list.reduce((n, b) => n + Number(b.amount), 0);
+    const name = list.length > 1 ? `${label(list[0])} และอีก ${list.length - 1} รายการ` : label(list[0]);
+    let res: { ok: boolean; reason: string; transRef?: string } = { ok: false, reason: 'ตรวจสลิปไม่ได้ในขณะนี้ ให้เจ้าหน้าที่ดูรูปเอง' };
+    try {
+      const fd = new FormData();
+      fd.append('file', await (await fetch(url)).blob(), 'slip.jpg'); fd.append('amount', String(amount)); fd.append('payee', String(cfg(c).payeeName || ''));
+      const j = await (await fetch('/api/demo-slip', { method: 'POST', body: fd })).json();
+      res = j.unavailable ? { ok: false, reason: j.reason || res.reason } : j;
+    } catch { /* ใช้ค่าเริ่มต้น */ }
+    const used = (res.ok && res.transRef) ? [...c.db.wasteBills, ...c.db.marketBills].some((b) => b.slipTransRef === res.transRef) : false;
+    if (used) res = { ok: false, reason: 'สลิปนี้ถูกใช้ชำระไปแล้ว' };
+    const receiptNos: string[] = [];
+    for (const b of list) {
+      if (res.ok) {
+        Object.assign(b, { status: 'paid', paidMethod: 'transfer', paidAt: nowIso(), reviewNote: null, receiptNo: nextReceipt(c, prefix) });
+        receiptNos.push(b.receiptNo); syncPayBack(c.db, b.id, 'confirmed');
+      } else b.reviewNote = String(res.reason).slice(0, 300);
+    }
+    if (res.ok) list[0].slipTransRef = res.transRef;
+    results.push({ label: name, count: list.length, amount, ok: res.ok, reason: res.ok ? '' : res.reason, receiptNos });
+  }
+  syncCitizenOutsideBills(c.db);
+  return { results, remaining: Math.max(0, entries.length - 10) };
+}
+post('/market/bills/verify-slips', (c) => { needPerm(c, 'market:manage:MarketBill'); return verifyDemoSlips(c, c.db.marketBills, 'MK', (b) => `แผง ${b.stallCode} · ${b.payerName}`); });
+post('/waste/bills/verify-slips', (c) => { needPerm(c, 'waste:manage:WasteBill'); return verifyDemoSlips(c, c.db.wasteBills, 'WS', (b) => `บ้าน ${b.houseNo} หมู่ ${Number(b.moo)} · ${b.holderName}`); });
 
 function payBill(c: Ctx, list: Row[], prefix: string, notFoundMsg: string) {
   const bill = list.find((b) => b.id === c.params.id && b.organizationId === ORG_ID);

@@ -10,7 +10,7 @@ import { money, periodLabel } from '@/lib/payment-labels';
 import { Empty, Panel, inputCls } from './pay-ui';
 
 export type QueueBill = {
-  id: string; period: string; amount: string; status: string; slipUrl: string | null; submittedMethod: string | null; submittedAt: string | null;
+  id: string; period: string; amount: string; status: string; slipUrl: string | null; submittedMethod: string | null; submittedAt: string | null; reviewNote?: string | null;
   // ค่าแผง
   stallCode?: string; payerName?: string; kind?: 'rent' | 'waste';
   // ค่าขยะบ้าน
@@ -82,6 +82,7 @@ export function SlipQueue({ kind, canManage }: { kind: 'market' | 'waste'; canMa
           <p className="text-sm text-gray-600">{place}</p>
           <p className="text-sm text-gray-500">งวด {periodLabel(b.period)} · แจ้งเมื่อ {fmtTime(b.submittedAt)}</p>
           <p className="mt-1 text-lg font-bold text-blue-700">{money(b.amount)} บาท</p>
+          {b.reviewNote && <p className="mt-1 text-sm text-amber-700">ตรวจอัตโนมัติ: {b.reviewNote}</p>}
         </div>
         {canManage && (
           <div className="flex shrink-0 flex-col gap-2">
