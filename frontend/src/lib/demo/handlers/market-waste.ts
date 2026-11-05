@@ -144,7 +144,10 @@ function syncCitizenOutsideBills(db: Ctx['db']) {
     // ค่าขยะบ้านทุกครัวเรือนที่ยังค้าง ใส่คีย์เดียวกัน (hh:true) ให้หน้าประชาชนเดโม่ค้นได้ครบเหมือนที่เจ้าหน้าที่เห็น — คีย์ใหม่ต้องแก้นโยบาย Supabase
     const hh = db.wasteBills.filter((b) => b.organizationId === ORG_ID && ['unpaid', 'pending', 'mismatch'].includes(b.status))
       .map((b) => ({ hh: true, id: b.id, householdRef: b.householdRef, holderName: b.holderName, houseNo: b.houseNo, moo: b.moo, phone: b.phone ?? '', period: b.period, amount: b.amount, status: b.status, submittedMethod: b.submittedMethod ?? null, dueDate: b.dueDate ?? null, reviewNote: b.reviewNote ?? null }));
-    localStorage.setItem('lamplaimat:demo-outside-bills', JSON.stringify([...rows, ...hh]));
+    // ช่องทางรับเงินที่เจ้าหน้าที่ตั้งในหน้าตั้งค่า → หน้าประชาชนเดโม่ใช้ตาม (payCfg)
+    const p = db.payConfig?.[0];
+    const payCfg = p ? [{ payCfg: true, promptpayId: p.promptpayId, promptpayType: p.promptpayType, payeeName: p.payeeName, accountBank: p.accountBank, accountNo: p.accountNo, cashPlace: p.cashPlace, cashHours: p.cashHours, contactPhone: p.contactPhone ?? '' }] : [];
+    localStorage.setItem('lamplaimat:demo-outside-bills', JSON.stringify([...rows, ...hh, ...payCfg]));
   } catch { /* เขียนไม่ได้ = ข้าม */ }
 }
 
@@ -540,9 +543,9 @@ get('/market/summary', (c) => {
 });
 
 // ───────────────────────────── ตั้งค่ารับเงิน/ราคา (ค่าแผงและค่าขยะใช้ชุดเดียวกัน)
-get('/market/config', (c) => { needPerm(c, 'market:read:MarketBill'); return { ...cfg(c), id: undefined }; });
+get('/market/config', (c) => { needPerm(c, 'market:read:MarketBill'); syncCitizenOutsideBills(c.db); return { ...cfg(c), id: undefined }; });
 put('/market/config', (c) => { needPerm(c, 'market:manage:MarketStall'); return saveConfig(c); });
-get('/waste/config', (c) => { needPerm(c, 'waste:read:WasteBill'); return { ...cfg(c), id: undefined }; });
+get('/waste/config', (c) => { needPerm(c, 'waste:read:WasteBill'); syncCitizenOutsideBills(c.db); return { ...cfg(c), id: undefined }; });
 put('/waste/config', (c) => { needPerm(c, 'waste:manage:WasteBill'); return saveConfig(c); });
 function saveConfig(c: Ctx) {
   const row = cfg(c), b = c.body ?? {};
@@ -555,6 +558,7 @@ function saveConfig(c: Ctx) {
     cashPlace: text(b.cashPlace, 120, row.cashPlace), cashHours: text(b.cashHours, 120, row.cashHours), contactPhone: text(b.contactPhone, 40, row.contactPhone ?? ''),
     wasteStallFee: fee(b.wasteStallFee, row.wasteStallFee), householdFee: fee(b.householdFee, row.householdFee),
   });
+  syncCitizenOutsideBills(c.db);
   return { ...row, id: undefined };
 }
 

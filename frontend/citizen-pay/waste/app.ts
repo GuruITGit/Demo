@@ -152,4 +152,4 @@ applySavedPayments();
 // เปิดจาก QR หน้าบ้าน (?house=&moo=) → ใส่บ้านเลขที่ให้แล้ว ผู้ใช้กรอกแค่ชื่อ
 if (new URLSearchParams(location.search).has('house')) qrHouse = houseFromQr(location.href);
 // ถ้าเข้าถึงระบบจริงได้: ใช้ช่องทางรับเงินจริงและส่งการแจ้งชำระเข้าระบบ · ไม่ได้ (เดโม่) ใช้ข้อมูลตัวอย่างเดิม
-(async () => { const c = await payApi<any>("/config").catch(() => null); if (c) { applyPayConfig(c); billSubmitter = submitWasteBills; } render(); if (qrHouse && PAYMENT.demo) fillDemoHouse(); const hk = parseHouseKeyLink(location.href); if (hk) void searchWasteByKey(hk.ref, hk.key); })();
+(async () => { const c = await payApi<any>("/config").catch(() => null); if (c) { applyPayConfig(c); billSubmitter = submitWasteBills; } else applyDemoPayConfig(); render(); if (qrHouse && PAYMENT.demo) fillDemoHouse(); const hk = parseHouseKeyLink(location.href); if (hk) void searchWasteByKey(hk.ref, hk.key); })();
