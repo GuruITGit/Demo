@@ -31,7 +31,7 @@ export function PaySettings({ kind, canManage }: { kind: 'market' | 'waste'; can
       void slipTokenSet;
       return api.put(`/${kind}/config`, token.trim() ? { ...rest, slipToken: token.trim() } : rest);
     },
-    onSuccess: () => { toast.success('บันทึกการตั้งค่าแล้ว'); qc.invalidateQueries({ queryKey: ['pay-config'] }); },
+    onSuccess: () => { toast.success('บันทึกการตั้งค่าแล้ว'); setDraft(null); setToken(''); qc.invalidateQueries({ queryKey: ['pay-config'] }); }, // ล้างค่าที่พิมพ์ค้าง ให้แสดงค่าที่เซิร์ฟเวอร์เก็บจริง (สถานะโทเคน "ตั้งค่าแล้ว")
     onError: (e) => toast.error(getErrorMessage(e)),
   });
 
