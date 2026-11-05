@@ -557,7 +557,9 @@ function saveConfig(c: Ctx) {
     payeeName: text(b.payeeName, 120, row.payeeName), accountBank: text(b.accountBank, 60, row.accountBank), accountNo: text(b.accountNo, 30, row.accountNo),
     cashPlace: text(b.cashPlace, 120, row.cashPlace), cashHours: text(b.cashHours, 120, row.cashHours), contactPhone: text(b.contactPhone, 40, row.contactPhone ?? ''),
     wasteStallFee: fee(b.wasteStallFee, row.wasteStallFee), householdFee: fee(b.householdFee, row.householdFee),
+    slipProvider: ['', 'slip2go'].includes(b.slipProvider) ? b.slipProvider : (row.slipProvider ?? ''),
   });
+  if (typeof b.slipToken === 'string' && b.slipToken.trim()) row.slipTokenSet = true; // เดโม่ไม่เก็บโทเคนจริง จำแค่ว่าตั้งแล้ว
   syncCitizenOutsideBills(c.db);
   return { ...row, id: undefined };
 }
