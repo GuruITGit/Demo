@@ -196,7 +196,8 @@ function absorbPayments(db: Ctx['db']) {
   const told = new Set<string>();
   let changed = false;
   for (const [cid, r] of Object.entries(raw)) {
-    if (!r?.meta || !['pending', 'cash'].includes(r.status) || db.demoPayLinks.some((l) => l.citizenId === cid && l.at === r.at)) continue;
+    const auto = r?.status === 'confirmed' && r?.auto; // ประชาชนส่งสลิปแล้ว Slip2Go ตรวจผ่าน → ตัดเป็นชำระแล้วเลย
+    if (!r?.meta || !(['pending', 'cash'].includes(r.status) || auto) || db.demoPayLinks.some((l) => l.citizenId === cid && l.at === r.at)) continue;
     const [mn, y] = String(r.meta.m).split(' ');
     const mi = MONTHS_TH.indexOf(mn) + 1;
     if (!mi) continue;
@@ -209,7 +210,12 @@ function absorbPayments(db: Ctx['db']) {
     db.demoPayLinks.push({ citizenId: cid, at: r.at, billId: bill.id });
     changed = true;
     if (bill.status === 'paid') continue;
-    Object.assign(bill, { status: 'pending', submittedMethod: r.method === 'cash' ? 'cash' : 'transfer', submittedAt: r.at, slipUrl: null, reviewNote: r.method === 'cash' ? null : 'เดโม่: ไม่มีรูปสลิปจริง' });
+    if (auto) {
+      Object.assign(bill, { status: 'paid', paidMethod: 'transfer', paidAt: r.at, submittedMethod: 'transfer', submittedAt: r.at, slipUrl: null, reviewNote: null, receiptNo: nextReceipt({ db } as Ctx, household ? 'WS' : 'MK'), slipTransRef: r.transRef ?? null });
+      notify(db, db.users.map((u: Row) => u.id), { type: household ? 'waste:paid' : 'market:paid', title: 'ตรวจสลิปผ่านและชำระแล้ว', body: `${household ? 'บ้าน ' : 'แผง '}${r.meta.s} · ${Number(r.amount).toLocaleString('th-TH')} บาท`, actionUrl: household ? '/waste' : '/market' });
+      continue;
+    }
+    Object.assign(bill, { status: 'pending', submittedMethod: r.method === 'cash' ? 'cash' : 'transfer', submittedAt: r.at, slipUrl: null, reviewNote: r.method === 'cash' ? null : (r.note || 'เดโม่: ไม่มีรูปสลิปจริง') });
     if (told.has(r.ref)) continue;
     told.add(r.ref);
     notify(db, db.users.map((u: Row) => u.id), {
