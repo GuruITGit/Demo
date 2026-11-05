@@ -230,7 +230,7 @@ async function submitTransferPayment() {
   const v = await demoVerifySlip();
   if (v?.ok && v.transRef) {
     if (Object.values(loadPaymentRecords()).some(r => r.transRef === v.transRef)) { recordPayment('pending', newPaymentRef('TRF'), { note: 'สลิปนี้ถูกใช้ชำระไปแล้ว (ตรงกับรายการที่ชำระแล้วในระบบ)' }); clearSlip(); resetSelection(); paySubmitted(); modal.close(); toast('สลิปนี้ถูกใช้ชำระไปแล้ว · รอเจ้าหน้าที่ตรวจสอบ'); render(); return; }
-    recordPayment('confirmed', newPaymentRef('TRF'), { transRef: v.transRef, auto: true });
+    recordPayment('confirmed', newPaymentRef('TRF'), { transRef: v.transRef, auto: true, slipImg: slipFile ? await slipThumb(slipFile) : '' });
     clearSlip(); resetSelection(); paySubmitted(); modal.close(); toast('ตรวจสลิปผ่านแล้ว · ชำระเรียบร้อย'); render(); return;
   }
   const slipImg = slipFile ? await slipThumb(slipFile) : '';

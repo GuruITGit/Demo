@@ -510,7 +510,7 @@ async function submitTransferPayment() {
             render();
             return;
         }
-        recordPayment('confirmed', newPaymentRef('TRF'), { transRef: v.transRef, auto: true });
+        recordPayment('confirmed', newPaymentRef('TRF'), { transRef: v.transRef, auto: true, slipImg: slipFile ? await slipThumb(slipFile) : '' });
         clearSlip();
         resetSelection();
         paySubmitted();
