@@ -1,5 +1,5 @@
 'use client';
-import { useRef, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, getErrorMessage } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
@@ -11,6 +11,8 @@ import { DuesFilter, Empty, Field, Metric, Panel, PayTabs, dueTone, filterDues, 
 import { cn } from '@/lib/utils';
 import { QrSvg, downloadQrPng, printQrSheet, houseQrUrl, type QrItem } from '@/components/pay/qr';
 import { SlipQueue } from '@/components/pay/slip-queue';
+import { PaidHistory } from '@/components/pay/paid-history';
+import { useSearchParams } from 'next/navigation';
 import { PaySettings } from '@/components/pay/pay-settings';
 import { printReceipt } from '@/components/pay/receipt-print';
 
@@ -27,7 +29,8 @@ type Summary = {
   byStatus: { status: string; count: number; total: number }[];
 };
 type Arrear = { householdRef: string; holderName: string; houseNo: string; moo: string; phone: string | null; months: number; oldest?: string; total: number };
-type Tab = 'overview' | 'queue' | 'households' | 'bills' | 'dues' | 'qr' | 'settings';
+type Tab = 'overview' | 'queue' | 'paid' | 'households' | 'bills' | 'dues' | 'qr' | 'settings';
+const TABS: Tab[] = ['overview', 'queue', 'paid', 'households', 'bills', 'dues', 'qr', 'settings'];
 
 const STATUS_TONE: Record<string, string> = {
   unpaid: 'bg-red-50 text-red-700', pending: 'bg-amber-50 text-amber-700', paid: 'bg-green-50 text-green-700', mismatch: 'bg-orange-50 text-orange-700',
@@ -38,7 +41,11 @@ export function WasteAdmin() {
   const has = useAuthStore((s) => s.hasPermission);
   const canManage = has('waste:manage:WasteBill');
   const orgName = useOrgName();
-  const [tab, setTab] = useState<Tab>('overview');
+  const sp = useSearchParams();
+  const urlTab = sp.get('tab');
+  const [tab, setTab] = useState<Tab>(TABS.includes(urlTab as Tab) ? (urlTab as Tab) : 'overview');
+  // กด "ดูรายละเอียด" ในการแจ้งเตือน (ลิงก์ ?tab=...) ขณะอยู่หน้านี้แล้ว ให้สลับแท็บตาม
+  useEffect(() => { if (TABS.includes(urlTab as Tab)) setTab(urlTab as Tab); }, [urlTab]);
   const [billSeed, setBillSeed] = useState<{ q: string; status: string; n: number }>({ q: '', status: '', n: 0 });
   const { data: sum } = useQuery<Summary>({ queryKey: ['waste', 'summary'], queryFn: async () => (await api.get('/waste/summary')).data.data, refetchInterval: 60_000 });
   const pending = sum?.byStatus.find((s) => s.status === 'pending')?.count ?? 0;
@@ -52,6 +59,7 @@ export function WasteAdmin() {
         tabs={[
           { key: 'overview', label: 'ภาพรวม' },
           { key: 'queue', label: 'รอตรวจ', badge: pending },
+          { key: 'paid', label: 'ชำระแล้ว' },
           { key: 'households', label: 'ครัวเรือน' },
           { key: 'bills', label: 'บิล' },
           { key: 'dues', label: 'ค้างชำระ' },
@@ -61,6 +69,7 @@ export function WasteAdmin() {
       />
       {tab === 'overview' && <Overview sum={sum} onGo={setTab} />}
       {tab === 'queue' && <SlipQueue kind="waste" canManage={canManage} />}
+      {tab === 'paid' && <PaidHistory kind="waste" />}
       {tab === 'households' && <Households canManage={canManage} onBills={(ref) => goBills(ref)} />}
       {tab === 'bills' && <Bills key={billSeed.n} canManage={canManage} orgName={orgName} seedQ={billSeed.q} seedStatus={billSeed.status} />}
       {tab === 'dues' && <Dues onBills={(ref) => goBills(ref, 'unpaid')} />}
