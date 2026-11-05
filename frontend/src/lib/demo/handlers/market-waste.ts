@@ -212,7 +212,7 @@ function absorbPayments(db: Ctx['db']) {
     if (bill.status === 'paid') continue;
     if (auto) {
       Object.assign(bill, { status: 'paid', paidMethod: 'transfer', paidAt: r.at, submittedMethod: 'transfer', submittedAt: r.at, slipUrl: r.slipImg || null, reviewNote: null, receiptNo: nextReceipt({ db } as Ctx, household ? 'WS' : 'MK'), slipTransRef: r.transRef ?? null });
-      notify(db, db.users.map((u: Row) => u.id), { type: household ? 'waste:paid' : 'market:paid', title: 'ตรวจสลิปผ่านและชำระแล้ว', body: `${bill.payerName ?? bill.holderName ?? ''} · ${household ? 'บ้าน ' : 'แผง '}${r.meta.s} · ${Number(r.amount).toLocaleString('th-TH')} บาท`, actionUrl: household ? '/waste?tab=paid' : '/market?tab=paid' });
+      notify(db, db.users.map((u: Row) => u.id), { type: household ? 'waste:paid' : 'market:paid', title: 'ตรวจสลิปผ่านและชำระแล้ว', body: `${bill.payerName ?? bill.holderName ?? ''} · ${household ? 'บ้าน ' : 'แผง '}${r.meta.s} · ${Number(r.amount).toLocaleString('th-TH')} บาท · โอน · ตรวจสลิปอัตโนมัติ`, actionUrl: household ? '/waste?tab=paid' : '/market?tab=paid' });
       continue;
     }
     Object.assign(bill, { status: 'pending', submittedMethod: r.method === 'cash' ? 'cash' : 'transfer', submittedAt: r.at, slipUrl: r.slipImg || null, reviewNote: r.method === 'cash' ? null : (r.note || (r.slipImg ? null : 'เดโม่: ไม่มีรูปสลิปจริง')) });

@@ -349,8 +349,8 @@ export class CitizenPayService {
     const payer = isMarket ? (first as MarketBill).payerName : (first as WasteBill).holderName;
     const perm = isMarket ? { module: 'market', action: 'manage', subject: 'MarketBill' } : { module: 'waste', action: 'manage', subject: 'WasteBill' };
     const notice = status === 'paid'
-      ? { type: isMarket ? 'market:paid' : 'waste:paid', title: 'ตรวจสลิปผ่านและชำระแล้ว', body: `${payer} · ${who} · ${bills.length} รายการ · ${total} บาท` }
-      : { type: isMarket ? 'market:pending' : 'waste:pending', title: 'มีการแจ้งชำระรอตรวจ', body: `${payer} · ${who} · ${bills.length} รายการ · ${total} บาท${reason ? ' — ' + reason : ''}` };
+      ? { type: isMarket ? 'market:paid' : 'waste:paid', title: 'ตรวจสลิปผ่านและชำระแล้ว', body: `${payer} · ${who} · ${bills.length} รายการ · ${total} บาท · โอน · ตรวจสลิปอัตโนมัติ` }
+      : { type: isMarket ? 'market:pending' : 'waste:pending', title: 'มีการแจ้งชำระรอตรวจ', body: `${payer} · ${who} · ${bills.length} รายการ · ${total} บาท · ${first.submittedMethod === 'cash' ? 'เงินสด (รอรับที่ อบต.)' : 'โอน'}${reason ? ' — ' + reason : ''}` };
     await notifyUsersWithPermission(this.ds, this.notifications, first.organizationId, perm, {
       ...notice, actionUrl: `${isMarket ? '/market' : '/waste'}?tab=${status === 'paid' ? 'paid' : 'queue'}`, refType: isMarket ? 'market_bill' : 'waste_bill', refId: first.id,
     });
