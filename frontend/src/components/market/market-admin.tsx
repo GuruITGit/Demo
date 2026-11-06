@@ -55,6 +55,7 @@ export function MarketAdmin() {
   // เปลี่ยนแท็บแล้วอัปเดต URL ด้วย — ไม่งั้นกดลิงก์แจ้งเตือนที่ URL เท่าเดิมแล้วไม่มีอะไรเกิดขึ้น
   const setTab = (t: Tab) => { setTabRaw(t); try { window.history.replaceState(null, '', '?tab=' + t); } catch { /* ไม่เป็นไร */ } };
   // กด "ดูรายละเอียด" ในการแจ้งเตือน (ลิงก์ ?tab=...) ขณะอยู่หน้านี้แล้ว ให้สลับแท็บตาม
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- ซิงก์แท็บจาก URL ที่เปลี่ยนจากภายนอก (ลิงก์แจ้งเตือน)
   useEffect(() => { if (TABS.includes(urlTab as Tab)) setTabRaw(urlTab as Tab); }, [urlTab]);
   const [billFilter, setBillFilter] = useState<{ stall?: string; status?: string; n: number }>({ n: 0 });
   const [reserveFilter, setReserveFilter] = useState<'pending' | 'approved' | 'rejected' | 'cancelled' | 'all'>('pending');

@@ -48,6 +48,7 @@ export function WasteAdmin() {
   // เปลี่ยนแท็บแล้วอัปเดต URL ด้วย — ไม่งั้นกดลิงก์แจ้งเตือนที่ URL เท่าเดิมแล้วไม่มีอะไรเกิดขึ้น
   const setTab = (t: Tab) => { setTabRaw(t); try { window.history.replaceState(null, '', '?tab=' + t); } catch { /* ไม่เป็นไร */ } };
   // กด "ดูรายละเอียด" ในการแจ้งเตือน (ลิงก์ ?tab=...) ขณะอยู่หน้านี้แล้ว ให้สลับแท็บตาม
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- ซิงก์แท็บจาก URL ที่เปลี่ยนจากภายนอก (ลิงก์แจ้งเตือน)
   useEffect(() => { if (TABS.includes(urlTab as Tab)) setTabRaw(urlTab as Tab); }, [urlTab]);
   const [billSeed, setBillSeed] = useState<{ q: string; status: string; n: number }>({ q: '', status: '', n: 0 });
   const { data: sum } = useQuery<Summary>({ queryKey: ['waste', 'summary'], queryFn: async () => (await api.get('/waste/summary')).data.data, refetchInterval: 60_000 });
