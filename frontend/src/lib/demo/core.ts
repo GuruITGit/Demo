@@ -91,7 +91,9 @@ function startRemotePoll() {
   setInterval(async () => {
     if (loadFailed || timer || pendingWrites > 0) return;
     try {
+      const seq = writeSeq;
       const r = await remoteLoad();
+      if (seq !== writeSeq) return; // มีการแก้ข้อมูลระหว่างรอ → ค่าที่ดึงมาเก่าแล้ว
       if ((r as Row | null)?._meta?.[0]?.version !== DB_VERSION) return;
       const json = JSON.stringify(r);
       if (json === lastSaved || timer || pendingWrites > 0) return;
@@ -106,7 +108,9 @@ export function getDb(): Db {
   return db;
 }
 
+let writeSeq = 0; // นับครั้งที่แก้ข้อมูลในเครื่อง — รอบดึงสถานะกลางทิ้งผลที่ดึงมาก่อนการแก้ (กันข้อมูลใหม่โดนค่าเก่าทับ)
 export function persist(now = false) {
+  writeSeq++;
   if (!db || typeof indexedDB === 'undefined') return;
   // ต่อคิวทีละงาน และอ่าน db ตอนถึงคิว → ข้อมูลล่าสุดเสมอ ไม่ให้คำขอเก่าที่เสร็จทีหลังทับของใหม่
   const write = () => {
