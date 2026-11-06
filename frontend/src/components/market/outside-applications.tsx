@@ -86,17 +86,20 @@ export function OutsideApplications({ canManage, locationId, filter: shared }: {
           {rows.map((a) => (
             <li key={a.id} className="flex flex-wrap items-center gap-3 border-t border-gray-100 px-4 py-3 first:border-t-0">
               <div className="min-w-0 flex-1">
-                <p className="font-semibold">{a.appCode} <span className="keep-name font-normal text-gray-500">· {a.applicantName}</span> <span className="ml-1 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-normal text-gray-700">{a.tenancyType === 'temporary' ? 'ชั่วคราว' : 'ประจำ'}</span></p>
-                <p className="text-sm text-gray-500">
+                <p className="flex flex-wrap items-center gap-2 font-semibold">
+                  <span className="keep-name text-base">{a.applicantName}</span>
+                  <span className="text-sm font-normal text-gray-500">{a.appCode}</span>
+                  <span className="whitespace-nowrap rounded-full bg-gray-100 px-2 py-0.5 text-xs font-normal text-gray-700">{a.tenancyType === 'temporary' ? 'ชั่วคราว' : 'ประจำ'}</span>
+                  <span className={`whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium ${a.status === 'pending' ? 'bg-blue-50 text-blue-700' : a.status === 'approved' ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-600'}`}>{STATUS_LABEL[a.status]}</span>
+                </p>
+                <p className="mt-0.5 text-sm text-gray-600">
                   {a.location?.name ?? '—'} · โทร {a.phone} · {a.startDate ? `เริ่ม ${thDate(a.startDate)}` : 'ไม่ระบุวันเริ่ม'} · {a.days} วัน
                 </p>
                 <p className="text-sm text-gray-500">
-                  {STATUS_LABEL[a.status]}
                   {a.status === 'approved' && (a.openDues.count > 0
-                    ? <span className="font-medium text-amber-700"> · ค้าง {a.openDues.count} รายการ {Number(a.openDues.total).toLocaleString('th-TH', { minimumFractionDigits: 2 })} บาท</span>
-                    : <span className="text-green-700"> · ไม่มียอดค้าง</span>)}
-                  {a.reviewNote && ` · ${a.reviewNote}`}
-                  {' · '}
+                    ? <span className="font-medium text-amber-700">ค้าง {a.openDues.count} รายการ {Number(a.openDues.total).toLocaleString('th-TH', { minimumFractionDigits: 2 })} บาท · </span>
+                    : <span className="text-green-700">ไม่มียอดค้าง · </span>)}
+                  {a.reviewNote && `${a.reviewNote} · `}
                   {a.idCardUrl
                     ? <a href={a.idCardUrl} target="_blank" rel="noreferrer" className="text-sky-700 underline">ดูรูปบัตรประชาชน</a>
                     : 'ไม่ได้แนบบัตร'}
