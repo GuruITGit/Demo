@@ -115,7 +115,7 @@ function setPayMethod(m: PayMethod) { payMethod = m; renderPaymentModal(); }
 
 function slipBoxHTML(optional: boolean) {
   const label = slipFile ? 'เปลี่ยนรูปสลิป' : optional ? 'แนบรูปสลิป (ถ้ามี)' : 'แนบรูปสลิป (จำเป็น)';
-  return `<div class="slip-box"><label class="upload scan-upload">${label}<input type="file" accept="image/*" onchange="pickSlip(this)"></label>${slipFile ? `<div style="margin-top:8px;padding:8px 10px;border-radius:8px;background:#e8f6ee;color:#146c3b;font-weight:600;font-size:14px">✓ แนบสลิปแล้ว · พร้อมส่ง</div><div class="slip-preview"><img src="${slipPreviewUrl}" alt="สลิปที่แนบ"><span>${escapeHTML(slipFile.name)}</span></div>` : ''}</div>`;
+  return `<div class="slip-box"><label class="upload scan-upload">${label}<input type="file" accept="image/*" onchange="pickSlip(this)"></label>${slipFile ? `<div style="margin-top:8px;padding:10px 12px;border-radius:10px;border:1px solid #9bd3b3;background:#e8f6ee;color:#146c3b;font-weight:700;font-size:15px;text-align:center">✓ แนบสลิปแล้ว<br><span style="font-weight:400;font-size:12px">กดปุ่มส่งด้านล่างเพื่อยืนยัน</span></div><div class="slip-preview"><img src="${slipPreviewUrl}" alt="สลิปที่แนบ"><span>${escapeHTML(slipFile.name)}</span></div>` : ''}</div>`;
 }
 
 function renderPaymentModal() {
