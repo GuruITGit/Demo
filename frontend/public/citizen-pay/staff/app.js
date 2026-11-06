@@ -503,7 +503,7 @@ async function submitTransferPayment() {
     const v = await demoVerifySlip();
     if (v?.ok && v.transRef) {
         if (Object.values(loadPaymentRecords()).some(r => r.transRef === v.transRef)) {
-            recordPayment('pending', newPaymentRef('TRF'), { note: 'สลิปนี้ถูกใช้ชำระไปแล้ว (ตรงกับรายการที่ชำระแล้วในระบบ)' });
+            recordPayment('pending', newPaymentRef('TRF'), { note: 'สลิปนี้ถูกใช้ชำระไปแล้ว (ตรงกับรายการที่ชำระแล้วในระบบ)', slipImg: slipFile ? await slipThumb(slipFile) : '' });
             clearSlip();
             resetSelection();
             paySubmitted();
