@@ -70,7 +70,7 @@ export function SlipQueue({ kind, canManage }: { kind: 'market' | 'waste'; canMa
       ? `แผง ${b.stallCode} · ${b.kind === 'waste' ? 'ค่าขยะแผง' : 'ค่าเช่าแผง'}`
       : `บ้านเลขที่ ${b.houseNo} หมู่ ${Number(b.moo)} · ${b.householdRef}`;
     return (
-      <article key={b.id} className="flex flex-wrap items-start gap-4 border-t border-gray-100 p-4 first:border-t-0">
+      <article key={b.id} className="flex flex-wrap items-start gap-4 sm:flex-nowrap border-t border-gray-100 p-4 first:border-t-0">
         {b.slipUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={b.slipUrl} alt="สลิปโอนเงิน" onClick={() => setZoom(b.slipUrl)} className="h-24 w-24 shrink-0 cursor-zoom-in rounded-lg border border-gray-200 object-cover" />
@@ -85,7 +85,7 @@ export function SlipQueue({ kind, canManage }: { kind: 'market' | 'waste'; canMa
           {b.reviewNote && <p className="mt-1 text-sm text-amber-700">ตรวจอัตโนมัติ: {b.reviewNote}</p>}
         </div>
         {canManage && (
-          <div className="flex shrink-0 flex-col gap-2">
+          <div className="flex shrink-0 flex-col gap-2 sm:ml-auto">
             <Button size="sm" variant="success" loading={confirm.isPending && confirm.variables?.id === b.id} onClick={() => confirm.mutate(b)}>
               {b.submittedMethod === 'cash' ? 'รับเงินสดแล้ว' : 'ยืนยันรับเงิน'}
             </Button>
