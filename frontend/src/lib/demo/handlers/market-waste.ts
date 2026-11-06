@@ -150,7 +150,7 @@ const takenCount = (db: Ctx['db'], locId: string) => db.marketOutsideApps.filter
 function syncCitizenOutsideBills(db: Ctx['db']) {
   try {
     const rows = db.marketBills
-      .filter((b) => b.organizationId === ORG_ID && String(b.stallCode).startsWith('OUT-'))
+      .filter((b) => b.organizationId === ORG_ID) // แผงลอย + แผงประจำ (ประชาชนค้นด้วยชื่อ+รหัสแผง)
       .map((b) => ({ id: b.id, stallCode: b.stallCode, payerName: b.payerName, kind: b.kind, period: b.period, amount: b.amount, status: b.status, submittedMethod: b.submittedMethod ?? null, dueDate: b.dueDate ?? null, reviewNote: b.reviewNote ?? null }));
     // ค่าขยะบ้านทุกครัวเรือนที่ยังค้าง ใส่คีย์เดียวกัน (hh:true) ให้หน้าประชาชนเดโม่ค้นได้ครบเหมือนที่เจ้าหน้าที่เห็น — คีย์ใหม่ต้องแก้นโยบาย Supabase
     const hh = db.wasteBills.filter((b) => b.organizationId === ORG_ID && ['unpaid', 'pending', 'mismatch'].includes(b.status))

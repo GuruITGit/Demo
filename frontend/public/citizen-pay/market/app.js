@@ -1055,6 +1055,16 @@ function readOutsideBills() {
         return [];
     }
 }
+/** บิลแผงประจำที่เจ้าหน้าที่เดโม่ออก/ยกเลิก/รับชำระ (ซิงก์มาในคีย์เดียวกัน) — ถ้าแผงนั้นมีข้อมูลซิงก์ ใช้ชุดนี้แทนข้อมูลตัวอย่างคงที่ */
+function readStallBills(code) {
+    try {
+        const v = JSON.parse(localStorage.getItem('lamplaimat:demo-outside-bills') || '[]');
+        return Array.isArray(v) ? v.filter((x) => x && !x.hh && !x.payCfg && !String(x.stallCode || '').startsWith('OUT-') && String(x.stallCode).toUpperCase() === code) : [];
+    }
+    catch {
+        return [];
+    }
+}
 let emptyNote = '';
 async function searchStallBills(name, stall) {
     verifiedName = name.trim();
@@ -1078,6 +1088,14 @@ async function searchStallBills(name, stall) {
                     emptyNote = 'ไม่พบชื่อผู้เช่านี้ในระบบ กรุณาตรวจสอบชื่อ-นามสกุลให้ตรงกับที่สมัคร';
                 DEMO.bills = raw.filter(isOpenRow).map(toStallBill);
                 if (raw.length && !DEMO.bills.length)
+                    emptyNote = 'ไม่มียอดค้างชำระ';
+            }
+            else if (searchTerm && readStallBills(searchTerm).length) {
+                const all = readStallBills(searchTerm).filter((x) => demoNameKey(x.payerName) === nk);
+                DEMO.bills = all.filter(isOpenRow).map(toStallBill);
+                if (!all.length)
+                    emptyNote = 'ไม่พบข้อมูลที่ตรงกัน กรุณาตรวจสอบชื่อและเลขล็อกให้ตรงกับที่ลงทะเบียนไว้';
+                else if (!DEMO.bills.length)
                     emptyNote = 'ไม่มียอดค้างชำระ';
             }
             else if (searchTerm) {
@@ -1135,6 +1153,11 @@ async function searchStallByKey(code, key) {
                 const raw = readOutsideBills().filter((x) => String(x.stallCode).toUpperCase() === code);
                 verifiedName = raw[0]?.payerName || '';
                 DEMO.bills = raw.filter(isOpenRow).map(toStallBill);
+            }
+            else if (readStallBills(code).length) {
+                const all = readStallBills(code);
+                verifiedName = all[0].payerName || '';
+                DEMO.bills = all.filter(isOpenRow).map(toStallBill);
             }
             else {
                 DEMO.bills = demoBillsAll.filter((b) => b.payerType === 'stall' && b.stall?.toUpperCase() === code);
