@@ -7,7 +7,7 @@ import { toast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/shared/confirm-dialog';
 import { BILL_STATUS, PAY_METHOD, periodLabel, money } from '@/lib/payment-labels';
-import { MethodChip, SlipButton, Empty, Field, Panel, inputCls, recentPeriods } from '@/components/pay/pay-ui';
+import { RowMenu, SlipButton, Empty, Field, Panel, inputCls, recentPeriods } from '@/components/pay/pay-ui';
 import { printReceipt } from '@/components/pay/receipt-print';
 
 export type Bill = {
@@ -31,7 +31,6 @@ export function MarketBills({ canManage, orgName, initialStall, initialStatus }:
   const [stall, setStall] = useState(initialStall ?? '');
   const [place, setPlace] = useState<PlaceKind>('all');
   const [genPeriod, setGenPeriod] = useState(periods[0]);
-  const [method, setMethod] = useState<Record<string, string>>({});
   const [cancelId, setCancelId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [draft, setDraft] = useState({ stallCode: '', kind: 'rent' as Bill['kind'], period: periods[0], amount: '' });
@@ -144,22 +143,17 @@ export function MarketBills({ canManage, orgName, initialStall, initialStatus }:
                   <td className="whitespace-nowrap px-4 py-2 text-right tabular-nums">{money(b.amount)}</td>
                   <td className="px-4 py-2">
                     <span className={`inline-block whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_TONE[b.status] ?? 'bg-gray-100 text-gray-600'}`}>{BILL_STATUS[b.status] ?? b.status}</span>
-                    {b.status === 'paid' && <span className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-gray-500"><MethodChip method={b.paidMethod} /><span>{b.receiptNo}</span><SlipButton url={b.slipUrl} method={b.paidMethod} /></span>}
+                    {b.status === 'paid' && <span className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-gray-500"><span>{PAY_METHOD[b.paidMethod ?? ''] ?? b.paidMethod} · {b.receiptNo}</span><SlipButton url={b.slipUrl} method={b.paidMethod} /></span>}
                     {b.status === 'mismatch' && b.reviewNote && <span className="mt-1 block text-xs text-orange-700">{b.reviewNote}</span>}
                   </td>
                   <td className="px-4 py-2">
                     {b.status === 'paid' ? (
-                      <Button size="sm" variant="outline" onClick={() => doPrint(b)}>พิมพ์ใบเสร็จ</Button>
+                      <RowMenu items={[{ label: 'พิมพ์ใบเสร็จ', onClick: () => doPrint(b) }]} />
                     ) : canManage ? (
-                      <div className="flex items-center gap-2 whitespace-nowrap">
-                        <select value={method[b.id] ?? (b.submittedMethod === 'cash' ? 'cash' : b.submittedMethod === 'transfer' ? 'transfer' : 'cash')}
-                          onChange={(e) => setMethod({ ...method, [b.id]: e.target.value })} className="rounded-md border border-gray-300 px-2 py-1.5 text-sm">
-                          {Object.entries(PAY_METHOD).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-                        </select>
-                        <Button size="sm" loading={pay.isPending && pay.variables?.id === b.id}
-                          onClick={() => pay.mutate({ id: b.id, m: method[b.id] ?? (b.submittedMethod === 'transfer' ? 'transfer' : 'cash') })}>รับชำระ</Button>
-                        <Button size="sm" variant="ghost" className="text-red-600" onClick={() => setCancelId(b.id)}>ยกเลิกบิล</Button>
-                      </div>
+                      <RowMenu items={[
+                        ...Object.entries(PAY_METHOD).map(([k, v]) => ({ label: `รับชำระ · ${v}`, hint: b.submittedMethod === k ? 'ลูกค้าแจ้งไว้' : undefined, onClick: () => pay.mutate({ id: b.id, m: k }) })),
+                        { label: 'ยกเลิกบิล', danger: true, onClick: () => setCancelId(b.id) },
+                      ]} />
                     ) : null}
                   </td>
                 </tr>

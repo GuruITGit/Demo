@@ -146,3 +146,33 @@ export function SlipButton({ url, method }: { url?: string | null; method?: stri
     </>
   );
 }
+
+/** ปุ่ม "จัดการ" ปุ่มเดียว — กดแล้วเลือกการกระทำจากรายการ (ใช้ fixed เพื่อไม่ถูกตารางที่เลื่อนได้ตัดขอบ) */
+export type RowMenuItem = { label: string; onClick: () => void; danger?: boolean; hint?: string };
+export function RowMenu({ items }: { items: RowMenuItem[] }) {
+  const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
+  return (
+    <>
+      <button type="button" aria-haspopup="menu" aria-expanded={!!pos}
+        onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); setPos(pos ? null : { x: Math.max(8, r.right - 224), y: r.bottom + 4 }); }}
+        className="inline-flex items-center gap-1 whitespace-nowrap rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50">
+        จัดการ <span aria-hidden className="text-xs text-gray-400">▾</span>
+      </button>
+      {pos && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setPos(null)} />
+          <ul role="menu" style={{ left: pos.x, top: Math.min(pos.y, window.innerHeight - items.length * 40 - 16) }} className="fixed z-50 w-56 rounded-lg border border-gray-200 bg-white py-1 shadow-md">
+            {items.map((it, i) => (
+              <li key={i} role="none" className={it.danger ? 'mt-1 border-t border-gray-100 pt-1' : undefined}>
+                <button type="button" role="menuitem" onClick={() => { setPos(null); it.onClick(); }}
+                  className={cn('flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm hover:bg-gray-50', it.danger ? 'text-red-600' : 'text-gray-800')}>
+                  {it.label}{it.hint && <span className="text-xs text-gray-400">{it.hint}</span>}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </>
+  );
+}
