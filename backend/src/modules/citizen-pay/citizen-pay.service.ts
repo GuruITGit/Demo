@@ -1,5 +1,6 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { houseKeyOk } from '../../common/house-key';
+import { prorate, prorateFactor } from '../market/prorate';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Like, Repository, FindOptionsWhere, DataSource } from 'typeorm';
 import { MarketStall } from '../../database/entities/market-stall.entity';
@@ -303,8 +304,8 @@ export class CitizenPayService {
     }));
     if (tenancy === 'temporary') { // ชั่วคราว: ออกบิลทันที (ครบกำหนดวันนี้) ให้ผู้สมัครจ่ายต่อเลย · แจ้งเจ้าหน้าที่ตอนแจ้งชำระ ไม่ใช่ตอนสมัคร
       const rate = Number(loc.rentRate);
-      const amount = loc.rentPeriod === 'monthly' ? rate : rate * d;
       const period = sd ? `${Number(sd.slice(0, 4)) + 543}-${sd.slice(5, 7)}` : currentPeriod();
+      const amount = loc.rentPeriod === 'monthly' ? prorate(rate, prorateFactor(sd, period)) : rate * d; // รายเดือนเริ่มกลางเดือน = คิดตามวันใช้งาน
       const t = new Date();
       const bill = await this.marketBills.save(this.marketBills.create({
         organizationId: orgId, stallId: null, stallCode: code, payerName: n, kind: 'rent', period,

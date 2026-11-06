@@ -13,6 +13,9 @@ function daysInCalendarMonth(year:number,month:number){const lastDay=new Date(0)
 function calendarDaysInMonth(isoDate:string){return dateParts(isoDate).daysInMonth}
 function dailyWasteRate(monthlyWasteRate:number,isoDate:string){return monthlyWasteRate/calendarDaysInMonth(isoDate)}
 
+/** ค่าเช่ารายเดือนเดือนแรก คิดตามวันที่ใช้จริง (นับวันเริ่มด้วย) ปัดเป็นสตางค์ — ตรงกับที่เจ้าหน้าที่ออกบิลตอนอนุมัติ */
+function prorateMonthly(rentRate:number,startDate:string){const s=dateParts(startDate);return Math.round(rentRate*(s.daysInMonth-s.day+1)/s.daysInMonth*100)/100}
+
 function calculateFirstCharge(rentRate:number,monthlyWasteRate:number,period:ChargePeriod,startDate:string,durationDays=1){
   if(!Number.isFinite(rentRate)||rentRate<0||!Number.isFinite(monthlyWasteRate)||monthlyWasteRate<0)throw new RangeError('อัตราค่าบริการต้องเป็นตัวเลขตั้งแต่ 0 ขึ้นไป');
   if(period!=='daily'&&period!=='monthly')throw new RangeError('รอบเก็บเงินไม่ถูกต้อง');
