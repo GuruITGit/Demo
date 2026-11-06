@@ -487,7 +487,7 @@ function TenantsStalls({ sum }: { sum?: Summary }) {
   return (
     <Panel
       title={<>ผู้เช่าทั้งหมด <span className="text-sm font-normal text-gray-500">{rows.length} แผง</span></>}
-      actions={<Button size="sm" variant="outline" onClick={printTenants}>พิมพ์รายงาน</Button>}
+      actions={<Button size="sm" variant="outline" disabled={!stalls.length} onClick={printTenants}>พิมพ์รายงาน</Button>}
     >
       <ConfirmDialog
         open={!!cancelling}

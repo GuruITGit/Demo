@@ -173,7 +173,7 @@ export function Sidebar({ mobileOpen = false, onClose }: { mobileOpen?: boolean;
   return (
     <>
       {/* เดสก์ท็อป: เมนูข้างคงที่ */}
-      <aside className="no-print hidden lg:block w-60 shrink-0 overflow-y-auto bg-white border-r border-gray-100 py-3 px-3" aria-label="เมนูหลัก">
+      <aside className="no-print hidden lg:block w-60 shrink-0 overflow-y-auto bg-white border-r border-gray-100 pt-3 pb-16 px-3" aria-label="เมนูหลัก">
         {nav}
       </aside>
 
@@ -181,7 +181,7 @@ export function Sidebar({ mobileOpen = false, onClose }: { mobileOpen?: boolean;
       {mobileOpen && (
         <div className="lg:hidden fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label="เมนูหลัก">
           <div className="absolute inset-0 bg-black/40" onClick={onClose} aria-hidden />
-          <aside className="absolute left-0 top-0 h-full w-72 max-w-[82%] bg-white shadow-xl overflow-y-auto py-3 px-3">
+          <aside className="absolute left-0 top-0 h-full w-72 max-w-[82%] bg-white shadow-xl overflow-y-auto pt-3 pb-16 px-3">
             {nav}
           </aside>
         </div>
