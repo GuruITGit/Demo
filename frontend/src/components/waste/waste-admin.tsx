@@ -270,7 +270,7 @@ function Bills({ canManage, orgName, seedQ, seedStatus }: { canManage: boolean; 
   const [q, setQ] = useState(seedQ);
   const [status, setStatus] = useState(seedStatus);
   const [period, setPeriod] = useState('');
-  const [genPeriod, setGenPeriod] = useState(periods[0]);
+  const genPeriod = period || periods[0]; // ใช้งวดจากตัวกรองด้านล่าง ไม่เลือก = เดือนปัจจุบัน
   const [cancelId, setCancelId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [draft, setDraft] = useState({ householdRef: '', period: periods[0], amount: '' });
@@ -319,13 +319,8 @@ function Bills({ canManage, orgName, seedQ, seedStatus }: { canManage: boolean; 
       {canManage && (
         <Panel title="ออกบิลประจำงวด" actions={<Button size="sm" variant="outline" onClick={() => setAdding((v) => !v)}>{adding ? 'ปิดฟอร์ม' : '+ เพิ่มบิลเอง'}</Button>}>
           <div className="flex flex-wrap items-end gap-3 p-4">
-            <Field label="งวด" className="w-48">
-              <select className={inputCls} value={genPeriod} onChange={(e) => setGenPeriod(e.target.value)}>
-                {periods.map((p) => <option key={p} value={p}>{periodLabel(p)}</option>)}
-              </select>
-            </Field>
-            <Button size="sm" loading={generate.isPending} onClick={() => generate.mutate()}>ออกบิลค่าขยะบ้านทุกครัวเรือน</Button>
-            <p className="basis-full text-xs text-gray-500">ออกให้ทุกครัวเรือนในทะเบียน ตามราคากลาง (หรือราคาเฉพาะครัวเรือน) · กดซ้ำได้ ไม่ออกบิลซ้ำ</p>
+            <Button size="sm" loading={generate.isPending} onClick={() => generate.mutate()}>ออกบิลค่าขยะบ้านทุกครัวเรือน · {periodLabel(genPeriod)}</Button>
+            <p className="basis-full text-xs text-gray-500">ออกให้ทุกครัวเรือนในทะเบียน ตามราคากลาง (หรือราคาเฉพาะครัวเรือน) · เลือกงวดที่ตัวกรองงวดด้านล่าง (ไม่เลือก = เดือนปัจจุบัน) · กดซ้ำได้ ไม่ออกบิลซ้ำ</p>
           </div>
           {adding && (
             <div className="grid gap-3 border-t border-gray-100 p-4 sm:grid-cols-4">
