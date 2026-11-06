@@ -78,35 +78,33 @@ export function MarketBills({ canManage, orgName, initialStall, initialStatus }:
 
   return (
     <div className="space-y-5">
-      {canManage && (
-        <Panel title="ออกบิลประจำงวด" actions={<Button size="sm" variant="outline" onClick={() => setAdding((v) => !v)}>{adding ? 'ปิดฟอร์ม' : '+ เพิ่มบิลเอง'}</Button>}>
-          <div className="flex flex-wrap items-end gap-3 p-4">
-            <Button size="sm" loading={generate.isPending} onClick={() => generate.mutate()}>ออกบิลค่าเช่า + ค่าขยะแผง · {periodLabel(genPeriod)}</Button>
-            <p className="basis-full text-xs text-gray-500">ออกให้ทุกแผงที่มีผู้เช่า ตามค่าเช่าของแผงและค่าขยะที่ตั้งไว้ · เลือกงวดที่ตัวกรองงวดด้านล่าง (ไม่เลือก = เดือนปัจจุบัน) · กดซ้ำได้ ไม่ออกบิลซ้ำ</p>
-          </div>
-          {adding && (
-            <div className="grid gap-3 border-t border-gray-100 p-4 sm:grid-cols-5">
-              <Field label="รหัสแผง"><input className={inputCls} value={draft.stallCode} onChange={(e) => setDraft({ ...draft, stallCode: e.target.value })} placeholder="A06" /></Field>
-              <Field label="รายการ">
-                <select className={inputCls} value={draft.kind} onChange={(e) => setDraft({ ...draft, kind: e.target.value as Bill['kind'] })}>
-                  <option value="rent">ค่าเช่าแผง</option><option value="waste">ค่าขยะแผง</option>
-                </select>
-              </Field>
-              <Field label="งวด">
-                <select className={inputCls} value={draft.period} onChange={(e) => setDraft({ ...draft, period: e.target.value })}>
-                  {recentPeriods(36).map((p) => <option key={p} value={p}>{periodLabel(p)}</option>)}
-                </select>
-              </Field>
-              <Field label="ยอด (บาท)"><input type="number" min={0} className={inputCls} value={draft.amount} onChange={(e) => setDraft({ ...draft, amount: e.target.value })} /></Field>
-              <div className="flex items-end"><Button loading={create.isPending} disabled={!draft.stallCode.trim() || !(Number(draft.amount) > 0)} onClick={() => create.mutate()}>เพิ่มบิล</Button></div>
-            </div>
-          )}
-        </Panel>
+      {canManage && adding && (
+        <div className="grid gap-3 rounded-xl border border-gray-200 bg-white p-4 sm:grid-cols-5">
+          <Field label="รหัสแผง"><input className={inputCls} value={draft.stallCode} onChange={(e) => setDraft({ ...draft, stallCode: e.target.value })} placeholder="A06" /></Field>
+          <Field label="รายการ">
+            <select className={inputCls} value={draft.kind} onChange={(e) => setDraft({ ...draft, kind: e.target.value as Bill['kind'] })}>
+              <option value="rent">ค่าเช่าแผง</option><option value="waste">ค่าขยะแผง</option>
+            </select>
+          </Field>
+          <Field label="งวด">
+            <select className={inputCls} value={draft.period} onChange={(e) => setDraft({ ...draft, period: e.target.value })}>
+              {recentPeriods(36).map((p) => <option key={p} value={p}>{periodLabel(p)}</option>)}
+            </select>
+          </Field>
+          <Field label="ยอด (บาท)"><input type="number" min={0} className={inputCls} value={draft.amount} onChange={(e) => setDraft({ ...draft, amount: e.target.value })} /></Field>
+          <div className="flex items-end"><Button loading={create.isPending} disabled={!draft.stallCode.trim() || !(Number(draft.amount) > 0)} onClick={() => create.mutate()}>เพิ่มบิล</Button></div>
+        </div>
       )}
 
       <Panel
         title="รายการบิล"
-        actions={<span className="text-sm text-gray-500">ยอดยังไม่ชำระในรายการนี้ <b className="text-gray-800">{money(openTotal)}</b> บาท</span>}
+        actions={<div className="flex flex-wrap items-center justify-end gap-3">
+            <span className="text-sm text-gray-500">ยอดยังไม่ชำระในรายการนี้ <b className="text-gray-800">{money(openTotal)}</b> บาท</span>
+            {canManage && (<>
+              <Button size="sm" variant="outline" onClick={() => setAdding((v) => !v)}>{adding ? 'ปิดฟอร์ม' : '+ เพิ่มบิลเอง'}</Button>
+              <Button size="sm" loading={generate.isPending} title="ออกให้ทุกแผงที่มีผู้เช่า · ใช้งวดจากตัวกรอง (ไม่เลือก = เดือนปัจจุบัน) · กดซ้ำไม่ออกบิลซ้ำ" onClick={() => generate.mutate()}>ออกบิลค่าเช่า + ค่าขยะแผง · {periodLabel(genPeriod)}</Button>
+            </>)}
+          </div>}
       >
         <div className="flex flex-wrap items-center gap-3 border-b border-gray-100 p-4">
           <select value={status} onChange={(e) => setStatus(e.target.value)} className={`${inputCls} w-auto!`}>

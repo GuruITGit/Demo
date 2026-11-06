@@ -316,28 +316,26 @@ function Bills({ canManage, orgName, seedQ, seedStatus }: { canManage: boolean; 
 
   return (
     <div className="space-y-5">
-      {canManage && (
-        <Panel title="ออกบิลประจำงวด" actions={<Button size="sm" variant="outline" onClick={() => setAdding((v) => !v)}>{adding ? 'ปิดฟอร์ม' : '+ เพิ่มบิลเอง'}</Button>}>
-          <div className="flex flex-wrap items-end gap-3 p-4">
-            <Button size="sm" loading={generate.isPending} onClick={() => generate.mutate()}>ออกบิลค่าขยะบ้านทุกครัวเรือน · {periodLabel(genPeriod)}</Button>
-            <p className="basis-full text-xs text-gray-500">ออกให้ทุกครัวเรือนในทะเบียน ตามราคากลาง (หรือราคาเฉพาะครัวเรือน) · เลือกงวดที่ตัวกรองงวดด้านล่าง (ไม่เลือก = เดือนปัจจุบัน) · กดซ้ำได้ ไม่ออกบิลซ้ำ</p>
-          </div>
-          {adding && (
-            <div className="grid gap-3 border-t border-gray-100 p-4 sm:grid-cols-4">
-              <Field label="รหัสครัวเรือน"><input className={inputCls} value={draft.householdRef} onChange={(e) => setDraft({ ...draft, householdRef: e.target.value })} placeholder="HH-014" /></Field>
-              <Field label="งวด">
-                <select className={inputCls} value={draft.period} onChange={(e) => setDraft({ ...draft, period: e.target.value })}>
-                  {recentPeriods(36).map((p) => <option key={p} value={p}>{periodLabel(p)}</option>)}
-                </select>
-              </Field>
-              <Field label="ยอด (บาท)"><input type="number" min={0} className={inputCls} value={draft.amount} onChange={(e) => setDraft({ ...draft, amount: e.target.value })} /></Field>
-              <div className="flex items-end"><Button loading={create.isPending} disabled={!draft.householdRef.trim() || !(Number(draft.amount) > 0)} onClick={() => create.mutate()}>เพิ่มบิล</Button></div>
-            </div>
-          )}
-        </Panel>
+      {canManage && adding && (
+        <div className="grid gap-3 rounded-xl border border-gray-200 bg-white p-4 sm:grid-cols-4">
+          <Field label="รหัสครัวเรือน"><input className={inputCls} value={draft.householdRef} onChange={(e) => setDraft({ ...draft, householdRef: e.target.value })} placeholder="HH-014" /></Field>
+          <Field label="งวด">
+            <select className={inputCls} value={draft.period} onChange={(e) => setDraft({ ...draft, period: e.target.value })}>
+              {recentPeriods(36).map((p) => <option key={p} value={p}>{periodLabel(p)}</option>)}
+            </select>
+          </Field>
+          <Field label="ยอด (บาท)"><input type="number" min={0} className={inputCls} value={draft.amount} onChange={(e) => setDraft({ ...draft, amount: e.target.value })} /></Field>
+          <div className="flex items-end"><Button loading={create.isPending} disabled={!draft.householdRef.trim() || !(Number(draft.amount) > 0)} onClick={() => create.mutate()}>เพิ่มบิล</Button></div>
+        </div>
       )}
 
-      <Panel title="รายการบิล" actions={<span className="text-sm text-gray-500">ยอดยังไม่ชำระในรายการนี้ <b className="text-gray-800">{money(openTotal)}</b> บาท</span>}>
+      <Panel title="รายการบิล" actions={<div className="flex flex-wrap items-center justify-end gap-3">
+            <span className="text-sm text-gray-500">ยอดยังไม่ชำระในรายการนี้ <b className="text-gray-800">{money(openTotal)}</b> บาท</span>
+            {canManage && (<>
+              <Button size="sm" variant="outline" onClick={() => setAdding((v) => !v)}>{adding ? 'ปิดฟอร์ม' : '+ เพิ่มบิลเอง'}</Button>
+              <Button size="sm" loading={generate.isPending} title="ออกให้ทุกครัวเรือนในทะเบียน · ใช้งวดจากตัวกรอง (ไม่เลือก = เดือนปัจจุบัน) · กดซ้ำไม่ออกบิลซ้ำ" onClick={() => generate.mutate()}>ออกบิลค่าขยะบ้านทุกครัวเรือน · {periodLabel(genPeriod)}</Button>
+            </>)}
+          </div>}>
         <form onSubmit={(e) => { e.preventDefault(); setQ(input.trim()); }} className="flex flex-wrap items-center gap-2 border-b border-gray-100 p-4">
           <input value={input} onChange={(e) => setInput(e.target.value)} placeholder="บ้านเลขที่และหมู่ · ชื่อ · เบอร์ · รหัส (เว้นว่าง = ล่าสุด)" className={`${inputCls} min-w-[240px] flex-1`} />
           <select value={status} onChange={(e) => setStatus(e.target.value)} className={`${inputCls} w-auto!`}>
