@@ -150,12 +150,12 @@ export function MarketOutside({ canManageStall, canManageBill, orgName }: { canM
           </div>
         )}
         <div className="flex flex-wrap items-center gap-3 border-b border-gray-100 p-4">
-          <select className={`${inputCls} w-auto`} value={selLoc} onChange={(e) => setSelLoc(e.target.value)}>
+          <select className={`${inputCls} w-auto!`} value={selLoc} onChange={(e) => setSelLoc(e.target.value)}>
             <option value="">ทุกจุด</option>
             {locs.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
           </select>
-          <label className="flex items-center gap-2 text-sm text-gray-600">ตั้งแต่ <input type="date" className={`${inputCls} w-auto`} value={from} onChange={(e) => setFrom(e.target.value)} /></label>
-          <label className="flex items-center gap-2 text-sm text-gray-600">ถึง <input type="date" className={`${inputCls} w-auto`} value={to} onChange={(e) => setTo(e.target.value)} /></label>
+          <label className="flex items-center gap-2 text-sm text-gray-600">ตั้งแต่ <input type="date" className={`${inputCls} w-auto!`} value={from} onChange={(e) => setFrom(e.target.value)} /></label>
+          <label className="flex items-center gap-2 text-sm text-gray-600">ถึง <input type="date" className={`${inputCls} w-auto!`} value={to} onChange={(e) => setTo(e.target.value)} /></label>
           <span className="ml-auto text-sm text-gray-500">รวม <b className="text-gray-800">{money(cols?.total ?? 0)}</b> บาท · {cols?.rows.length ?? 0} รายการ</span>
         </div>
         <div className="overflow-x-auto">

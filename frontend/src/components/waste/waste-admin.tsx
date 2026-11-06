@@ -324,7 +324,7 @@ function Bills({ canManage, orgName, seedQ, seedStatus }: { canManage: boolean; 
                 {periods.map((p) => <option key={p} value={p}>{periodLabel(p)}</option>)}
               </select>
             </Field>
-            <Button loading={generate.isPending} onClick={() => generate.mutate()}>ออกบิลค่าขยะบ้านทุกครัวเรือน</Button>
+            <Button size="sm" loading={generate.isPending} onClick={() => generate.mutate()}>ออกบิลค่าขยะบ้านทุกครัวเรือน</Button>
             <p className="basis-full text-xs text-gray-500">ออกให้ทุกครัวเรือนในทะเบียน ตามราคากลาง (หรือราคาเฉพาะครัวเรือน) · กดซ้ำได้ ไม่ออกบิลซ้ำ</p>
           </div>
           {adding && (
@@ -345,11 +345,11 @@ function Bills({ canManage, orgName, seedQ, seedStatus }: { canManage: boolean; 
       <Panel title="รายการบิล" actions={<span className="text-sm text-gray-500">ยอดยังไม่ชำระในรายการนี้ <b className="text-gray-800">{money(openTotal)}</b> บาท</span>}>
         <form onSubmit={(e) => { e.preventDefault(); setQ(input.trim()); }} className="flex flex-wrap items-center gap-2 border-b border-gray-100 p-4">
           <input value={input} onChange={(e) => setInput(e.target.value)} placeholder="บ้านเลขที่และหมู่ · ชื่อ · เบอร์ · รหัส (เว้นว่าง = ล่าสุด)" className={`${inputCls} min-w-[240px] flex-1`} />
-          <select value={status} onChange={(e) => setStatus(e.target.value)} className={`${inputCls} w-auto`}>
+          <select value={status} onChange={(e) => setStatus(e.target.value)} className={`${inputCls} w-auto!`}>
             <option value="">ทุกสถานะ</option>
             {Object.entries(BILL_STATUS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
           </select>
-          <select value={period} onChange={(e) => setPeriod(e.target.value)} className={`${inputCls} w-auto`}>
+          <select value={period} onChange={(e) => setPeriod(e.target.value)} className={`${inputCls} w-auto!`}>
             <option value="">ทุกงวด</option>
             {recentPeriods(36).map((p) => <option key={p} value={p}>{periodLabel(p)}</option>)}
           </select>
@@ -464,8 +464,8 @@ function HouseQr({ orgName }: { orgName: string }) {
       title="QR ประจำบ้าน"
       actions={
         <>
-          <input className={`${inputCls} w-48`} value={q} onChange={(e) => { setQ(e.target.value); setPicked(new Set()); }} placeholder="ค้นหาชื่อ รหัส หรือบ้านเลขที่" aria-label="ค้นหาครัวเรือน" />
-          <select className={`${inputCls} w-auto`} value={moo} onChange={(e) => { setMoo(e.target.value); setPicked(new Set()); }}>
+          <input className={`${inputCls} w-48!`} value={q} onChange={(e) => { setQ(e.target.value); setPicked(new Set()); }} placeholder="ค้นหาชื่อ รหัส หรือบ้านเลขที่" aria-label="ค้นหาครัวเรือน" />
+          <select className={`${inputCls} w-auto!`} value={moo} onChange={(e) => { setMoo(e.target.value); setPicked(new Set()); }}>
             <option value="">ทุกหมู่</option>
             {moos.map((m) => <option key={m} value={m}>หมู่ {Number(m)}</option>)}
           </select>

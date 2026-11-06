@@ -86,7 +86,7 @@ export function MarketBills({ canManage, orgName, initialStall, initialStatus }:
                 {periods.map((p) => <option key={p} value={p}>{periodLabel(p)}</option>)}
               </select>
             </Field>
-            <Button loading={generate.isPending} onClick={() => generate.mutate()}>ออกบิลค่าเช่า + ค่าขยะแผง</Button>
+            <Button size="sm" loading={generate.isPending} onClick={() => generate.mutate()}>ออกบิลค่าเช่า + ค่าขยะแผง</Button>
             <p className="basis-full text-xs text-gray-500">ออกให้ทุกแผงที่มีผู้เช่า ตามค่าเช่าของแผงและค่าขยะที่ตั้งไว้ · กดซ้ำได้ ไม่ออกบิลซ้ำ</p>
           </div>
           {adding && (
@@ -114,16 +114,16 @@ export function MarketBills({ canManage, orgName, initialStall, initialStatus }:
         actions={<span className="text-sm text-gray-500">ยอดยังไม่ชำระในรายการนี้ <b className="text-gray-800">{money(openTotal)}</b> บาท</span>}
       >
         <div className="flex flex-wrap items-center gap-3 border-b border-gray-100 p-4">
-          <select value={status} onChange={(e) => setStatus(e.target.value)} className={`${inputCls} w-auto`}>
+          <select value={status} onChange={(e) => setStatus(e.target.value)} className={`${inputCls} w-auto!`}>
             <option value="">ทุกสถานะ</option>
             {Object.entries(BILL_STATUS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
           </select>
-          <select value={period} onChange={(e) => setPeriod(e.target.value)} className={`${inputCls} w-auto`}>
+          <select value={period} onChange={(e) => setPeriod(e.target.value)} className={`${inputCls} w-auto!`}>
             <option value="">ทุกงวด</option>
             {recentPeriods(36).map((p) => <option key={p} value={p}>{periodLabel(p)}</option>)}
           </select>
           <PlaceFilter value={place} onChange={setPlace} />
-          <input value={stall} onChange={(e) => setStall(e.target.value)} placeholder="รหัสแผง เช่น A06" className={`${inputCls} w-40`} />
+          <input value={stall} onChange={(e) => setStall(e.target.value)} placeholder="รหัสแผง เช่น A06" className={`${inputCls} w-40!`} />
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
