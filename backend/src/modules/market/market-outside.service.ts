@@ -7,6 +7,7 @@ import { MarketOutsideApplication } from '../../database/entities/market-outside
 import { MarketBill } from '../../database/entities/market-bill.entity';
 import { OutsideCollectionDto, OutsideLocationDto, RejectBillDto } from './dto/market.dto';
 import { currentPeriod, nextReceiptNo, periodEndDate } from './receipt';
+import { prorate, prorateFactor } from './prorate';
 import { StorageService } from '../storage/storage.service';
 import { cancelUnpaidTemporary, TEMP_PAY_WINDOW_MIN } from './outside-temp';
 
@@ -73,9 +74,10 @@ export class MarketOutsideService {
       return { ok: true, billId: app.billId, appCode: app.appCode, amount: b?.amount ?? 0 };
     }
     const rate = Number(app.location.rentRate);
-    const amount = app.location.rentPeriod === 'monthly' ? rate : rate * app.days;
     // วันเริ่มเช่า (ค.ศ.) → งวดพุทธศักราช YYYY-MM
     const period = app.startDate ? `${Number(app.startDate.slice(0, 4)) + 543}-${app.startDate.slice(5, 7)}` : currentPeriod();
+    // รายเดือนเริ่มกลางเดือน = คิดตามวันใช้งาน · รายวัน = ค่าเช่า × จำนวนวัน
+    const amount = app.location.rentPeriod === 'monthly' ? prorate(rate, prorateFactor(app.startDate, period)) : rate * app.days;
     return this.ds.transaction(async (em) => {
       const bill = await em.save(em.create(MarketBill, {
         organizationId: orgId, stallId: null, stallCode: app.appCode, payerName: app.applicantName, kind: 'rent', period,

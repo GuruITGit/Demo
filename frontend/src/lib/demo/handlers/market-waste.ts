@@ -15,6 +15,17 @@ const period = (offset = 0) => {
 };
 /** วันสุดท้ายของเดือนในงวด (ค.ศ.) — ใช้เป็นวันครบกำหนด */
 const periodEnd = (per: string) => { const [by, m] = per.split('-').map(Number); return ymd(new Date(by - 543, m, 0)); };
+/** คิดตามวันใช้งาน: เริ่มใช้แผงกลางเดือน → (วันที่เหลือรวมวันเริ่ม ÷ วันในเดือน) · เริ่มหลังงวด → 0 · ก่อนงวด/ไม่ทราบ → 1 (ตรงกับ backend market/prorate.ts) */
+function prorateFactor(start: string | null | undefined, per: string): number {
+  const m = /^(d{4})-(d{2})-(d{2})/.exec(String(start ?? '')); const p = /^(d{4})-(d{2})$/.exec(per);
+  if (!m || !p) return 1;
+  const y = Number(p[1]) - 543, mo = Number(p[2]), sy = Number(m[1]), sm = Number(m[2]), sd = Number(m[3]);
+  if (sy < y || (sy === y && sm < mo)) return 1;
+  if (sy > y || sm > mo) return 0;
+  const dim = new Date(y, mo, 0).getDate();
+  return Math.max(0, Math.min(1, (dim - sd + 1) / dim));
+}
+const prorate = (amount: number, f: number) => Math.round(amount * f * 100) / 100;
 const isPeriod = (s: unknown) => typeof s === 'string' && /^\d{4}-(0[1-9]|1[0-2])$/.test(s);
 const OPEN = ['unpaid', 'pending', 'mismatch'];
 const METHODS = ['cash', 'qr', 'transfer'];
@@ -337,7 +348,7 @@ function absorbCitizen(db: Ctx['db']) {
     if (a.prepaid && app.tenancyType === 'temporary') { // ชั่วคราว: จ่ายตอนสมัคร → ออกบิลครบกำหนดวันนี้ รอจับคู่กับการแจ้งชำระ
       const rate = Number(loc.rentRate);
       const per = app.startDate ? `${Number(app.startDate.slice(0, 4)) + 543}-${app.startDate.slice(5, 7)}` : period();
-      const bill = { id: uid(), organizationId: ORG_ID, stallId: null, stallCode: app.appCode, payerName: app.applicantName, kind: 'rent', period: per, amount: (loc.rentPeriod === 'monthly' ? rate : rate * app.days).toFixed(2), dueDate: ymd(new Date()), status: 'unpaid', paidMethod: null, paidAt: null, receiptNo: null, submittedMethod: null, submittedAt: null, slipUrl: null, reviewNote: null };
+      const bill = { id: uid(), organizationId: ORG_ID, stallId: null, stallCode: app.appCode, payerName: app.applicantName, kind: 'rent', period: per, amount: (loc.rentPeriod === 'monthly' ? prorate(rate, prorateFactor(app.startDate, per)) : rate * app.days).toFixed(2), dueDate: ymd(new Date()), status: 'unpaid', paidMethod: null, paidAt: null, receiptNo: null, submittedMethod: null, submittedAt: null, slipUrl: null, reviewNote: null };
       db.marketBills.push(bill); app.billId = bill.id;
     }
     db.marketOutsideApps.push(app);
@@ -410,8 +421,8 @@ post('/market/outside/applications/:id/approve', (c) => {
     return { ok: true, billId: app.billId, appCode: app.appCode, amount: Number(c.db.marketBills.find((b) => b.id === app.billId)?.amount ?? 0) };
   }
   const rate = Number(loc.rentRate);
-  const amount = loc.rentPeriod === 'monthly' ? rate : rate * app.days;
   const per = app.startDate ? `${Number(app.startDate.slice(0, 4)) + 543}-${app.startDate.slice(5, 7)}` : period();
+  const amount = loc.rentPeriod === 'monthly' ? prorate(rate, prorateFactor(app.startDate, per)) : rate * app.days; // รายเดือนเริ่มกลางเดือน = คิดตามวันใช้งาน
   const bill = { id: uid(), organizationId: ORG_ID, stallId: null, stallCode: app.appCode, payerName: app.applicantName, kind: 'rent', period: per, amount: amount.toFixed(2), dueDate: app.tenancyType === 'temporary' ? ymd(new Date()) : periodEnd(per), status: 'unpaid', paidMethod: null, paidAt: null, receiptNo: null, submittedMethod: null, submittedAt: null, slipUrl: null, reviewNote: null };
   c.db.marketBills.push(bill);
   Object.assign(app, { status: 'approved', billId: bill.id, reviewNote: null });
@@ -546,7 +557,9 @@ post('/market/bills/generate', (c) => {
   const have = new Set(c.db.marketBills.filter((b) => b.period === per).map((b) => `${b.stallCode}|${b.kind}`));
   let created = 0;
   for (const s of occupied) {
-    const add = (kind: 'rent' | 'waste', amount: number) => {
+    const f = s.reserveDays ? 1 : prorateFactor(s.reserveStartDate, per);
+    const add = (kind: 'rent' | 'waste', full: number) => {
+      const amount = prorate(full, f);
       if (amount <= 0 || have.has(`${s.stallCode}|${kind}`)) return;
       c.db.marketBills.push({ id: uid(), organizationId: ORG_ID, stallId: s.id, stallCode: s.stallCode, payerName: s.tenantName || s.stallCode, kind, period: per, amount: String(amount), dueDate: periodEnd(per), status: 'unpaid', paidMethod: null, paidAt: null, receiptNo: null, submittedMethod: null, submittedAt: null, slipUrl: null, reviewNote: null });
       created++;

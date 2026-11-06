@@ -7,6 +7,7 @@ import { MarketBill } from '../../database/entities/market-bill.entity';
 import { MarketBillQueryDto, UpdateStallDto, CreateStallDto, BulkStallsDto, CreateMarketBillDto } from './dto/market.dto';
 import { PayConfigService } from './pay-config.service';
 import { currentPeriod, nextReceiptNo, periodEndDate } from './receipt';
+import { prorate, prorateFactor } from './prorate';
 import { NotificationsService } from '../notifications/notifications.service';
 import { notifyUsersWithPermission } from '../../common/notify-permission';
 import { StorageService } from '../storage/storage.service';
@@ -120,7 +121,10 @@ export class MarketService {
     const rows: MarketBill[] = [];
     for (const s of occupied) {
       const payer = s.tenantName || s.stallCode;
-      const add = (kind: 'rent' | 'waste', amount: number) => {
+      // เริ่มใช้แผงกลางเดือน = คิดตามวันใช้งาน (แผงรายวันที่มี reserveDays ไม่ลดสัดส่วน)
+      const f = s.reserveDays ? 1 : prorateFactor(s.reserveStartDate, p);
+      const add = (kind: 'rent' | 'waste', full: number) => {
+        const amount = prorate(full, f);
         if (amount <= 0 || existing.has(`${s.stallCode}|${kind}`)) return;
         rows.push(this.bills.create({ organizationId: orgId, stallId: s.id, stallCode: s.stallCode, payerName: payer, kind, period: p, amount: String(amount), dueDate: due, status: 'unpaid' }));
       };
