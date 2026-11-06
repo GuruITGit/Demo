@@ -136,14 +136,14 @@ export function MarketBills({ canManage, orgName, initialStall, initialStatus }:
             </thead>
             <tbody>
               {rows.map((b) => (
-                <tr key={b.id} className="border-t border-gray-100 align-top">
-                  <td className="px-4 py-2 font-medium">{b.stallCode}</td>
+                <tr key={b.id} className="border-t border-gray-100 align-middle">
+                  <td className="whitespace-nowrap px-4 py-2 font-medium">{b.stallCode}</td>
                   <td className="px-4 py-2">{b.payerName}</td>
                   <td className="px-4 py-2">{KIND_LABEL[b.kind]}</td>
-                  <td className="px-4 py-2">{periodLabel(b.period)}</td>
-                  <td className="px-4 py-2 text-right">{money(b.amount)}</td>
+                  <td className="whitespace-nowrap px-4 py-2">{periodLabel(b.period)}</td>
+                  <td className="whitespace-nowrap px-4 py-2 text-right tabular-nums">{money(b.amount)}</td>
                   <td className="px-4 py-2">
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_TONE[b.status] ?? 'bg-gray-100 text-gray-600'}`}>{BILL_STATUS[b.status] ?? b.status}</span>
+                    <span className={`inline-block whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_TONE[b.status] ?? 'bg-gray-100 text-gray-600'}`}>{BILL_STATUS[b.status] ?? b.status}</span>
                     {b.status === 'paid' && <span className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-gray-500"><MethodChip method={b.paidMethod} /><span>{b.receiptNo}</span><SlipButton url={b.slipUrl} method={b.paidMethod} /></span>}
                     {b.status === 'mismatch' && b.reviewNote && <span className="mt-1 block text-xs text-orange-700">{b.reviewNote}</span>}
                   </td>
@@ -151,9 +151,9 @@ export function MarketBills({ canManage, orgName, initialStall, initialStatus }:
                     {b.status === 'paid' ? (
                       <Button size="sm" variant="outline" onClick={() => doPrint(b)}>พิมพ์ใบเสร็จ</Button>
                     ) : canManage ? (
-                      <div className="flex flex-wrap items-center gap-2">
+                      <div className="flex items-center gap-2 whitespace-nowrap">
                         <select value={method[b.id] ?? (b.submittedMethod === 'cash' ? 'cash' : b.submittedMethod === 'transfer' ? 'transfer' : 'cash')}
-                          onChange={(e) => setMethod({ ...method, [b.id]: e.target.value })} className="rounded-md border border-gray-300 px-2 py-1 text-xs">
+                          onChange={(e) => setMethod({ ...method, [b.id]: e.target.value })} className="rounded-md border border-gray-300 px-2 py-1.5 text-sm">
                           {Object.entries(PAY_METHOD).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                         </select>
                         <Button size="sm" loading={pay.isPending && pay.variables?.id === b.id}
