@@ -17,7 +17,7 @@ const period = (offset = 0) => {
 const periodEnd = (per: string) => { const [by, m] = per.split('-').map(Number); return ymd(new Date(by - 543, m, 0)); };
 /** คิดตามวันใช้งาน: เริ่มใช้แผงกลางเดือน → (วันที่เหลือรวมวันเริ่ม ÷ วันในเดือน) · เริ่มหลังงวด → 0 · ก่อนงวด/ไม่ทราบ → 1 (ตรงกับ backend market/prorate.ts) */
 function prorateFactor(start: string | null | undefined, per: string): number {
-  const m = /^(d{4})-(d{2})-(d{2})/.exec(String(start ?? '')); const p = /^(d{4})-(d{2})$/.exec(per);
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(start ?? '')); const p = /^(\d{4})-(\d{2})$/.exec(per);
   if (!m || !p) return 1;
   const y = Number(p[1]) - 543, mo = Number(p[2]), sy = Number(m[1]), sm = Number(m[2]), sd = Number(m[3]);
   if (sy < y || (sy === y && sm < mo)) return 1;
