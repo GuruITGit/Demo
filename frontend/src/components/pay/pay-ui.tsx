@@ -24,7 +24,7 @@ export function PayTabs<T extends string>({ tabs, value, onChange }: {
   onChange: (k: T) => void;
 }) {
   return (
-    <div role="tablist" className="flex gap-1 overflow-x-auto rounded-xl border border-gray-200 bg-white p-1">
+    <div role="tablist" className="flex flex-wrap gap-1 rounded-xl border border-gray-200 bg-white p-1">
       {tabs.map((t) => (
         <button
           key={t.key}
@@ -33,7 +33,7 @@ export function PayTabs<T extends string>({ tabs, value, onChange }: {
           aria-selected={value === t.key}
           onClick={() => onChange(t.key)}
           className={cn(
-            'inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition-colors',
+            'inline-flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium transition-colors',
             value === t.key ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100',
           )}
         >
