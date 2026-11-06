@@ -234,7 +234,7 @@ function absorbPayments(db: Ctx['db']) {
       body: `${bill.payerName ?? bill.holderName ?? ''} · ${household ? 'บ้าน ' : 'แผง '}${r.meta.s} · ${Number(r.amount).toLocaleString('th-TH')} บาท · ${r.method === 'cash' ? 'เงินสด' : 'โอน'}`, actionUrl: household ? '/waste?tab=queue' : '/market?tab=queue',
     });
   }
-  if (changed) persist();
+  if (changed) persist(true);
   syncCitizenOutsideBills(db);
 }
 /** เจ้าหน้าที่ยืนยัน/ปฏิเสธบิลที่ประชาชนแจ้งมา → เขียนผลกลับให้หน้าประชาชนเห็น */
@@ -355,7 +355,7 @@ function absorbCitizen(db: Ctx['db']) {
     notify(db, staff, { type: 'market:outside_applied', title: 'มีใบสมัครแผงลอยใหม่', body: `${a.appCode} · ${loc.name} · ${a.name} · โทร ${a.phone}`, actionUrl: '/market?tab=reserve' });
     changed = true;
   }
-  if (changed) { persist(); syncCitizenStalls(db); }
+  if (changed) { persist(true); syncCitizenStalls(db); }
 }
 const reservations = (db: Ctx['db']) => db.marketStalls
   .filter((s) => s.active && s.organizationId === ORG_ID && s.status === 'reserved')
