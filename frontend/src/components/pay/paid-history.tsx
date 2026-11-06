@@ -117,7 +117,7 @@ export function PaidHistory({ kind }: { kind: 'market' | 'waste' }) {
         {isLoading ? <p className="p-6 text-sm text-gray-500">กำลังโหลด…</p> : shown.length === 0 ? <Empty>ยังไม่มีรายการที่ชำระแล้วตามที่เลือก</Empty> : (
           <ul>
             {shown.map((r) => (
-              <li key={r.id} className="flex flex-wrap items-start gap-4 sm:flex-nowrap border-t border-gray-100 p-4 first:border-t-0">
+              <li key={r.id} className="flex items-start gap-4 border-t border-gray-100 p-4 first:border-t-0">
                 {r.slipUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={r.slipUrl} alt="สลิปโอนเงิน" onClick={() => setZoom(r.slipUrl)} className="h-16 w-16 shrink-0 cursor-zoom-in rounded-lg border border-gray-200 object-cover" />

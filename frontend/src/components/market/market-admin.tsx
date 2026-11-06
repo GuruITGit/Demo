@@ -593,7 +593,7 @@ function StallQr({ orgName }: { orgName: string }) {
             <Button size="sm" variant={kind === 'outside' ? 'default' : 'outline'} onClick={() => switchKind('outside')}>แผงลอย</Button>
           </div>
           {kind === 'stall' && (
-            <select className={`${inputCls} w-auto`} value={zone} onChange={(e) => { setZone(e.target.value); setPicked(new Set()); }}>
+            <select className={inputCls} style={{ width: 'auto' }} value={zone} onChange={(e) => { setZone(e.target.value); setPicked(new Set()); }}>
               <option value="">ทุกโซน</option>
               {zones.map((z) => <option key={z} value={z}>โซน {z}</option>)}
             </select>

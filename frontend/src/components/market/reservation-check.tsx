@@ -58,7 +58,7 @@ export function ReservationCheck({ canManage, filter = 'pending' }: { canManage:
       ) : (
         <ul>
           {rows.map((r) => (
-            <li key={r.id} className="flex flex-wrap items-center gap-3 sm:flex-nowrap border-t border-gray-100 px-4 py-3 first:border-t-0">
+            <li key={r.id} className="flex items-center gap-3 border-t border-gray-100 px-4 py-3 first:border-t-0">
               <div className="min-w-0 flex-1">
                 <p className="font-semibold">แผง {r.stallCode} <span className="font-normal text-gray-500">· โซน {r.zone} · <span className="keep-name">{r.tenantName || "—"}</span></span></p>
                 <p className="text-sm text-gray-500">
@@ -74,7 +74,7 @@ export function ReservationCheck({ canManage, filter = 'pending' }: { canManage:
                 </p>
               </div>
               {canManage && (
-                <div className="flex shrink-0 gap-2 sm:ml-auto">
+                <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:ml-auto">
                   <Button size="sm" variant="success" loading={decide.isPending && decide.variables?.id === r.id && decide.variables.status === 'occupied'} onClick={() => decide.mutate({ id: r.id, status: 'occupied' })}>ยืนยันเป็นผู้เช่า</Button>
                   <Button size="sm" variant="outline" loading={decide.isPending && decide.variables?.id === r.id && decide.variables.status === 'available'} onClick={() => decide.mutate({ id: r.id, status: 'available' })}>ปฏิเสธการจอง</Button>
                 </div>

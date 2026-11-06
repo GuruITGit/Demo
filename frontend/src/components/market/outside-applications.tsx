@@ -84,7 +84,7 @@ export function OutsideApplications({ canManage, locationId, filter: shared }: {
       ) : (
         <ul>
           {rows.map((a) => (
-            <li key={a.id} className="flex flex-wrap items-center gap-3 sm:flex-nowrap border-t border-gray-100 px-4 py-3 first:border-t-0">
+            <li key={a.id} className="flex items-center gap-3 border-t border-gray-100 px-4 py-3 first:border-t-0">
               <div className="min-w-0 flex-1">
                 <p className="flex flex-wrap items-center gap-2 font-semibold">
                   <span className="keep-name text-base">{a.applicantName}</span>
@@ -113,13 +113,13 @@ export function OutsideApplications({ canManage, locationId, filter: shared }: {
                   </p>); })()}
               </div>
               {canManage && a.status === 'pending' && (
-                <div className="flex shrink-0 gap-2 sm:ml-auto">
+                <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:ml-auto">
                   <Button size="sm" variant="success" loading={approve.isPending && approve.variables === a.id} onClick={() => approve.mutate(a.id)}>อนุมัติและออกบิล</Button>
                   <Button size="sm" variant="outline" onClick={() => setRejectTarget(a)}>ไม่อนุมัติ</Button>
                 </div>
               )}
               {canManage && a.status === 'approved' && (
-                <Button size="sm" className="shrink-0 sm:ml-auto" variant="outline" disabled={a.openDues.count > 0} title={a.openDues.count > 0 ? 'ต้องชำระยอดค้างให้ครบก่อน' : undefined} onClick={() => setCancelTarget(a)}>ลบผู้เช่า</Button>
+                <Button size="sm" className="shrink-0 ml-auto" variant="outline" disabled={a.openDues.count > 0} title={a.openDues.count > 0 ? 'ต้องชำระยอดค้างให้ครบก่อน' : undefined} onClick={() => setCancelTarget(a)}>ลบผู้เช่า</Button>
               )}
             </li>
           ))}
