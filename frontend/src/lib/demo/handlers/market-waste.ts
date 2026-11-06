@@ -321,7 +321,7 @@ function absorbCitizen(db: Ctx['db']) {
     if (!s) continue;
     Object.assign(s, {
       status: 'reserved', tenantName: String(r.name ?? '').slice(0, 200), contactPhone: String(r.phone ?? '').slice(0, 20),
-      reservedAt: r.reservedAt || nowIso(), reserveStartDate: r.startDate || null, reserveDays: r.days || null, reserveCardUrl: null,
+      reservedAt: r.reservedAt || nowIso(), reserveStartDate: r.startDate || null, reserveDays: r.days || null, reserveCardUrl: typeof r.idCard === 'string' && r.idCard.startsWith('data:image') ? r.idCard : null,
     });
     notify(db, staff, { type: 'market:reserved', title: 'มีการจองแผงใหม่', body: `แผง ${s.stallCode} · ${s.tenantName} · โทร ${s.contactPhone} — รอยืนยัน`, actionUrl: '/market?tab=reserve' });
     changed = true;
@@ -332,7 +332,7 @@ function absorbCitizen(db: Ctx['db']) {
     if (!loc || db.marketOutsideApps.some((x) => x.appCode === a.appCode)) continue;
     const app: Row = {
       id: uid(), organizationId: ORG_ID, locationId: loc.id, appCode: a.appCode, applicantName: String(a.name ?? '').slice(0, 200), phone: String(a.phone ?? '').slice(0, 20),
-      idCardUrl: null, startDate: a.startDate || null, days: Number(a.days) || 1, status: 'pending', reviewNote: null, billId: null, createdAt: a.createdAt || nowIso(), tenancyType: a.tenancyType === 'temporary' ? 'temporary' : 'regular',
+      idCardUrl: typeof a.idCard === 'string' && a.idCard.startsWith('data:image') ? a.idCard : null, startDate: a.startDate || null, days: Number(a.days) || 1, status: 'pending', reviewNote: null, billId: null, createdAt: a.createdAt || nowIso(), tenancyType: a.tenancyType === 'temporary' ? 'temporary' : 'regular',
     };
     if (a.prepaid && app.tenancyType === 'temporary') { // ชั่วคราว: จ่ายตอนสมัคร → ออกบิลครบกำหนดวันนี้ รอจับคู่กับการแจ้งชำระ
       const rate = Number(loc.rentRate);
