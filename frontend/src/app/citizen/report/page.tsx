@@ -176,6 +176,13 @@ function ReportForm() {
           </div>
           <h2 className="text-2xl font-bold text-slate-800">ส่งเรื่องสำเร็จแล้ว</h2>
           <p className="mt-1 text-slate-500">ขอบคุณที่แจ้งเข้ามา เจ้าหน้าที่จะตรวจสอบและดำเนินการต่อไป</p>
+          {done.refNo && (
+            <div className="mx-auto mt-5 max-w-xs rounded-2xl bg-slate-50 px-4 py-3">
+              <p className="text-xs text-slate-500">เลขอ้างอิงของท่าน</p>
+              <p className="text-xl font-bold tracking-wide text-slate-800">{done.refNo}</p>
+              <p className="mt-1 text-xs text-slate-500">จดไว้เช็กสถานะ (เครื่องนี้จำให้อัตโนมัติด้วย)</p>
+            </div>
+          )}
           <div className="mt-6 flex justify-center gap-3">
             <Link href="/citizen/track" className="rounded-xl border border-slate-200 px-5 py-2.5 text-sm text-slate-600 hover:bg-slate-50">ติดตามสถานะ</Link>
             <button onClick={() => { setDone(null); setDetail(''); setPhoto(null); setVillageNo(''); setGeo(null); setLocation(''); setSubject(''); setHouseNo(''); setName(''); setPhone(''); }}
