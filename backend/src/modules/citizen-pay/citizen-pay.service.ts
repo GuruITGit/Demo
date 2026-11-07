@@ -1,5 +1,6 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { houseKeyOk } from '../../common/house-key';
+import { WasteHousehold } from '../../database/entities/waste-household.entity';
 import { prorate, prorateFactor } from '../market/prorate';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Like, Repository, FindOptionsWhere, DataSource } from 'typeorm';
@@ -134,7 +135,8 @@ export class CitizenPayService {
     const ref = (refRaw || '').trim().toUpperCase();
     if (!ref || !houseKeyOk(orgId, ref, key)) throw new NotFoundException('QR นี้ใช้ไม่ได้ กรุณาค้นด้วยชื่อและบ้านเลขที่แทน');
     const rows = await this.wasteBills.find({ where: { organizationId: orgId, householdRef: ref, status: In(OPEN_STATUSES) }, order: { period: 'DESC' }, take: 60 });
-    return { holderName: rows[0]?.holderName ?? null, bills: rows.map(publicWasteBill) };
+    const hh = await this.ds.getRepository(WasteHousehold).findOne({ where: { organizationId: orgId, householdRef: ref } }); // บ้านที่จ่ายครบแล้วก็ยังบอกชื่อ+บ้านเลขที่ได้
+    return { holderName: hh?.holderName ?? rows[0]?.holderName ?? null, houseNo: hh?.houseNo ?? null, moo: hh?.moo ?? null, bills: rows.map(publicWasteBill) };
   }
 
   /** ผังแผงสาธารณะ: รหัส/โซน/สถานะ/ค่าเช่า เท่านั้น — ไม่มีชื่อผู้เช่า */

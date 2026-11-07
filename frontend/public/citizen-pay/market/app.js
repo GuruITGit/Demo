@@ -1165,7 +1165,10 @@ async function searchStallByKey(code, key) {
                 DEMO.bills = demoBillsAll.filter((b) => b.payerType === 'stall' && b.stall?.toUpperCase() === code);
                 verifiedName = DEMO.bills[0]?.merchant || '';
             }
-            const st = readDemoStalls()?.find((x) => x.stallCode === code)?.status; // จองไว้/ว่าง = ยังไม่มีบิล ไม่ใช่ "ไม่พบแผง"
+            const row = readDemoStalls()?.find((x) => x.stallCode === code);
+            const st = row?.status; // จองไว้/ว่าง/มีผู้เช่าแต่ยังไม่มีบิล = ไม่ใช่ "ไม่พบแผง"
+            if (!verifiedName && row?.tenantName)
+                verifiedName = row.tenantName;
             if (!verifiedName)
                 emptyNote = st === 'reserved' ? `แผง ${code} จองไว้แล้ว · รอเจ้าหน้าที่ยืนยันเป็นผู้เช่า ยังไม่มียอดต้องชำระ` : st === 'available' ? `แผง ${code} ยังว่าง ยังไม่มีผู้เช่า` : 'ไม่พบข้อมูลแผงนี้ในระบบ';
             else if (!DEMO.bills.length)

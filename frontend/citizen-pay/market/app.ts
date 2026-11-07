@@ -122,7 +122,8 @@ async function searchStallByKey(code: string, key: string) {
         DEMO.bills = demoBillsAll.filter((b) => b.payerType === 'stall' && b.stall?.toUpperCase() === code);
         verifiedName = DEMO.bills[0]?.merchant || '';
       }
-      const st = readDemoStalls()?.find((x) => x.stallCode === code)?.status; // จองไว้/ว่าง = ยังไม่มีบิล ไม่ใช่ "ไม่พบแผง"
+      const row = readDemoStalls()?.find((x) => x.stallCode === code); const st = row?.status; // จองไว้/ว่าง/มีผู้เช่าแต่ยังไม่มีบิล = ไม่ใช่ "ไม่พบแผง"
+      if (!verifiedName && row?.tenantName) verifiedName = row.tenantName;
       if (!verifiedName) emptyNote = st === 'reserved' ? `แผง ${code} จองไว้แล้ว · รอเจ้าหน้าที่ยืนยันเป็นผู้เช่า ยังไม่มียอดต้องชำระ` : st === 'available' ? `แผง ${code} ยังว่าง ยังไม่มีผู้เช่า` : 'ไม่พบข้อมูลแผงนี้ในระบบ';
       else if (!DEMO.bills.length) emptyNote = 'ไม่มียอดค้างชำระ';
       return render();
@@ -206,7 +207,7 @@ function pickIdCard(input:HTMLInputElement){const f=input.files?.[0];input.value
 let stallSig = '';
 let apiOnline = false;
 const DEMO_STALLS_KEY = 'lamplaimat:demo-stalls';
-type StallRow = { stallCode: string; zone: string; status: StallStatus; monthlyRate: number };
+type StallRow = { stallCode: string; zone: string; status: StallStatus; monthlyRate: number; tenantName?: string };
 /** เดโม่ (ไม่มี backend): สถานะแผงชุดเดียวกับหน้าเจ้าหน้าที่เดโม่ ที่ฝากไว้ใน localStorage (ไม่มี = ใช้ชุดตัวอย่างของหน้านี้) */
 function readDemoStalls(): StallRow[] | null {
   try {

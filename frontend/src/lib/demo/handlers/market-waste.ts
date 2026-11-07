@@ -158,7 +158,9 @@ function syncCitizenOutsideBills(db: Ctx['db']) {
     // ช่องทางรับเงินที่เจ้าหน้าที่ตั้งในหน้าตั้งค่า → หน้าประชาชนเดโม่ใช้ตาม (payCfg)
     const p = db.payConfig?.[0];
     const payCfg = p ? [{ payCfg: true, promptpayId: p.promptpayId, promptpayType: p.promptpayType, payeeName: p.payeeName, accountBank: p.accountBank, accountNo: p.accountNo, cashPlace: p.cashPlace, cashHours: p.cashHours, contactPhone: p.contactPhone ?? '', wasteStallFee: p.wasteStallFee, householdFee: p.householdFee }] : [];
-    localStorage.setItem('lamplaimat:demo-outside-bills', JSON.stringify([...rows, ...hh, ...payCfg]));
+    // ข้อมูลครัวเรือน (ชื่อ+บ้านเลขที่) ไว้ให้หน้าสแกน QR บอกได้แม้บ้านนั้นไม่มียอดค้าง
+    const hhInfo = db.wasteHouseholds.filter((h) => h.organizationId === ORG_ID && h.active).slice(0, 300).map((h) => ({ hhInfo: true, householdRef: h.householdRef, holderName: h.holderName, houseNo: h.houseNo, moo: h.moo }));
+    localStorage.setItem('lamplaimat:demo-outside-bills', JSON.stringify([...rows, ...hh, ...hhInfo, ...payCfg]));
   } catch { /* เขียนไม่ได้ = ข้าม */ }
 }
 
@@ -178,7 +180,7 @@ function syncCitizenOutside(db: Ctx['db']) {
 function syncCitizenStalls(db: Ctx['db']) {
   try {
     const rows = db.marketStalls.filter((s) => s.active && s.organizationId === ORG_ID)
-      .map((s) => ({ stallCode: s.stallCode, zone: s.zone, status: s.status, monthlyRate: Number(s.monthlyRate) || 0 }));
+      .map((s) => ({ stallCode: s.stallCode, zone: s.zone, status: s.status, monthlyRate: Number(s.monthlyRate) || 0, tenantName: s.status === 'available' ? '' : String(s.tenantName ?? '') }));
     localStorage.setItem('lamplaimat:demo-stalls', JSON.stringify(rows));
   } catch { /* เขียนไม่ได้ = ข้าม */ }
 }

@@ -99,6 +99,10 @@ function fillDemoHouse(): boolean {
   return true;
 }
 /** ค้นด้วยรหัสลับของ QR บ้าน — ไม่ต้องกรอกชื่อ (เดโม่: ใช้ข้อมูลตัวอย่างตามรหัสครัวเรือน) */
+/** ข้อมูลครัวเรือนที่เจ้าหน้าที่เดโม่ซิงก์มา (ชื่อ+บ้านเลขที่) */
+function demoHouseInfo(ref: string): any {
+  try { const v = JSON.parse(localStorage.getItem('lamplaimat:demo-outside-bills') || '[]'); return (Array.isArray(v) ? v : []).find((x: any) => x && x.hhInfo && String(x.householdRef).toUpperCase() === ref.toUpperCase()); } catch { return null; }
+}
 async function searchWasteByKey(ref: string, key: string) {
   qrHouse = ''; verifiedName = ''; draftQuery = ''; searchTerm = ''; resetSelection();
   try {
@@ -107,10 +111,11 @@ async function searchWasteByKey(ref: string, key: string) {
       demoBillsAll = demoHouseBills();
       DEMO.bills = demoBillsAll.filter((b) => b.payerType === 'household' && b.ref.toUpperCase() === ref.toUpperCase());
       verifiedName = DEMO.bills[0]?.merchant || '';
-    } else { verifiedName = r.holderName || ''; DEMO.bills = (r.bills || []).map(toWasteBill); }
+      if (!DEMO.bills.length) { const i = demoHouseInfo(ref); if (i) { verifiedName = i.holderName; draftQuery = `${i.houseNo} หมู่ ${Number(i.moo)}`; } }
+    } else { verifiedName = r.holderName || ''; DEMO.bills = (r.bills || []).map(toWasteBill); if (!DEMO.bills.length && r.houseNo) draftQuery = `${r.houseNo} หมู่ ${Number(r.moo)}`; }
     if (DEMO.bills[0]) draftQuery = `${DEMO.bills[0].houseNo} หมู่ ${Number(DEMO.bills[0].moo)}`;
     searchTerm = draftQuery || ref;
-    if (!DEMO.bills.length) toast('บ้านนี้ไม่มียอดค้างชำระ');
+    if (!DEMO.bills.length && !verifiedName) toast('ไม่พบข้อมูลบ้านนี้');
   } catch (e) { DEMO.bills = []; toast((e as Error).message); }
   render();
 }
@@ -142,10 +147,16 @@ function searchFormHTML() {
   return head + `<form class="search-card" onsubmit="event.preventDefault();searchWasteFromForm()"><label for="wq">ชื่อ-นามสกุล แล้วต่อด้วยบ้านเลขที่และหมู่ (หรือเบอร์โทร)</label><div class="search-row"><input id="wq" name="wq" value="${escapeHTML(v)}" placeholder="เช่น สมชาย ใจบุญ 18 หมู่ 2" autocomplete="off"><button type="submit">ค้นหา</button></div><p class="help">ชื่อต้องตรงกับที่ลงทะเบียนไว้ จึงจะเห็นยอดค้าง</p></form>`;
 }
 
+function rescanHouse(){verifiedName='';draftQuery='';searchTerm='';qrHouse='';DEMO.bills=[];resetSelection();render();scanHouseQr()}
+function whoHTML(matches:any[]){
+ if(!searchTerm||!verifiedName)return '';
+ const total=matches.reduce((n:number,b:any)=>n+b.amount,0);
+ return `<div class="panel scan-who" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px;margin:12px 0"><div><small style="color:#667085">บ้านที่เลือก</small><div style="font-weight:700;font-size:1.05em">${escapeHTML(verifiedName)}${draftQuery?' · '+escapeHTML(draftQuery):''}</div><div style="font-size:.9em;color:${matches.length?'#b54708':'#067647'}">${matches.length?`ค้างชำระ ${matches.length} รายการ รวม ${total.toLocaleString('th-TH',{maximumFractionDigits:2})} บาท`:'ไม่มียอดค้างชำระ'}</div></div><button type="button" onclick="rescanHouse()" style="border:1px solid #d0d5dd;background:#fff;border-radius:999px;padding:8px 16px;font-weight:600;cursor:pointer">สแกน QR ใหม่</button></div>`;
+}
 function render(){
  const matches=searchTerm&&verifiedName?DEMO.bills.filter(b=>demoNameKey(b.merchant)===demoNameKey(verifiedName)&&(PAYABLE.includes(b.status)||b.status==='pending'||b.status==='cash')).sort((a,b)=>b.id.localeCompare(a.id)):[];
  const shortcut=searchTerm?'':`<div class="payment-shortcuts"><button class="payment-shortcut" type="button" onclick="scanHouseQr()">${SCAN_HOUSE_ART}<b>สแกน QR หน้าบ้าน</b><small>ส่องรหัสหน้าบ้านหรือเลือกรูป QR เพื่อดูค่าขยะ</small></button><button class="payment-shortcut payment-shortcut-cash" type="button" onclick="openCashInfo()">${CASH_HOUSE_ART}<b>จ่ายเงินสด</b><small>ไปจ่ายที่ ${escapeHTML(PAYMENT.cashPlace)}</small></button></div>`;
- app.innerHTML=homeBackHTML()+searchFormHTML()+shortcut+billListHTML({title:'ค่าขยะ',matches,promptText:'กรอกชื่อผู้รับบิลและบ้านเลขที่ แล้วกดค้นหา',payerLabel:b=>b.location||b.ref,chargeLabel:()=>'ค่าขยะครัวเรือน'})+contactFooterHTML();
+ app.innerHTML=homeBackHTML()+searchFormHTML()+(searchTerm?whoHTML(matches):shortcut)+billListHTML({title:'ค่าขยะ',matches,promptText:'กรอกชื่อผู้รับบิลและบ้านเลขที่ แล้วกดค้นหา',payerLabel:b=>b.location||b.ref,chargeLabel:()=>'ค่าขยะครัวเรือน'})+contactFooterHTML();
 }
 
 applySavedPayments();
