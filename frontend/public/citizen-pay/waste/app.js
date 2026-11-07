@@ -144,6 +144,8 @@ class PayApiError extends Error {
     constructor(message, status) { super(message); this.status = status; }
 }
 const MONTH_TH = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+/** "ตุลาคม 2569" → ตัวเลขเรียงเวลา (เก่าก่อน) ไว้เรียงรายการบิลตามเดือน ไม่ใช่ตามรหัสบิล */
+const monthOrder = (label) => { const [m, y] = String(label).split(' '); const i = MONTH_TH.indexOf(m); return Number(y) * 12 + (i < 0 ? 0 : i); };
 /** "2569-10" → "ตุลาคม 2569" */
 const periodToThai = (p) => { const [y, m] = String(p).split('-'); return `${MONTH_TH[Number(m) - 1] ?? m} ${y}`; };
 /** เรียก API สาธารณะ: คืนค่า data · null = เข้าถึงไม่ได้ (ไม่ใช่ JSON) · โยน PayApiError เมื่อ backend ตอบว่าผิดพลาด */
@@ -1063,7 +1065,7 @@ function whoHTML(matches) {
     return `<div class="panel scan-who" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px;margin:12px 0"><div><small style="color:#667085">บ้านที่เลือก</small><div style="font-weight:700;font-size:1.05em">${escapeHTML(verifiedName)}${draftQuery ? ' · ' + escapeHTML(draftQuery) : ''}</div><div style="font-size:.9em;color:${matches.length ? '#b54708' : '#067647'}">${matches.length ? `ค้างชำระ ${matches.length} รายการ รวม ${total.toLocaleString('th-TH', { maximumFractionDigits: 2 })} บาท` : 'ไม่มียอดค้างชำระ'}</div></div><button type="button" onclick="rescanHouse()" style="border:1px solid #d0d5dd;background:#fff;border-radius:999px;padding:8px 16px;font-weight:600;cursor:pointer">สแกน QR ใหม่</button></div>`;
 }
 function render() {
-    const matches = searchTerm && verifiedName ? DEMO.bills.filter(b => demoNameKey(b.merchant) === demoNameKey(verifiedName) && (PAYABLE.includes(b.status) || b.status === 'pending' || b.status === 'cash')).sort((a, b) => b.id.localeCompare(a.id)) : [];
+    const matches = searchTerm && verifiedName ? DEMO.bills.filter(b => demoNameKey(b.merchant) === demoNameKey(verifiedName) && (PAYABLE.includes(b.status) || b.status === 'pending' || b.status === 'cash')).sort((a, b) => monthOrder(a.month) - monthOrder(b.month) || a.kind.localeCompare(b.kind)) : [];
     const shortcut = searchTerm ? '' : `<div class="payment-shortcuts"><button class="payment-shortcut" type="button" onclick="scanHouseQr()">${SCAN_HOUSE_ART}<b>สแกน QR หน้าบ้าน</b><small>ส่องรหัสหน้าบ้านหรือเลือกรูป QR เพื่อดูค่าขยะ</small></button><button class="payment-shortcut payment-shortcut-cash" type="button" onclick="openCashInfo()">${CASH_HOUSE_ART}<b>จ่ายเงินสด</b><small>ไปจ่ายที่ ${escapeHTML(PAYMENT.cashPlace)}</small></button></div>`;
     app.innerHTML = homeBackHTML() + searchFormHTML() + (searchTerm ? whoHTML(matches) : shortcut) + billListHTML({ title: 'ค่าขยะ', matches, promptText: 'กรอกชื่อผู้รับบิลและบ้านเลขที่ แล้วกดค้นหา', payerLabel: b => b.location || b.ref, chargeLabel: () => 'ค่าขยะครัวเรือน' }) + contactFooterHTML();
 }

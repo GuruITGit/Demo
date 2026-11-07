@@ -144,6 +144,8 @@ class PayApiError extends Error {
     constructor(message, status) { super(message); this.status = status; }
 }
 const MONTH_TH = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+/** "ตุลาคม 2569" → ตัวเลขเรียงเวลา (เก่าก่อน) ไว้เรียงรายการบิลตามเดือน ไม่ใช่ตามรหัสบิล */
+const monthOrder = (label) => { const [m, y] = String(label).split(' '); const i = MONTH_TH.indexOf(m); return Number(y) * 12 + (i < 0 ? 0 : i); };
 /** "2569-10" → "ตุลาคม 2569" */
 const periodToThai = (p) => { const [y, m] = String(p).split('-'); return `${MONTH_TH[Number(m) - 1] ?? m} ${y}`; };
 /** เรียก API สาธารณะ: คืนค่า data · null = เข้าถึงไม่ได้ (ไม่ใช่ JSON) · โยน PayApiError เมื่อ backend ตอบว่าผิดพลาด */
@@ -1252,7 +1254,7 @@ async function submitStallBills(ids, method, slip) {
 /** สแกน/ค้นใหม่: ล้างผลเดิมแล้วเปิดกล้องสแกน QR */
 function rescanStall() { verifiedName = ''; draftStall = ''; searchTerm = ''; emptyNote = ''; resetSelection(); render(); openQrScanner(); }
 function searchPage() {
-    const matches = searchTerm && verifiedName ? DEMO.bills.filter(b => b.payerType === 'stall' && demoNameKey(b.merchant) === demoNameKey(verifiedName) && (PAYABLE.includes(b.status) || b.status === 'pending' || b.status === 'cash')).sort((a, b) => b.id.localeCompare(a.id)) : [];
+    const matches = searchTerm && verifiedName ? DEMO.bills.filter(b => b.payerType === 'stall' && demoNameKey(b.merchant) === demoNameKey(verifiedName) && (PAYABLE.includes(b.status) || b.status === 'pending' || b.status === 'cash')).sort((a, b) => monthOrder(a.month) - monthOrder(b.month) || a.kind.localeCompare(b.kind)) : [];
     const total = matches.reduce((n, b) => n + b.amount, 0);
     const notFound = emptyNote.startsWith('ไม่พบ');
     const who = searchTerm ? `<div class="panel scan-who" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px;margin:12px 0"><div><small style="color:#667085">${searchTerm.startsWith('OUT-') ? 'แผงลอย' : 'แผง'}${notFound ? 'ที่ค้นหา' : 'ที่เลือก'}</small><div style="font-weight:700;font-size:1.05em">${escapeHTML(searchTerm)}${verifiedName ? ' · ' + escapeHTML(verifiedName) : ' · ยังไม่มีผู้เช่า'}</div><div style="font-size:.9em;color:${notFound ? '#b42318' : matches.length ? '#b54708' : '#067647'}">${notFound ? 'ไม่พบข้อมูลที่ตรงกัน' : matches.length ? `ค้างชำระ ${matches.length} รายการ รวม ${money(total)} บาท` : escapeHTML(emptyNote || 'ไม่มียอดค้างชำระ')}</div></div><button type="button" onclick="rescanStall()" style="border:1px solid #d0d5dd;background:#fff;border-radius:999px;padding:8px 16px;font-weight:600;cursor:pointer">สแกน QR ใหม่</button></div>` : '';

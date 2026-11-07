@@ -3,6 +3,8 @@
 const PAY_API = '/v1/citizen/pay';
 class PayApiError extends Error { status: number; constructor(message: string, status: number) { super(message); this.status = status; } }
 const MONTH_TH = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+/** "ตุลาคม 2569" → ตัวเลขเรียงเวลา (เก่าก่อน) ไว้เรียงรายการบิลตามเดือน ไม่ใช่ตามรหัสบิล */
+const monthOrder = (label: string) => { const [m, y] = String(label).split(' '); const i = MONTH_TH.indexOf(m); return Number(y) * 12 + (i < 0 ? 0 : i); };
 /** "2569-10" → "ตุลาคม 2569" */
 const periodToThai = (p: string) => { const [y, m] = String(p).split('-'); return `${MONTH_TH[Number(m) - 1] ?? m} ${y}`; };
 
