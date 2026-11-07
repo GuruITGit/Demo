@@ -702,7 +702,7 @@ function ReportDetail({ report, onClose }: { report: any; onClose: () => void })
                 <InfoRow icon={<User className="h-4 w-4" />} label="ชื่อ">{r.reporterName || <span className="text-gray-400">ไม่ระบุ</span>}</InfoRow>
                 <InfoRow icon={<Phone className="h-4 w-4" />} label="เบอร์โทร">{r.reporterPhone || <span className="text-gray-400">—</span>}</InfoRow>
                 <InfoRow icon={<MapPin className="h-4 w-4" />} label="หมู่ / ที่อยู่">
-                  {[r.villageNo ? `หมู่ ${r.villageNo}` : '', r.location].filter(Boolean).join(' · ') || <span className="text-gray-400">—</span>}
+                  {[(r.answers as { houseNo?: string } | null)?.houseNo ? `บ้านเลขที่ ${(r.answers as { houseNo?: string }).houseNo}` : '', r.villageNo ? `หมู่ ${r.villageNo}` : '', r.location].filter(Boolean).join(' · ') || <span className="text-gray-400">—</span>}
                 </InfoRow>
                 {r.geo && (
                   <a href={`https://www.openstreetmap.org/?mlat=${r.geo.lat}&mlon=${r.geo.lng}#map=17/${r.geo.lat}/${r.geo.lng}`} target="_blank" rel="noreferrer"
@@ -788,7 +788,7 @@ function ReportDetail({ report, onClose }: { report: any; onClose: () => void })
                 <div className="flex flex-wrap gap-2">
                   <Button variant="outline" onClick={() => save.mutate(undefined)} disabled={save.isPending}>บันทึกหมายเหตุ</Button>
                   {!r.targetDeptId && (
-                    <Button variant="outline" onClick={() => save.mutate('rejected')} disabled={save.isPending}>ปฏิเสธเรื่อง</Button>
+                    <Button variant="outline" onClick={() => { if (confirm(`ปฏิเสธเรื่อง ${r.refNo}? ผู้แจ้งจะเห็นสถานะ "ปฏิเสธ"`)) save.mutate('rejected'); }} disabled={save.isPending}>ปฏิเสธเรื่อง</Button>
                   )}
                   {/* ปิดเรื่องเป็น "เสร็จสิ้น" ได้เฉพาะนายก/รองนายก — คนอื่นต้องผ่าน "ส่งไปกองเพื่ออนุมัติ" แล้วให้ขั้นตอน 3 ผู้เซ็นปิดให้แทน */}
                   {!r.targetDeptId && isMayor && (
