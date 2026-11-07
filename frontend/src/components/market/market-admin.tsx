@@ -336,17 +336,17 @@ function Dues({ sum, onBills }: { sum?: Summary; onBills: (code: string) => void
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-gray-50 text-left text-gray-600">
-            <tr><th className="px-4 py-2">แผง</th><th className="px-4 py-2">ผู้เช่า</th><th className="px-4 py-2 text-right">ค้างมา</th><th className="px-4 py-2">ค้างตั้งแต่</th><th className="px-4 py-2 text-right">ยอดค้าง (บาท)</th><th className="px-4 py-2 no-print" /></tr>
+            <tr><th className="whitespace-nowrap px-4 py-2">แผง</th><th className="whitespace-nowrap px-4 py-2">ผู้เช่า</th><th className="whitespace-nowrap px-4 py-2 text-right">ค้างมา</th><th className="whitespace-nowrap px-4 py-2">ค้างตั้งแต่</th><th className="whitespace-nowrap px-4 py-2 text-right">ยอดค้าง (บาท)</th><th className="whitespace-nowrap px-4 py-2 no-print" /></tr>
           </thead>
           <tbody>
             {rows.map((r) => (
               <tr key={r.stallCode} className="border-t border-gray-100">
-                <td className="px-4 py-2 font-medium">{r.stallCode}</td>
-                <td className="px-4 py-2">{r.payerName}</td>
-                <td className={cn('px-4 py-2 text-right', dueTone(r.months))}>{r.months} เดือน</td>
-                <td className="px-4 py-2 text-gray-600">{r.oldest ? periodLabel(r.oldest) : '—'}</td>
-                <td className="px-4 py-2 text-right font-semibold">{money(r.total)}</td>
-                <td className="px-4 py-2 no-print"><Button size="sm" variant="outline" onClick={() => onBills(r.stallCode)}>ดูบิล / รับชำระ</Button></td>
+                <td className="whitespace-nowrap px-4 py-2 font-medium">{r.stallCode}</td>
+                <td className="whitespace-nowrap px-4 py-2">{r.payerName}</td>
+                <td className={cn('whitespace-nowrap px-4 py-2 text-right', dueTone(r.months))}>{r.months} เดือน</td>
+                <td className="whitespace-nowrap px-4 py-2 text-gray-600">{r.oldest ? periodLabel(r.oldest) : '—'}</td>
+                <td className="whitespace-nowrap px-4 py-2 text-right font-semibold">{money(r.total)}</td>
+                <td className="whitespace-nowrap px-4 py-2 no-print"><Button size="sm" variant="outline" onClick={() => onBills(r.stallCode)}>ดูบิล / รับชำระ</Button></td>
               </tr>
             ))}
             {!rows.length && <tr><td colSpan={6}><Empty>{min || q ? 'ไม่มีรายการตามเงื่อนไขที่เลือก' : 'ไม่มียอดค้างชำระ'}</Empty></td></tr>}
@@ -404,18 +404,18 @@ function TenantsOutside() {
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-gray-50 text-left text-gray-600">
-            <tr><th className="px-4 py-2">รหัสผู้เช่า</th><th className="px-4 py-2">ชื่อ</th><th className="px-4 py-2">เบอร์</th><th className="px-4 py-2">จุด</th><th className="px-4 py-2">เริ่มเช่า</th><th className="px-4 py-2">ค้างชำระ</th><th className="px-4 py-2" /></tr>
+            <tr><th className="whitespace-nowrap px-4 py-2">รหัสผู้เช่า</th><th className="whitespace-nowrap px-4 py-2">ชื่อ</th><th className="whitespace-nowrap px-4 py-2">เบอร์</th><th className="whitespace-nowrap px-4 py-2">จุด</th><th className="whitespace-nowrap px-4 py-2">เริ่มเช่า</th><th className="whitespace-nowrap px-4 py-2">ค้างชำระ</th><th className="whitespace-nowrap px-4 py-2" /></tr>
           </thead>
           <tbody>
             {list.filter((r) => kind === 'all' || r.tenancyType === kind).map((r) => (
               <tr key={r.id} className="border-t border-gray-100">
-                <td className="px-4 py-2 font-medium">{r.appCode}</td>
-                <td className="px-4 py-2">{r.applicantName} <span className="text-xs text-gray-500">({r.tenancyType === 'temporary' ? 'ชั่วคราว' : 'ประจำ'})</span></td>
-                <td className="px-4 py-2">{r.phone}</td>
-                <td className="px-4 py-2">{r.location?.name ?? '—'}</td>
-                <td className="px-4 py-2 text-gray-600">{r.startDate ? new Date(`${r.startDate}T00:00:00`).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' }) : '—'}</td>
-                <td className={cn('px-4 py-2', r.openDues.count > 0 && 'font-medium text-red-600')}>{r.openDues.count > 0 ? `${r.openDues.count} รายการ · ${money(r.openDues.total)} บาท` : 'ไม่มียอดค้าง'}</td>
-                <td className="px-4 py-2 text-right">
+                <td className="whitespace-nowrap px-4 py-2 font-medium">{r.appCode}</td>
+                <td className="whitespace-nowrap px-4 py-2">{r.applicantName} <span className="text-xs text-gray-500">({r.tenancyType === 'temporary' ? 'ชั่วคราว' : 'ประจำ'})</span></td>
+                <td className="whitespace-nowrap px-4 py-2">{r.phone}</td>
+                <td className="whitespace-nowrap px-4 py-2">{r.location?.name ?? '—'}</td>
+                <td className="whitespace-nowrap px-4 py-2 text-gray-600">{r.startDate ? new Date(`${r.startDate}T00:00:00`).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' }) : '—'}</td>
+                <td className={cn('whitespace-nowrap px-4 py-2', r.openDues.count > 0 && 'font-medium text-red-600')}>{r.openDues.count > 0 ? `${r.openDues.count} รายการ · ${money(r.openDues.total)} บาท` : 'ไม่มียอดค้าง'}</td>
+                <td className="whitespace-nowrap px-4 py-2 text-right">
                   <div className="flex justify-end gap-2">
                     <Button size="sm" variant="outline" onClick={() => setQrFor(r)}>QR จ่ายเงิน</Button>
                     <Button size="sm" variant="outline" disabled={r.openDues.count > 0} title={r.openDues.count > 0 ? 'ต้องชำระยอดค้างให้ครบก่อน' : undefined} onClick={() => setDel(r)}>ลบผู้เช่า</Button>
@@ -520,8 +520,8 @@ function TenantsStalls({ sum }: { sum?: Summary }) {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 text-left text-gray-600">
             <tr>
-              <th className="px-4 py-2">แผง</th><th className="px-4 py-2">โซน</th><th className="px-4 py-2">สถานะ</th><th className="px-4 py-2">ผู้เช่า</th>
-              <th className="px-4 py-2">เบอร์ติดต่อ</th><th className="px-4 py-2 text-right">ค่าเช่า/เดือน</th><th className="px-4 py-2">ช่วงเช่า</th><th className="px-4 py-2 text-right">ค้างชำระ</th><th className="px-4 py-2" />
+              <th className="whitespace-nowrap px-4 py-2">แผง</th><th className="whitespace-nowrap px-4 py-2">โซน</th><th className="whitespace-nowrap px-4 py-2">สถานะ</th><th className="whitespace-nowrap px-4 py-2">ผู้เช่า</th>
+              <th className="whitespace-nowrap px-4 py-2">เบอร์ติดต่อ</th><th className="whitespace-nowrap px-4 py-2 text-right">ค่าเช่า/เดือน</th><th className="whitespace-nowrap px-4 py-2">ช่วงเช่า</th><th className="whitespace-nowrap px-4 py-2 text-right">ค้างชำระ</th><th className="whitespace-nowrap px-4 py-2" />
             </tr>
           </thead>
           <tbody>
@@ -529,15 +529,15 @@ function TenantsStalls({ sum }: { sum?: Summary }) {
               const a = arrears.get(s.stallCode);
               return (
                 <tr key={s.id} className="border-t border-gray-100">
-                  <td className="px-4 py-2 font-medium">{s.stallCode}</td>
-                  <td className="px-4 py-2">{s.zone}</td>
-                  <td className="px-4 py-2"><span className={cn('inline-block whitespace-nowrap rounded-full border px-2 py-0.5 text-xs', STALL_TONE[s.status])}>{STALL_LABEL[s.status]}</span></td>
-                  <td className="px-4 py-2">{s.tenantName || '—'}</td>
-                  <td className="px-4 py-2">{s.contactPhone || '—'}</td>
-                  <td className="px-4 py-2 text-right">{money(Number(s.monthlyRate))}</td>
-                  <td className="px-4 py-2 text-gray-600">{s.reserveStartDate ? `${fmtDate(s.reserveStartDate)}${s.reserveDays ? ` · ${s.reserveDays} วัน` : ''}` : '—'}</td>
-                  <td className="px-4 py-2 text-right">{a ? <span className={dueTone(a.months)}>{a.months} เดือน · {money(a.total)} บาท</span> : '—'}</td>
-                  <td className="px-4 py-2 text-right">
+                  <td className="whitespace-nowrap px-4 py-2 font-medium">{s.stallCode}</td>
+                  <td className="whitespace-nowrap px-4 py-2">{s.zone}</td>
+                  <td className="whitespace-nowrap px-4 py-2"><span className={cn('inline-block whitespace-nowrap rounded-full border px-2 py-0.5 text-xs', STALL_TONE[s.status])}>{STALL_LABEL[s.status]}</span></td>
+                  <td className="whitespace-nowrap px-4 py-2">{s.tenantName || '—'}</td>
+                  <td className="whitespace-nowrap px-4 py-2">{s.contactPhone || '—'}</td>
+                  <td className="whitespace-nowrap px-4 py-2 text-right">{money(Number(s.monthlyRate))}</td>
+                  <td className="whitespace-nowrap px-4 py-2 text-gray-600">{s.reserveStartDate ? `${fmtDate(s.reserveStartDate)}${s.reserveDays ? ` · ${s.reserveDays} วัน` : ''}` : '—'}</td>
+                  <td className="whitespace-nowrap px-4 py-2 text-right">{a ? <span className={dueTone(a.months)}>{a.months} เดือน · {money(a.total)} บาท</span> : '—'}</td>
+                  <td className="whitespace-nowrap px-4 py-2 text-right">
                     <div className="flex justify-end gap-2">
                       <Button size="sm" variant="outline" onClick={() => setEditing(s)}>จัดการ</Button>
                       {s.status !== 'available' && (

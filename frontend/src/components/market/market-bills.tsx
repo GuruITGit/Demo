@@ -122,24 +122,24 @@ export function MarketBills({ canManage, orgName, initialStall, initialStatus }:
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-left text-gray-600">
               <tr>
-                <th className="px-4 py-2">แผง</th><th className="px-4 py-2">ผู้เช่า</th><th className="px-4 py-2">รายการ</th><th className="px-4 py-2">งวด</th>
-                <th className="px-4 py-2 text-right">ยอด (บาท)</th><th className="px-4 py-2">สถานะ</th><th className="px-4 py-2">จัดการ</th>
+                <th className="whitespace-nowrap px-4 py-2">แผง</th><th className="whitespace-nowrap px-4 py-2">ผู้เช่า</th><th className="whitespace-nowrap px-4 py-2">รายการ</th><th className="whitespace-nowrap px-4 py-2">งวด</th>
+                <th className="whitespace-nowrap px-4 py-2 text-right">ยอด (บาท)</th><th className="whitespace-nowrap px-4 py-2">สถานะ</th><th className="whitespace-nowrap px-4 py-2">จัดการ</th>
               </tr>
             </thead>
             <tbody>
               {rows.map((b) => (
                 <tr key={b.id} className="border-t border-gray-100 align-middle">
                   <td className="whitespace-nowrap px-4 py-2 font-medium">{b.stallCode}</td>
-                  <td className="px-4 py-2">{b.payerName}</td>
-                  <td className="px-4 py-2">{KIND_LABEL[b.kind]}</td>
+                  <td className="whitespace-nowrap px-4 py-2">{b.payerName}</td>
+                  <td className="whitespace-nowrap px-4 py-2">{KIND_LABEL[b.kind]}</td>
                   <td className="whitespace-nowrap px-4 py-2">{periodLabel(b.period)}</td>
                   <td className="whitespace-nowrap px-4 py-2 text-right tabular-nums">{money(b.amount)}</td>
-                  <td className="px-4 py-2">
+                  <td className="whitespace-nowrap px-4 py-2">
                     <span className={`inline-block whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_TONE[b.status] ?? 'bg-gray-100 text-gray-600'}`}>{BILL_STATUS[b.status] ?? b.status}</span>
                     {b.status === 'paid' && <span className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-gray-500"><span>{PAY_METHOD[b.paidMethod ?? ''] ?? b.paidMethod} · {b.receiptNo}</span><SlipButton url={b.slipUrl} method={b.paidMethod} /></span>}
                     {b.status === 'mismatch' && b.reviewNote && <span className="mt-1 block text-xs text-orange-700">{b.reviewNote}</span>}
                   </td>
-                  <td className="px-4 py-2">
+                  <td className="whitespace-nowrap px-4 py-2">
                     {b.status === 'paid' ? (
                       <RowMenu items={[{ label: 'พิมพ์ใบเสร็จ', onClick: () => doPrint(b) }]} />
                     ) : canManage ? (

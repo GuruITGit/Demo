@@ -228,20 +228,20 @@ function Households({ canManage, onBills }: { canManage: boolean; onBills: (ref:
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-left text-gray-600">
               <tr>
-                <th className="px-4 py-2">รหัส</th><th className="px-4 py-2">ผู้รับบิล</th><th className="px-4 py-2">บ้านเลขที่</th><th className="px-4 py-2">เบอร์โทร</th>
-                <th className="px-4 py-2 text-right">ค่าขยะ/เดือน</th><th className="px-4 py-2 text-right">ค้างชำระ</th><th className="px-4 py-2" />
+                <th className="whitespace-nowrap px-4 py-2">รหัส</th><th className="whitespace-nowrap px-4 py-2">ผู้รับบิล</th><th className="whitespace-nowrap px-4 py-2">บ้านเลขที่</th><th className="whitespace-nowrap px-4 py-2">เบอร์โทร</th>
+                <th className="whitespace-nowrap px-4 py-2 text-right">ค่าขยะ/เดือน</th><th className="whitespace-nowrap px-4 py-2 text-right">ค้างชำระ</th><th className="whitespace-nowrap px-4 py-2" />
               </tr>
             </thead>
             <tbody>
               {data.map((h) => (
                 <tr key={h.id} className="border-t border-gray-100">
-                  <td className="px-4 py-2 font-medium">{h.householdRef}</td>
-                  <td className="px-4 py-2">{h.holderName}</td>
-                  <td className="px-4 py-2">{h.houseNo} หมู่ {Number(h.moo)}</td>
-                  <td className="px-4 py-2">{h.phone ?? '—'}</td>
-                  <td className="px-4 py-2 text-right">{h.monthlyFee != null ? <span title="ราคาเฉพาะครัวเรือน">{money(h.monthlyFee)} *</span> : <span className="text-gray-400">ราคากลาง</span>}</td>
-                  <td className="px-4 py-2 text-right">{h.owedTotal ? <span className="font-semibold text-red-600">{money(h.owedTotal)} ({h.owedMonths} เดือน)</span> : <span className="text-gray-400">—</span>}</td>
-                  <td className="px-4 py-2">
+                  <td className="whitespace-nowrap px-4 py-2 font-medium">{h.householdRef}</td>
+                  <td className="whitespace-nowrap px-4 py-2">{h.holderName}</td>
+                  <td className="whitespace-nowrap px-4 py-2">{h.houseNo} หมู่ {Number(h.moo)}</td>
+                  <td className="whitespace-nowrap px-4 py-2">{h.phone ?? '—'}</td>
+                  <td className="whitespace-nowrap px-4 py-2 text-right">{h.monthlyFee != null ? <span title="ราคาเฉพาะครัวเรือน">{money(h.monthlyFee)} *</span> : <span className="text-gray-400">ราคากลาง</span>}</td>
+                  <td className="whitespace-nowrap px-4 py-2 text-right">{h.owedTotal ? <span className="font-semibold text-red-600">{money(h.owedTotal)} ({h.owedMonths} เดือน)</span> : <span className="text-gray-400">—</span>}</td>
+                  <td className="whitespace-nowrap px-4 py-2">
                     <div className="flex justify-end gap-2">
                       <Button size="sm" variant="outline" onClick={() => onBills(h.householdRef)}>บิล</Button>
                       {canManage && <Button size="sm" variant="outline" onClick={() => startEdit(h)}>แก้ไข</Button>}
@@ -351,22 +351,22 @@ function Bills({ canManage, orgName, seedQ, seedStatus }: { canManage: boolean; 
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-left text-gray-600">
-              <tr><th className="px-4 py-2">รหัส</th><th className="px-4 py-2">ผู้รับบิล</th><th className="px-4 py-2">บ้านเลขที่</th><th className="px-4 py-2">งวด</th><th className="px-4 py-2 text-right">ยอด (บาท)</th><th className="px-4 py-2">สถานะ</th><th className="px-4 py-2">จัดการ</th></tr>
+              <tr><th className="whitespace-nowrap px-4 py-2">รหัส</th><th className="whitespace-nowrap px-4 py-2">ผู้รับบิล</th><th className="whitespace-nowrap px-4 py-2">บ้านเลขที่</th><th className="whitespace-nowrap px-4 py-2">งวด</th><th className="whitespace-nowrap px-4 py-2 text-right">ยอด (บาท)</th><th className="whitespace-nowrap px-4 py-2">สถานะ</th><th className="whitespace-nowrap px-4 py-2">จัดการ</th></tr>
             </thead>
             <tbody>
               {data.map((b) => (
                 <tr key={b.id} className="border-t border-gray-100 align-middle">
                   <td className="whitespace-nowrap px-4 py-2 font-medium">{b.householdRef}</td>
-                  <td className="px-4 py-2">{b.holderName}</td>
-                  <td className="px-4 py-2">{b.houseNo} หมู่ {Number(b.moo)}</td>
+                  <td className="whitespace-nowrap px-4 py-2">{b.holderName}</td>
+                  <td className="whitespace-nowrap px-4 py-2">{b.houseNo} หมู่ {Number(b.moo)}</td>
                   <td className="whitespace-nowrap px-4 py-2">{periodLabel(b.period)}</td>
                   <td className="whitespace-nowrap px-4 py-2 text-right tabular-nums">{money(b.amount)}</td>
-                  <td className="px-4 py-2">
+                  <td className="whitespace-nowrap px-4 py-2">
                     <span className={`inline-block whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_TONE[b.status] ?? 'bg-gray-100 text-gray-600'}`}>{BILL_STATUS[b.status] ?? b.status}</span>
                     {b.status === 'paid' && <span className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-gray-500"><span>{PAY_METHOD[b.paidMethod ?? ''] ?? b.paidMethod} · {b.receiptNo}</span><SlipButton url={b.slipUrl} method={b.paidMethod} /></span>}
                     {b.status === 'mismatch' && b.reviewNote && <span className="mt-1 block text-xs text-orange-700">{b.reviewNote}</span>}
                   </td>
-                  <td className="px-4 py-2">
+                  <td className="whitespace-nowrap px-4 py-2">
                     {b.status === 'paid' ? (
                       <RowMenu items={[{ label: 'พิมพ์ใบเสร็จ', onClick: () => doPrint(b) }]} />
                     ) : canManage ? (
@@ -409,19 +409,19 @@ function Dues({ onBills }: { onBills: (ref: string) => void }) {
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-gray-50 text-left text-gray-600">
-            <tr><th className="px-4 py-2">รหัส</th><th className="px-4 py-2">ผู้รับบิล</th><th className="px-4 py-2">บ้านเลขที่</th><th className="px-4 py-2">เบอร์โทร</th><th className="px-4 py-2 text-right">ค้างมา</th><th className="px-4 py-2">ค้างตั้งแต่</th><th className="px-4 py-2 text-right">ยอดค้าง (บาท)</th><th className="px-4 py-2 no-print" /></tr>
+            <tr><th className="whitespace-nowrap px-4 py-2">รหัส</th><th className="whitespace-nowrap px-4 py-2">ผู้รับบิล</th><th className="whitespace-nowrap px-4 py-2">บ้านเลขที่</th><th className="whitespace-nowrap px-4 py-2">เบอร์โทร</th><th className="whitespace-nowrap px-4 py-2 text-right">ค้างมา</th><th className="whitespace-nowrap px-4 py-2">ค้างตั้งแต่</th><th className="whitespace-nowrap px-4 py-2 text-right">ยอดค้าง (บาท)</th><th className="whitespace-nowrap px-4 py-2 no-print" /></tr>
           </thead>
           <tbody>
             {rows.map((r) => (
               <tr key={r.householdRef} className="border-t border-gray-100">
-                <td className="px-4 py-2 font-medium">{r.householdRef}</td>
-                <td className="px-4 py-2">{r.holderName}</td>
-                <td className="px-4 py-2">{r.houseNo} หมู่ {Number(r.moo)}</td>
-                <td className="px-4 py-2">{r.phone ? <a href={`tel:${r.phone}`} className="text-sky-700 underline">{r.phone}</a> : '—'}</td>
-                <td className={cn('px-4 py-2 text-right', dueTone(r.months))}>{r.months} เดือน</td>
-                <td className="px-4 py-2 text-gray-600">{r.oldest ? periodLabel(r.oldest) : '—'}</td>
-                <td className="px-4 py-2 text-right font-semibold">{money(r.total)}</td>
-                <td className="px-4 py-2 no-print"><Button size="sm" variant="outline" onClick={() => onBills(r.householdRef)}>ดูบิล / รับชำระ</Button></td>
+                <td className="whitespace-nowrap px-4 py-2 font-medium">{r.householdRef}</td>
+                <td className="whitespace-nowrap px-4 py-2">{r.holderName}</td>
+                <td className="whitespace-nowrap px-4 py-2">{r.houseNo} หมู่ {Number(r.moo)}</td>
+                <td className="whitespace-nowrap px-4 py-2">{r.phone ? <a href={`tel:${r.phone}`} className="text-sky-700 underline">{r.phone}</a> : '—'}</td>
+                <td className={cn('whitespace-nowrap px-4 py-2 text-right', dueTone(r.months))}>{r.months} เดือน</td>
+                <td className="whitespace-nowrap px-4 py-2 text-gray-600">{r.oldest ? periodLabel(r.oldest) : '—'}</td>
+                <td className="whitespace-nowrap px-4 py-2 text-right font-semibold">{money(r.total)}</td>
+                <td className="whitespace-nowrap px-4 py-2 no-print"><Button size="sm" variant="outline" onClick={() => onBills(r.householdRef)}>ดูบิล / รับชำระ</Button></td>
               </tr>
             ))}
             {!rows.length && <tr><td colSpan={8}>{isLoading ? <Empty>กำลังโหลด…</Empty> : <Empty>{min || q ? 'ไม่มีรายการตามเงื่อนไขที่เลือก' : 'ไม่มียอดค้างชำระ'}</Empty>}</td></tr>}

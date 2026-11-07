@@ -161,17 +161,17 @@ export function MarketOutside({ canManageStall, canManageBill, orgName }: { canM
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-left text-gray-600">
-              <tr><th className="px-4 py-2">วันที่</th><th className="px-4 py-2">จุด</th><th className="px-4 py-2">ผู้ค้า</th><th className="px-4 py-2 text-right">ยอด (บาท)</th><th className="px-4 py-2">ใบเสร็จ</th><th className="px-4 py-2" /></tr>
+              <tr><th className="whitespace-nowrap px-4 py-2">วันที่</th><th className="whitespace-nowrap px-4 py-2">จุด</th><th className="whitespace-nowrap px-4 py-2">ผู้ค้า</th><th className="whitespace-nowrap px-4 py-2 text-right">ยอด (บาท)</th><th className="whitespace-nowrap px-4 py-2">ใบเสร็จ</th><th className="whitespace-nowrap px-4 py-2" /></tr>
             </thead>
             <tbody>
               {(cols?.rows ?? []).map((c) => (
                 <tr key={c.id} className="border-t border-gray-100">
-                  <td className="px-4 py-2">{thDate(c.collectedOn)}</td>
-                  <td className="px-4 py-2">{locName(c.locationId)}</td>
-                  <td className="px-4 py-2">{c.vendorName}</td>
-                  <td className="px-4 py-2 text-right">{money(c.amount)}</td>
-                  <td className="px-4 py-2 text-gray-500">{c.receiptNo}</td>
-                  <td className="px-4 py-2">
+                  <td className="whitespace-nowrap px-4 py-2">{thDate(c.collectedOn)}</td>
+                  <td className="whitespace-nowrap px-4 py-2">{locName(c.locationId)}</td>
+                  <td className="whitespace-nowrap px-4 py-2">{c.vendorName}</td>
+                  <td className="whitespace-nowrap px-4 py-2 text-right">{money(c.amount)}</td>
+                  <td className="whitespace-nowrap px-4 py-2 text-gray-500">{c.receiptNo}</td>
+                  <td className="whitespace-nowrap px-4 py-2">
                     <div className="flex gap-2">
                       <Button size="sm" variant="outline" onClick={() => {
                         if (!printReceipt({ orgName, receiptNo: c.receiptNo, payer: c.vendorName, place: `แผงลอย ${locName(c.locationId)}`, lines: [{ label: `ค่าที่แผงลอย ${thDate(c.collectedOn)}`, amount: c.amount }], method: 'cash', paidAt: `${c.collectedOn}T12:00:00` }))
