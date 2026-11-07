@@ -981,12 +981,12 @@ function openOutsideTenant(code) { verifiedName = ''; searchTerm = ''; paymentMa
 function findPaymentByQr(raw) { let key = raw.trim(); let qrName = ''; try {
     const url = new URL(key);
     const qk = (url.searchParams.get('k') || '').trim(), qs = (url.searchParams.get('stall') || '').trim();
+    qrName = (url.searchParams.get('name') || '').trim();
     if (qk && qs) {
         setPage('dues');
         void searchStallByKey(qs.toUpperCase(), qk);
         return;
     }
-    qrName = (url.searchParams.get('name') || '').trim();
     key = url.searchParams.get('stall') || url.searchParams.get('ref') || url.pathname.split('/').filter(Boolean).pop() || key;
 }
 catch { } key = key.trim().toUpperCase(); if (/^OUT-\d+$/.test(key)) {
@@ -1000,7 +1000,10 @@ catch { } key = key.trim().toUpperCase(); if (/^OUT-\d+$/.test(key)) {
     return;
 } if (/^[A-Z]{1,3}-?\d{1,3}$/.test(key)) {
     setPage('dues');
-    void searchStallByKey(key, '');
+    if (qrName.length >= 4)
+        void searchStallBills(qrName, key);
+    else
+        void searchStallByKey(key, '');
     return;
 } const bill = DEMO.bills.find(item => item.payerType === 'stall' && (item.stall?.toUpperCase() === key || item.ref.toUpperCase() === key)); const stall = findStall(key); verifiedName = ''; searchTerm = ''; draftStall = bill?.stall || stall?.id || key; paymentMapMode = false; resetSelection(); setPage('dues'); if (!bill && !stall)
     toast('ไม่พบรหัสแผงใน QR นี้ · ลองค้นหาด้วยชื่อหรือเลขแผง'); }

@@ -3,18 +3,20 @@ import qrcode from 'qrcode-generator';
 
 /**
  * QR ประจำแผง/ประจำบ้าน (ค่าแผงตลาด · ค่าเก็บขยะบ้าน)
- * ข้อมูลใน QR = ลิงก์หน้าประชาชนพร้อมรหัสแผง / บ้านเลขที่+หมู่ เท่านั้น — ไม่มีชื่อ/ยอดเงิน (ประชาชนยังต้องกรอกชื่อยืนยันเองก่อนเห็นบิล)
- * ลิงก์เป็น ASCII ล้วน ใช้ได้กับแอปกล้องทั่วไป ไม่ต้องสแกนผ่านเว็บ
+ * ข้อมูลใน QR = ลิงก์หน้าประชาชนพร้อม 'ชื่อ + รหัสแผง' (หรือชื่อ + บ้านเลขที่/รหัสบ้าน) — ไม่มียอดเงิน
+ * ชื่อใส่เป็น percent-encode ใช้ได้กับแอปกล้องทั่วไป ไม่ต้องสแกนผ่านเว็บ
  */
 export type QrItem = { code: string; title: string; sub: string; text: string };
 
 /** ลิงก์ของ QR แผง: /citizen/market?stall=A06 */
-export const stallQrUrl = (origin: string, stallCode: string, key?: string) =>
-  `${origin}/citizen/market?stall=${encodeURIComponent(stallCode)}${key ? `&k=${key}` : ''}`; // มีรหัสลับ: สแกนแล้วเห็นยอดเลย
+export const stallQrUrl = (origin: string, stallCode: string, key?: string, name?: string) =>
+  `${origin}/citizen/market?stall=${encodeURIComponent(stallCode)}${name ? `&name=${encodeURIComponent(name)}` : ''}${key ? `&k=${key}` : ''}`; // ชื่อ+รหัสแผงเสมอ · มีรหัสลับ: สแกนแล้วเห็นยอดเลย
 /** ลิงก์ของ QR บ้าน: /citizen/waste?house=18&moo=2 */
-export const houseQrUrl = (origin: string, houseNo: string, moo: string, ref?: string, key?: string) =>
-  ref && key ? `${origin}/citizen/waste?h=${encodeURIComponent(ref)}&k=${key}` // มีรหัสลับ: สแกนแล้วเห็นยอดเลย
-    : `${origin}/citizen/waste?house=${encodeURIComponent(houseNo)}&moo=${encodeURIComponent(moo)}`;
+export const houseQrUrl = (origin: string, houseNo: string, moo: string, ref?: string, key?: string, name?: string) => {
+  const nm = name ? `&name=${encodeURIComponent(name)}` : '';
+  return ref && key ? `${origin}/citizen/waste?h=${encodeURIComponent(ref)}${nm}&k=${key}` // มีรหัสลับ: สแกนแล้วเห็นยอดเลย
+    : `${origin}/citizen/waste?house=${encodeURIComponent(houseNo)}&moo=${encodeURIComponent(moo)}${nm}`;
+};
 
 function qrModel(text: string) {
   const q = qrcode(0, 'M');

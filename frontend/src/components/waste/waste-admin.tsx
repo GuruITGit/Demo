@@ -446,7 +446,7 @@ function HouseQr({ orgName }: { orgName: string }) {
   const key = q.trim().toLowerCase();
   const rows = data.filter((h) => (!moo || h.moo === moo) && (!key || `${h.householdRef} ${h.holderName} ${h.houseNo} ${h.moo}`.toLowerCase().includes(key)));
   const items: QrItem[] = rows.map((h) => ({
-    code: h.householdRef, title: `บ้านเลขที่ ${h.houseNo} หมู่ ${Number(h.moo)}`, sub: h.householdRef, text: houseQrUrl(origin, h.houseNo, String(Number(h.moo)), h.householdRef, h.qrKey),
+    code: h.householdRef, title: `บ้านเลขที่ ${h.houseNo} หมู่ ${Number(h.moo)}`, sub: `${h.holderName} · ${h.householdRef}`, text: houseQrUrl(origin, h.houseNo, String(Number(h.moo)), h.householdRef, h.qrKey, h.holderName),
   }));
   const nameOf = new Map(rows.map((h) => [h.householdRef, h.holderName]));
   const target = picked.size ? items.filter((i) => picked.has(i.code)) : items;

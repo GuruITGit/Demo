@@ -557,7 +557,7 @@ function TenantsStalls({ sum }: { sum?: Summary }) {
 // ───────────────────────────── QR ประจำแผง
 /** QR แผงลอย: รหัสผู้เช่า + ชื่อ (สแกนแล้วหน้าจ่ายเงินกรอกชื่อให้และแสดงยอดทันที) */
 const outsideQrUrl = (origin: string, code: string, name: string, key?: string) =>
-  key ? stallQrUrl(origin, code, key) : `${origin}/citizen/market?stall=${encodeURIComponent(code)}&name=${encodeURIComponent(name)}`;
+  key ? stallQrUrl(origin, code, key, name) : `${origin}/citizen/market?stall=${encodeURIComponent(code)}&name=${encodeURIComponent(name)}`;
 
 function StallQr({ orgName }: { orgName: string }) {
   const { data: stalls = [] } = useQuery<Stall[]>({ queryKey: ['market', 'stalls'], queryFn: async () => (await api.get('/market/stalls')).data.data });
@@ -569,9 +569,9 @@ function StallQr({ orgName }: { orgName: string }) {
   const rented = stalls.filter((s) => s.tenantName && s.status !== 'available');
   const zones = [...new Set(rented.map((s) => s.zone))];
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
-  // บนสติกเกอร์แผงประจำไม่ใส่ชื่อผู้เช่า (ติดหน้าแผงต่อสาธารณะ) — แผงลอยใส่ชื่อในรหัส QR ตามที่เจ้าหน้าที่เลือก
+  // QR ทุกใบมีทั้งชื่อและรหัสแผง (ไม่มียอดเงิน) — เลือก
   const items: QrItem[] = kind === 'stall'
-    ? rented.filter((s) => !zone || s.zone === zone).map((s) => ({ code: s.stallCode, title: `แผง ${s.stallCode}`, sub: `โซน ${s.zone}`, text: stallQrUrl(origin, s.stallCode, s.qrKey) }))
+    ? rented.filter((s) => !zone || s.zone === zone).map((s) => ({ code: s.stallCode, title: `แผง ${s.stallCode}`, sub: `${s.tenantName} · โซน ${s.zone}`, text: stallQrUrl(origin, s.stallCode, s.qrKey, s.tenantName ?? undefined) }))
     : outside.map((r) => ({ code: r.appCode, title: r.appCode, sub: `${r.applicantName} · ${r.location?.name ?? ''}`, text: outsideQrUrl(origin, r.appCode, r.applicantName, r.qrKey) }));
   const target = picked.size ? items.filter((i) => picked.has(i.code)) : items;
   const toggle = (code: string) => setPicked((p) => { const n = new Set(p); if (n.has(code)) n.delete(code); else n.add(code); return n; });
