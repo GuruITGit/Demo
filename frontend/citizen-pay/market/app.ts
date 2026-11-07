@@ -122,13 +122,14 @@ async function searchStallByKey(code: string, key: string) {
         DEMO.bills = demoBillsAll.filter((b) => b.payerType === 'stall' && b.stall?.toUpperCase() === code);
         verifiedName = DEMO.bills[0]?.merchant || '';
       }
-      if (!verifiedName) emptyNote = 'ไม่พบข้อมูลแผงนี้ในระบบ';
+      const st = readDemoStalls()?.find((x) => x.stallCode === code)?.status; // จองไว้/ว่าง = ยังไม่มีบิล ไม่ใช่ "ไม่พบแผง"
+      if (!verifiedName) emptyNote = st === 'reserved' ? `แผง ${code} จองไว้แล้ว · รอเจ้าหน้าที่ยืนยันเป็นผู้เช่า ยังไม่มียอดต้องชำระ` : st === 'available' ? `แผง ${code} ยังว่าง ยังไม่มีผู้เช่า` : 'ไม่พบข้อมูลแผงนี้ในระบบ';
       else if (!DEMO.bills.length) emptyNote = 'ไม่มียอดค้างชำระ';
       return render();
     }
     verifiedName = r.payerName || '';
     DEMO.bills = (r.bills || []).map(toStallBill);
-    if (!DEMO.bills.length) emptyNote = 'ไม่มียอดค้างชำระ';
+    if (!DEMO.bills.length) emptyNote = r.stall?.status === 'reserved' ? `แผง ${code} จองไว้แล้ว · รอเจ้าหน้าที่ยืนยันเป็นผู้เช่า ยังไม่มียอดต้องชำระ` : 'ไม่มียอดค้างชำระ';
   } catch (e) {
     DEMO.bills = [];
     if (!key) { emptyNote = ''; if (code.startsWith('OUT-')) { openOutsideTenant(code); return; } toast('กรอกชื่อผู้เช่าแล้วกดค้นหา'); }
