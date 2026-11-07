@@ -729,12 +729,14 @@
 .contact-box a{justify-self:center;justify-content:center}
 .link-btn{border:0;background:none;color:#0b6bb5;font:inherit;font-size:13px;text-decoration:underline;padding:0 0 0 6px;cursor:pointer;min-height:0}
 
-/* ปุ่มสแกน QR ที่มีปุ่มเดียว: แถบเล็กแนวนอน ไม่ดันช่องค้นหาลงล่าง */
-.payment-shortcut:only-child{flex-direction:row;align-items:center;gap:14px;min-height:0;padding:10px 14px}
-.payment-shortcut:only-child .shortcut-art{width:112px;height:72px;flex:none;margin:0;object-fit:cover;object-position:right center;border-radius:10px}
-.payment-shortcut:only-child b{font-size:15px;display:block}
-.payment-shortcut:only-child small{min-height:0;font-size:12px;margin-top:2px;display:block}
-.payment-shortcut:only-child::after{content:'›';margin-left:auto;font-size:26px;color:#0369a1;line-height:1}
+/* ปุ่มสแกน QR ที่มีปุ่มเดียว: เฉพาะจอคอมเป็นแถบเล็ก (มือถือใช้การ์ดเดิม) */
+@media(min-width:768px){
+  .payment-shortcut:only-child{flex-direction:row;align-items:center;gap:14px;min-height:0;padding:10px 14px}
+  .payment-shortcut:only-child .shortcut-art{width:112px;height:72px;flex:none;margin:0;object-fit:cover;object-position:right center;border-radius:10px}
+  .payment-shortcut:only-child b{font-size:15px;display:block}
+  .payment-shortcut:only-child small{min-height:0;font-size:12px;margin-top:2px;display:block}
+  .payment-shortcut:only-child::after{content:'›';margin-left:auto;font-size:26px;color:#0369a1;line-height:1}
+}
 @media(min-width:768px){
   .payment-shortcuts:has(>.payment-shortcut:only-child){grid-template-columns:minmax(0,360px)!important}
   .payment-shortcut:only-child{padding:6px 12px;gap:10px}
