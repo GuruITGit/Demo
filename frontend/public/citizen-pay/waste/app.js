@@ -903,9 +903,11 @@ function demoHouseBills() {
     }
 }
 let demoBillsAll = null;
+let whoOk = false; // ค้นเจอบ้านจริง (ไว้โชว์การ์ด "บ้านที่เลือก") — ค้นไม่เจอไม่โชว์ กันขึ้นว่า "ไม่มียอดค้าง" สวนกับข้อความไม่พบ
 async function searchWasteBills(name, q) {
     verifiedName = name.trim();
     draftQuery = q.trim();
+    whoOk = false;
     searchTerm = draftQuery;
     resetSelection();
     if (!searchTerm)
@@ -922,11 +924,13 @@ async function searchWasteBills(name, q) {
             const k = (s) => s.replace(/\s+/g, '').replace(/หมู่ที่|ม\./g, 'หมู่');
             DEMO.bills = demoBillsAll.filter((b) => b.payerType === 'household' && demoNameKey(b.merchant) === demoNameKey(verifiedName)
                 && (k(searchTerm) === k(`${b.houseNo} หมู่ ${b.moo}`) || searchTerm.replace(/[\s-]/g, '') === b.phone || searchTerm.toUpperCase() === b.ref));
+            whoOk = DEMO.bills.length > 0;
             if (!DEMO.bills.length)
                 toast('ไม่พบข้อมูลที่ตรงกัน กรุณาตรวจสอบชื่อและเลขล็อก/บ้านเลขที่ให้ตรงกับที่ลงทะเบียนไว้');
             return render();
         }
         DEMO.bills = rows.map(toWasteBill);
+        whoOk = DEMO.bills.length > 0;
     }
     catch (e) {
         DEMO.bills = [];
@@ -952,6 +956,7 @@ function fillDemoHouse() {
     if (!hit.length)
         return false;
     DEMO.bills = hit;
+    whoOk = true;
     verifiedName = hit[0].merchant;
     draftQuery = qrHouse;
     searchTerm = qrHouse;
@@ -1000,6 +1005,7 @@ async function searchWasteByKey(ref, key) {
         if (DEMO.bills[0])
             draftQuery = `${DEMO.bills[0].houseNo} หมู่ ${Number(DEMO.bills[0].moo)}`;
         searchTerm = draftQuery || ref;
+        whoOk = !!verifiedName;
         if (!DEMO.bills.length && !verifiedName)
             toast('ไม่พบข้อมูลบ้านนี้');
     }
@@ -1051,7 +1057,7 @@ function searchFormHTML() {
 }
 function rescanHouse() { verifiedName = ''; draftQuery = ''; searchTerm = ''; qrHouse = ''; DEMO.bills = []; resetSelection(); render(); scanHouseQr(); }
 function whoHTML(matches) {
-    if (!searchTerm || !verifiedName)
+    if (!searchTerm || !verifiedName || !whoOk)
         return '';
     const total = matches.reduce((n, b) => n + b.amount, 0);
     return `<div class="panel scan-who" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px;margin:12px 0"><div><small style="color:#667085">บ้านที่เลือก</small><div style="font-weight:700;font-size:1.05em">${escapeHTML(verifiedName)}${draftQuery ? ' · ' + escapeHTML(draftQuery) : ''}</div><div style="font-size:.9em;color:${matches.length ? '#b54708' : '#067647'}">${matches.length ? `ค้างชำระ ${matches.length} รายการ รวม ${total.toLocaleString('th-TH', { maximumFractionDigits: 2 })} บาท` : 'ไม่มียอดค้างชำระ'}</div></div><button type="button" onclick="rescanHouse()" style="border:1px solid #d0d5dd;background:#fff;border-radius:999px;padding:8px 16px;font-weight:600;cursor:pointer">สแกน QR ใหม่</button></div>`;
