@@ -83,7 +83,11 @@ async function searchStallBills(name: string, stall: string) {
         if (!all.length) emptyNote = 'ไม่พบข้อมูลที่ตรงกัน กรุณาตรวจสอบชื่อและเลขล็อกให้ตรงกับที่ลงทะเบียนไว้'; else if (!DEMO.bills.length) emptyNote = 'ไม่มียอดค้างชำระ';
       } else if (searchTerm) {
         DEMO.bills = demoBillsAll.filter((b) => b.payerType === 'stall' && b.stall?.toUpperCase() === searchTerm && demoNameKey(b.merchant) === nk);
-        if (!DEMO.bills.length) emptyNote = 'ไม่พบข้อมูลที่ตรงกัน กรุณาตรวจสอบชื่อและเลขล็อกให้ตรงกับที่ลงทะเบียนไว้';
+        if (!DEMO.bills.length) {
+          const row = readDemoStalls()?.find((x) => x.stallCode === searchTerm); // ผู้เช่า/ผู้จองที่ชื่อตรง แต่ยังไม่มีบิล
+          if (row?.tenantName && demoNameKey(row.tenantName) === nk) emptyNote = row.status === 'reserved' ? `แผง ${searchTerm} จองไว้แล้ว · รอเจ้าหน้าที่ยืนยันเป็นผู้เช่า ยังไม่มียอดต้องชำระ` : 'ไม่มียอดค้างชำระ';
+          else emptyNote = 'ไม่พบข้อมูลที่ตรงกัน กรุณาตรวจสอบชื่อและเลขล็อกให้ตรงกับที่ลงทะเบียนไว้';
+        }
       } else { // แผงลอย: ชื่ออย่างเดียว — ชื่อซ้ำหลายรายต้องพิมพ์รหัสผู้เช่าด้วย
         const raw = readOutsideBills().filter((x) => demoNameKey(x.payerName) === nk);
         if (!raw.length) emptyNote = 'ไม่พบชื่อผู้เช่านี้ในระบบ กรุณาตรวจสอบชื่อ-นามสกุลให้ตรงกับที่สมัคร';
