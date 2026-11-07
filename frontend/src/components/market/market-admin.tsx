@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/shared/confirm-dialog';
 import { money, periodLabel } from '@/lib/payment-labels';
 import { cn } from '@/lib/utils';
-import { DuesFilter, Empty, Field, Metric, Panel, PayTabs, Segmented, dueTone, filterDues, inputCls, useOrgName } from '@/components/pay/pay-ui';
+import { DuesFilter, Empty, Field, Metric, Panel, PayTabs, RowMenu, Segmented, dueTone, filterDues, inputCls, useOrgName } from '@/components/pay/pay-ui';
 import { QrSvg, downloadQrPng, printQrSheet, stallQrUrl, type QrItem } from '@/components/pay/qr';
 import { SlipQueue } from '@/components/pay/slip-queue';
 import { PaySettings } from '@/components/pay/pay-settings';
@@ -538,12 +538,10 @@ function TenantsStalls({ sum }: { sum?: Summary }) {
                   <td className="whitespace-nowrap px-4 py-2 text-gray-600">{s.reserveStartDate ? `${fmtDate(s.reserveStartDate)}${s.reserveDays ? ` · ${s.reserveDays} วัน` : ''}` : '—'}</td>
                   <td className="whitespace-nowrap px-4 py-2 text-right">{a ? <span className={dueTone(a.months)}>{a.months} เดือน · {money(a.total)} บาท</span> : '—'}</td>
                   <td className="whitespace-nowrap px-4 py-2 text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button size="sm" variant="outline" onClick={() => setEditing(s)}>จัดการ</Button>
-                      {s.status !== 'available' && (
-                        <Button size="sm" variant="outline" className="text-red-600" disabled={!!a} title={a ? 'ต้องชำระยอดค้างให้ครบก่อน' : undefined} onClick={() => setCancelling(s)}>ยกเลิกผู้เช่า</Button>
-                      )}
-                    </div>
+                    <RowMenu items={[
+                      { label: 'แก้ไขแผง / ดูรายละเอียด', onClick: () => setEditing(s) },
+                      ...(s.status !== 'available' ? [{ label: 'ยกเลิกผู้เช่า', danger: true, disabled: !!a, hint: a ? 'ค้างชำระอยู่' : undefined, onClick: () => setCancelling(s) }] : []),
+                    ]} />
                   </td>
                 </tr>
               );
