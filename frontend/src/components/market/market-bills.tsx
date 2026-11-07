@@ -123,7 +123,7 @@ export function MarketBills({ canManage, orgName, initialStall, initialStatus }:
             <thead className="bg-gray-50 text-left text-gray-600">
               <tr>
                 <th className="whitespace-nowrap px-4 py-2">แผง</th><th className="whitespace-nowrap px-4 py-2">ผู้เช่า</th><th className="whitespace-nowrap px-4 py-2">รายการ</th><th className="whitespace-nowrap px-4 py-2">งวด</th>
-                <th className="whitespace-nowrap px-4 py-2 text-right">ยอด (บาท)</th><th className="whitespace-nowrap px-4 py-2">สถานะ</th><th className="whitespace-nowrap px-4 py-2">จัดการ</th>
+                <th className="whitespace-nowrap px-4 py-2 text-right">ยอด (บาท)</th><th className="whitespace-nowrap px-4 py-2">สถานะ</th><th className="whitespace-nowrap px-4 py-2 text-right">จัดการ</th>
               </tr>
             </thead>
             <tbody>
@@ -139,7 +139,7 @@ export function MarketBills({ canManage, orgName, initialStall, initialStatus }:
                     {b.status === 'paid' && <span className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-gray-500"><span>{PAY_METHOD[b.paidMethod ?? ''] ?? b.paidMethod} · {b.receiptNo}</span><SlipButton url={b.slipUrl} method={b.paidMethod} /></span>}
                     {b.status === 'mismatch' && b.reviewNote && <span className="mt-1 block text-xs text-orange-700">{b.reviewNote}</span>}
                   </td>
-                  <td className="whitespace-nowrap px-4 py-2">
+                  <td className="whitespace-nowrap px-4 py-2 text-right">
                     {b.status === 'paid' ? (
                       <RowMenu items={[{ label: 'พิมพ์ใบเสร็จ', onClick: () => doPrint(b) }]} />
                     ) : canManage ? (

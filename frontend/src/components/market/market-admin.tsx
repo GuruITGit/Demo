@@ -91,7 +91,7 @@ export function MarketAdmin() {
       {tab === 'paid' && <PaidHistory kind="market" />}
       {tab === 'reserve' && (
         <div className="space-y-4">
-          <div className="flex justify-center"><Segmented label="สถานะ" value={reserveFilter} onChange={setReserveFilter} options={[['pending', 'รอตรวจ'], ['approved', 'ผู้เช่า'], ['rejected', 'ไม่อนุมัติ'], ['cancelled', 'ลบแล้ว'], ['all', 'ทั้งหมด']] as const} /></div>
+          <div className="flex"><Segmented label="สถานะ" value={reserveFilter} onChange={setReserveFilter} options={[['pending', 'รอตรวจ'], ['approved', 'ผู้เช่า'], ['rejected', 'ไม่อนุมัติ'], ['cancelled', 'ลบแล้ว'], ['all', 'ทั้งหมด']] as const} /></div>
           <div className="grid items-start gap-5 lg:grid-cols-2">
             <ReservationCheck canManage={canStall} filter={reserveFilter} />
             <OutsideApplications canManage={canBill} filter={reserveFilter} />
