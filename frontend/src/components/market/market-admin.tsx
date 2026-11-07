@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/shared/confirm-dialog';
 import { money, periodLabel } from '@/lib/payment-labels';
 import { cn } from '@/lib/utils';
-import { DuesFilter, Empty, Field, Metric, Panel, PayTabs, dueTone, filterDues, inputCls, useOrgName } from '@/components/pay/pay-ui';
+import { DuesFilter, Empty, Field, Metric, Panel, PayTabs, Segmented, dueTone, filterDues, inputCls, useOrgName } from '@/components/pay/pay-ui';
 import { QrSvg, downloadQrPng, printQrSheet, stallQrUrl, type QrItem } from '@/components/pay/qr';
 import { SlipQueue } from '@/components/pay/slip-queue';
 import { PaySettings } from '@/components/pay/pay-settings';
@@ -91,11 +91,7 @@ export function MarketAdmin() {
       {tab === 'paid' && <PaidHistory kind="market" />}
       {tab === 'reserve' && (
         <div className="space-y-4">
-          <div className="flex flex-wrap justify-center gap-2">
-            {([['pending', 'รอตรวจ'], ['approved', 'ผู้เช่า'], ['rejected', 'ไม่อนุมัติ'], ['cancelled', 'ลบแล้ว'], ['all', 'ทั้งหมด']] as const).map(([k, label]) => (
-              <Button key={k} size="sm" variant={reserveFilter === k ? 'default' : 'outline'} onClick={() => setReserveFilter(k)}>{label}</Button>
-            ))}
-          </div>
+          <div className="flex justify-center"><Segmented value={reserveFilter} onChange={setReserveFilter} options={[['pending', 'รอตรวจ'], ['approved', 'ผู้เช่า'], ['rejected', 'ไม่อนุมัติ'], ['cancelled', 'ลบแล้ว'], ['all', 'ทั้งหมด']] as const} /></div>
           <div className="grid items-start gap-5 lg:grid-cols-2">
             <ReservationCheck canManage={canStall} filter={reserveFilter} />
             <OutsideApplications canManage={canBill} filter={reserveFilter} />

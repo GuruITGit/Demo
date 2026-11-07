@@ -5,7 +5,7 @@ import { api, getErrorMessage } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/shared/confirm-dialog';
-import { Empty, MethodChip, Panel, SlipButton } from '@/components/pay/pay-ui';
+import { Empty, MethodChip, Panel, Segmented, SlipButton } from '@/components/pay/pay-ui';
 
 type Status = 'pending' | 'approved' | 'rejected' | 'cancelled';
 type Application = {
@@ -74,11 +74,7 @@ export function OutsideApplications({ canManage, locationId, filter: shared }: {
         ))}
       </div>
       )}
-      <div className="flex flex-wrap gap-2 border-b border-gray-100 px-4 py-2">
-        {(['all', 'regular', 'temporary'] as const).map((k) => (
-          <Button key={k} size="sm" variant={kindFilter === k ? 'default' : 'outline'} onClick={() => setKindFilter(k)}>{k === 'all' ? 'ทุกประเภท' : k === 'regular' ? 'ประจำ' : 'ชั่วคราว'}</Button>
-        ))}
-      </div>
+      <div className="border-b border-gray-100 px-4 py-2"><Segmented value={kindFilter} onChange={setKindFilter} options={[['all', 'ทุกประเภท'], ['regular', 'ประจำ'], ['temporary', 'ชั่วคราว']] as const} /></div>
       {rows.length === 0 ? (
         <Empty>ไม่มีใบสมัครในสถานะนี้</Empty>
       ) : (

@@ -176,3 +176,17 @@ export function RowMenu({ items }: { items: RowMenuItem[] }) {
     </>
   );
 }
+
+/** ตัวเลือกแบบแถบเดียว (segmented) — ใช้แทนปุ่มกรองหลายปุ่ม */
+export function Segmented<T extends string>({ options, value, onChange, className }: { options: readonly (readonly [T, string])[]; value: T; onChange: (v: T) => void; className?: string }) {
+  return (
+    <div role="tablist" className={cn('inline-flex max-w-full overflow-x-auto rounded-lg border border-gray-200 bg-gray-100 p-0.5', className)}>
+      {options.map(([k, label]) => (
+        <button key={k} type="button" role="tab" aria-selected={value === k} onClick={() => onChange(k)}
+          className={cn('whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium transition-colors', value === k ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-800')}>
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+}
