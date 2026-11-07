@@ -74,7 +74,7 @@ export function OutsideApplications({ canManage, locationId, filter: shared }: {
         ))}
       </div>
       )}
-      <div className="border-b border-gray-100 px-4 py-2"><Segmented value={kindFilter} onChange={setKindFilter} options={[['all', 'ทุกประเภท'], ['regular', 'ประจำ'], ['temporary', 'ชั่วคราว']] as const} /></div>
+      <div className="border-b border-gray-100 px-4 py-2"><Segmented label="ประเภท" value={kindFilter} onChange={setKindFilter} options={[['all', 'ทุกประเภท'], ['regular', 'ประจำ'], ['temporary', 'ชั่วคราว']] as const} /></div>
       {rows.length === 0 ? (
         <Empty>ไม่มีใบสมัครในสถานะนี้</Empty>
       ) : (

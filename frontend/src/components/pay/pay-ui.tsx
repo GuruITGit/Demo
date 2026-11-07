@@ -177,16 +177,14 @@ export function RowMenu({ items }: { items: RowMenuItem[] }) {
   );
 }
 
-/** ตัวเลือกแบบแถบเดียว (segmented) — ใช้แทนปุ่มกรองหลายปุ่ม */
-export function Segmented<T extends string>({ options, value, onChange, className }: { options: readonly (readonly [T, string])[]; value: T; onChange: (v: T) => void; className?: string }) {
+/** ตัวเลือกแบบลิสต์ดรอปดาวน์ — ใช้แทนปุ่มกรองหลายปุ่ม */
+export function Segmented<T extends string>({ options, value, onChange, className, label }: { options: readonly (readonly [T, string])[]; value: T; onChange: (v: T) => void; className?: string; label?: string }) {
   return (
-    <div role="tablist" className={cn('inline-flex max-w-full overflow-x-auto rounded-lg border border-gray-200 bg-gray-100 p-0.5', className)}>
-      {options.map(([k, label]) => (
-        <button key={k} type="button" role="tab" aria-selected={value === k} onClick={() => onChange(k)}
-          className={cn('whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium transition-colors', value === k ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-800')}>
-          {label}
-        </button>
-      ))}
-    </div>
+    <label className={cn('inline-flex items-center gap-2 text-sm text-gray-600', className)}>
+      {label && <span>{label}</span>}
+      <select value={value} onChange={(e) => onChange(e.target.value as T)} className={cn(inputCls, 'w-auto! min-w-[10rem]')}>
+        {options.map(([k, text]) => <option key={k} value={k}>{text}</option>)}
+      </select>
+    </label>
   );
 }
