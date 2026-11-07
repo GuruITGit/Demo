@@ -713,3 +713,11 @@
 .payment-shortcut:only-child b{font-size:15px;display:block}
 .payment-shortcut:only-child small{min-height:0;font-size:12px;margin-top:2px;display:block}
 .payment-shortcut:only-child::after{content:'›';margin-left:auto;font-size:26px;color:#0369a1;line-height:1}
+@media(min-width:768px){
+  .payment-shortcuts:has(>.payment-shortcut:only-child){grid-template-columns:minmax(0,360px)!important}
+  .payment-shortcut:only-child{padding:6px 12px;gap:10px}
+  .payment-shortcut:only-child .shortcut-art{width:76px;height:48px;border-radius:8px}
+  .payment-shortcut:only-child b{font-size:14px}
+  .payment-shortcut:only-child small{font-size:11px}
+  .payment-shortcut:only-child::after{font-size:22px}
+}
