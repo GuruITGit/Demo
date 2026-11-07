@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { FlaskConical, ChevronUp, RotateCcw, UserRound, X } from 'lucide-react';
+import { FlaskConical, RotateCcw, UserRound, X } from 'lucide-react';
 import { DEMO_LOGINS } from '@/lib/demo/accounts';
 import { useAuthStore, loginAction, logoutAction } from '@/stores/auth.store';
 import { toast } from '@/hooks/use-toast';
@@ -40,7 +40,7 @@ export function DemoBanner() {
   };
 
   return (
-    <div className="no-print fixed bottom-4 left-4 z-[200] text-sm">
+    <div className="no-print fixed bottom-3 right-3 z-[200] flex flex-col items-end text-sm">
       {open && (
         <div className="mb-2 w-72 rounded-lg border border-gray-200 bg-white p-3 shadow-lg">
           <div className="mb-2 flex items-start justify-between gap-2">
@@ -72,8 +72,9 @@ export function DemoBanner() {
         </div>
       )}
       <button onClick={() => setOpen((o) => !o)} aria-expanded={open}
-        className="inline-flex items-center gap-1.5 rounded-full border border-gray-300 bg-white/95 px-3 py-1.5 font-medium text-gray-700 shadow-sm backdrop-blur hover:bg-white">
-        <FlaskConical className="h-4 w-4 text-amber-600" />เดโม่<ChevronUp className={`h-3.5 w-3.5 text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`} />
+        title="โหมดเดโม่ · สลับบัญชี / รีเซ็ตข้อมูล" aria-label="โหมดเดโม่"
+        className="group inline-flex h-9 items-center gap-1.5 rounded-full border border-gray-300 bg-white/90 px-2.5 font-medium text-gray-600 opacity-70 shadow-sm backdrop-blur transition hover:bg-white hover:opacity-100">
+        <FlaskConical className="h-4 w-4 text-amber-600" /><span className={open ? '' : 'hidden group-hover:inline'}>เดโม่</span>
       </button>
     </div>
   );
