@@ -54,6 +54,13 @@ export function SlipQueue({ kind, canManage }: { kind: 'market' | 'waste'; canMa
     onSuccess: () => { toast.success('บันทึกการรับเงินแล้ว'); refresh(); },
     onError: (e) => toast.error(getErrorMessage(e)),
   });
+  // เงินสดที่แจ้งมาครั้งเดียวหลายเดือน (คนเดียวกัน เวลาเดียวกัน) รับเงินทีเดียวทั้งชุด
+  const groupKey = (b: QueueBill) => `${b.stallCode ?? b.householdRef}|${b.submittedAt}`;
+  const confirmGroup = useMutation({
+    mutationFn: async (list: QueueBill[]) => { for (const b of list) await api.post(`/${kind}/bills/${b.id}/pay`, { method: 'cash' }); return list.length; },
+    onSuccess: (n) => { toast.success(`บันทึกการรับเงินแล้ว ${n} รายการ`); refresh(); },
+    onError: (e) => { toast.error(getErrorMessage(e)); refresh(); },
+  });
   const reject = useMutation({
     mutationFn: (b: QueueBill) => api.post(`/${kind}/bills/${b.id}/reject`, { note }),
     onSuccess: () => { toast.success('ตีกลับแล้ว ผู้จ่ายจะเห็นเหตุผลและแจ้งใหม่ได้'); setRejecting(null); setNote(''); refresh(); },
@@ -69,6 +76,7 @@ export function SlipQueue({ kind, canManage }: { kind: 'market' | 'waste'; canMa
     const place = kind === 'market'
       ? `แผง ${b.stallCode} · ${b.kind === 'waste' ? 'ค่าขยะแผง' : 'ค่าเช่าแผง'}`
       : `บ้านเลขที่ ${b.houseNo} หมู่ ${Number(b.moo)} · ${b.householdRef}`;
+    const group = b.submittedMethod === 'cash' ? cash.filter((x) => groupKey(x) === groupKey(b)) : [];
     return (
       <article key={b.id} className="flex items-start gap-4 border-t border-gray-100 p-4 first:border-t-0">
         {b.slipUrl ? (
@@ -89,6 +97,11 @@ export function SlipQueue({ kind, canManage }: { kind: 'market' | 'waste'; canMa
             <Button size="sm" variant="success" loading={confirm.isPending && confirm.variables?.id === b.id} onClick={() => confirm.mutate(b)}>
               {b.submittedMethod === 'cash' ? 'รับเงินสดแล้ว' : 'ยืนยันรับเงิน'}
             </Button>
+            {group.length > 1 && (
+              <Button size="sm" variant="success" loading={confirmGroup.isPending && confirmGroup.variables?.[0]?.id === group[0].id} onClick={() => confirmGroup.mutate(group)}>
+                รับทั้งชุด {group.length} รายการ · {money(group.reduce((n, x) => n + Number(x.amount), 0))} บาท
+              </Button>
+            )}
             <Button size="sm" variant="outline" onClick={() => { setRejecting(b); setNote(''); }}>ตีกลับ</Button>
           </div>
         )}
