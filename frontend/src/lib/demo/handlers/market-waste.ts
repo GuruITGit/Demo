@@ -473,9 +473,10 @@ post('/market/stalls', (c) => {
   const rate = String(Number(c.body?.monthlyRate) || 0);
   const ex = c.db.marketStalls.find((s) => s.stallCode === code);
   if (ex?.active) throw badRequest(`มีแผง ${code} อยู่แล้ว`);
-  if (ex) return Object.assign(ex, { active: true, zone, status: 'available', tenantName: null, contactPhone: null, reservedAt: null, monthlyRate: rate });
+  if (ex) { Object.assign(ex, { active: true, zone, status: 'available', tenantName: null, contactPhone: null, reservedAt: null, monthlyRate: rate }); syncCitizenStalls(c.db); return ex; }
   const row = { id: uid(), organizationId: ORG_ID, stallCode: code, zone, status: 'available', tenantName: null, contactPhone: null, reservedAt: null, monthlyRate: rate, active: true };
   c.db.marketStalls.push(row);
+  syncCitizenStalls(c.db); // เพิ่มแผงแล้วหน้าประชาชนเห็นทันที
   return row;
 });
 
@@ -496,6 +497,7 @@ post('/market/stalls/bulk', (c) => {
     c.db.marketStalls.push({ id: uid(), organizationId: ORG_ID, stallCode: code, zone, status: 'available', tenantName: null, contactPhone: null, reservedAt: null, monthlyRate: rate, active: true });
     created++;
   }
+  syncCitizenStalls(c.db);
   return { created, reopened, skipped };
 });
 
