@@ -188,12 +188,11 @@ export class MarketService {
     return { created, reopened, skipped };
   }
 
-  /** ลบแผง (ปิดใช้งาน) — มีบิลค้างอยู่ห้ามลบ ต้องเก็บ/ยกเลิกบิลก่อน · บิลที่ชำระแล้วคงไว้เป็นประวัติ */
+  /** ลบแผง (ปิดใช้งาน) — บิลที่ยังไม่ชำระของแผงถูกยกเลิกไปด้วย · บิลที่ชำระแล้วคงไว้เป็นประวัติ */
   async removeStall(orgId: string, id: string) {
     const stall = await this.stalls.findOne({ where: { id, organizationId: orgId } });
     if (!stall) throw new NotFoundException('ไม่พบแผงนี้');
-    const open = await this.bills.count({ where: { organizationId: orgId, stallCode: stall.stallCode, status: In(['unpaid', 'pending', 'mismatch']) } });
-    if (open) throw new BadRequestException(`แผง ${stall.stallCode} ยังมีบิลค้าง ${open} รายการ — เก็บเงินหรือยกเลิกบิลก่อนลบแผง`);
+    await this.bills.delete({ organizationId: orgId, stallCode: stall.stallCode, status: In(['unpaid', 'pending', 'mismatch']) }); // ลบแผง = ยกเลิกบิลที่ยังไม่ชำระด้วย
     stall.active = false;
     stall.status = 'available';
     stall.tenantName = null; stall.contactPhone = null; stall.reservedAt = null;

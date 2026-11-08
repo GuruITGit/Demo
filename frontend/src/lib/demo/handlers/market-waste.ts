@@ -39,10 +39,11 @@ const TENANT: Record<string, string> = {
 };
 const OCCUPIED = ['A01', 'A02', 'A03', 'A05', 'A06', 'A08', 'B02', 'B04', 'B07', 'C03', 'C06', 'D01', 'E09'];
 const RESERVED = ['A04', 'B05', 'C08', 'D07', 'E04'];
-const PAID = new Set(['A01', 'D01', 'B02']);
-const PENDING_RENT = new Set(['B04']);
+// เดโม่: ทุกแผงค้างทุกเดือน (3 เดือนล่าสุด) · 10 รายแรกคิดราคาปกติของโซน ที่เหลือเดือนละ 1 บาท
+const NORMAL_PRICE = new Set(['A01', 'A02', 'A03', 'A05', 'B02', 'B04', 'B07', 'C03', 'C06', 'D01']);
+const SLIP_SAMPLE = '/demo-slip.webp'; // รูปสลิปตัวอย่างของเดโม่
+const PENDING_RENT = new Set(['A02', 'B04', 'B07', 'C06', 'A08']);
 const MISMATCH_RENT = new Set(['C03']);
-const ARREARS: [string, number][] = [['A06', -2], ['A06', -1], ['B07', -2], ['B07', -1]];
 const HOUSEHOLDS = [
   { ref: 'HH-014', name: 'สมชาย ใจบุญ', houseNo: '18', moo: '2', phone: '0810000014' },
   { ref: 'HH-021', name: 'สมใจ ใจดี', houseNo: '7', moo: '3', phone: '0810000021' },
@@ -64,7 +65,17 @@ const HOUSEHOLDS = [
   { ref: 'HH-063', name: 'นางพรทิพย์ จันทร์งาม', houseNo: '29', moo: '2', phone: '0810000063' },
   { ref: 'HH-068', name: 'นายสมบูรณ์ ดวงแก้ว', houseNo: '72', moo: '7', phone: '0810000068' },
   { ref: 'HH-072', name: 'นางสาวรัชนี หอมจันทร์', houseNo: '11', moo: '8', phone: '0810000072' },
+  { ref: 'HH-076', name: 'นายสมพงษ์ ศรีวิชัย', houseNo: '27', moo: '1', phone: '0810000076' },
+  { ref: 'HH-081', name: 'นางสาวสุนิสา คำแก้ว', houseNo: '5', moo: '4', phone: '0810000081' },
+  { ref: 'HH-084', name: 'นายประพันธ์ มั่นคง', houseNo: '38', moo: '5', phone: '0810000084' },
+  { ref: 'HH-088', name: 'นางทองใบ สุขสวัสดิ์', houseNo: '9/2', moo: '6', phone: '0810000088' },
+  { ref: 'HH-092', name: 'นายกฤษณะ พลเมือง', houseNo: '50', moo: '7', phone: '0810000092' },
+  { ref: 'HH-095', name: 'นางสาวภัทรา วงศ์ใหญ่', houseNo: '13', moo: '2', phone: '0810000095' },
+  { ref: 'HH-099', name: 'นายธวัชชัย บุญทัน', houseNo: '66', moo: '3', phone: '0810000099' },
+  { ref: 'HH-103', name: 'นางสุภาพ เรืองศรี', houseNo: '2', moo: '8', phone: '0810000103' },
 ];
+// เดโม่: 10 ครัวเรือนแรกคิดค่าขยะปกติ (ค่าเริ่มต้นของระบบ) ที่เหลือเดือนละ 1 บาท
+const HH_NORMAL = new Set(['HH-014', 'HH-021', 'HH-030', 'HH-042', 'HH-003', 'HH-007', 'HH-009', 'HH-011', 'HH-017', 'HH-019']);
 const CONFIG = {
   promptpayId: '', promptpayType: 'mobile', payeeName: '', accountBank: '', accountNo: '',
   cashPlace: 'งานการเงิน ที่ทำการ อบต.', cashHours: 'จันทร์–ศุกร์ 08:30–16:30 น. (เว้นวันหยุดราชการ)', contactPhone: '044-000-000',
@@ -78,7 +89,7 @@ registerSeed((db) => {
     const status = OCCUPIED.includes(code) ? 'occupied' : RESERVED.includes(code) ? 'reserved' : 'available';
     return {
       id: `stall-${code}`, organizationId: ORG_ID, stallCode: code, zone: row.zone, status, active: true,
-      tenantName: status === 'available' ? null : TENANT[code] ?? null, contactPhone: null, reservedAt: null, monthlyRate: String(row.rate),
+      tenantName: status === 'available' ? null : TENANT[code] ?? null, contactPhone: null, reservedAt: null, monthlyRate: String(status === 'available' || NORMAL_PRICE.has(code) ? row.rate : 1),
     };
   }));
   const rate = (code: string) => db.marketStalls.find((s) => s.stallCode === code)!.monthlyRate;
@@ -88,14 +99,12 @@ registerSeed((db) => {
     receiptNo: status === 'paid' ? `MK-${per.slice(-2)}-SEED${code}${kind === 'waste' ? 'W' : ''}` : null,
     submittedMethod: null, submittedAt: null, slipUrl: null, reviewNote: null, ...extra,
   });
-  db.marketBills = [
-    ...[...OCCUPIED, ...RESERVED].flatMap((code) => [
-      bill(code, 'rent', P, rate(code), PAID.has(code) ? 'paid' : PENDING_RENT.has(code) ? 'pending' : MISMATCH_RENT.has(code) ? 'mismatch' : 'unpaid',
-        PENDING_RENT.has(code) ? { submittedMethod: 'transfer', submittedAt: nowIso() } : MISMATCH_RENT.has(code) ? { reviewNote: 'ยอดในสลิปไม่ตรงกับบิล' } : {}),
-      bill(code, 'waste', P, String(CONFIG.wasteStallFee), PAID.has(code) ? 'paid' : 'unpaid'),
-    ]),
-    ...ARREARS.map(([code, off]) => bill(code, 'rent', period(off), rate(code), 'unpaid')),
-  ];
+  db.marketBills = [...OCCUPIED, ...RESERVED].flatMap((code) => [-2, -1, 0].map((off) => {
+    const latest = off === 0;
+    if (latest && PENDING_RENT.has(code)) return bill(code, 'rent', period(off), rate(code), 'pending', { submittedMethod: 'transfer', submittedAt: nowIso(), slipUrl: SLIP_SAMPLE });
+    if (latest && MISMATCH_RENT.has(code)) return bill(code, 'rent', period(off), rate(code), 'mismatch', { submittedMethod: 'transfer', submittedAt: nowIso(), slipUrl: SLIP_SAMPLE, reviewNote: 'ยอดในสลิปไม่ตรงกับบิล' });
+    return bill(code, 'rent', period(off), rate(code), 'unpaid');
+  }));
   db.marketOutsideLocations = [
     { id: 'outside-1', organizationId: ORG_ID, name: 'หน้าตลาดสด (ลานหน้าอาคาร)', rentRate: '40', rentPeriod: 'daily', enabled: true, active: true, createdAt: nowIso() },
     { id: 'outside-2', organizationId: ORG_ID, name: 'ลานจอดรถ (รายเดือน)', rentRate: '1500', rentPeriod: 'monthly', enabled: false, active: true, createdAt: nowIso() },
@@ -129,13 +138,17 @@ registerSeed((db) => {
   db.marketBills = [...db.marketBills, ...outBills];
   db.wasteHouseholds = HOUSEHOLDS.map((h) => ({
     id: `hh-${h.ref}`, organizationId: ORG_ID, householdRef: h.ref, holderName: h.name, houseNo: h.houseNo, moo: h.moo, phone: h.phone,
-    monthlyFee: null, active: true, createdAt: nowIso(),
+    monthlyFee: HH_NORMAL.has(h.ref) ? null : '1', active: true, createdAt: nowIso(),
   }));
-  db.wasteBills = HOUSEHOLDS.flatMap((h) => [period(-1), P].map((per) => ({
-    id: uid(), organizationId: ORG_ID, householdRef: h.ref, holderName: h.name, houseNo: h.houseNo, moo: h.moo, phone: h.phone, period: per,
-    amount: '40', status: h.ref === 'HH-021' && per === P ? 'pending' : 'unpaid', dueDate: periodEnd(per), paidMethod: null, paidAt: null, receiptNo: null,
-    submittedMethod: h.ref === 'HH-021' && per === P ? 'transfer' : null, submittedAt: h.ref === 'HH-021' && per === P ? nowIso() : null, slipUrl: null, reviewNote: null,
-  })));
+  const HH_PENDING = new Set(['HH-021', 'HH-014', 'HH-030']);
+  db.wasteBills = HOUSEHOLDS.flatMap((h) => [period(-2), period(-1), P].map((per) => {
+    const pend = HH_PENDING.has(h.ref) && per === P;
+    return {
+      id: uid(), organizationId: ORG_ID, householdRef: h.ref, holderName: h.name, houseNo: h.houseNo, moo: h.moo, phone: h.phone, period: per,
+      amount: HH_NORMAL.has(h.ref) ? String(CONFIG.householdFee) : '1', status: pend ? 'pending' : 'unpaid', dueDate: periodEnd(per), paidMethod: null, paidAt: null, receiptNo: null,
+      submittedMethod: pend ? 'transfer' : null, submittedAt: pend ? nowIso() : null, slipUrl: pend ? SLIP_SAMPLE : null, reviewNote: null,
+    };
+  }));
   db.payConfig = [{ id: 'pay-config', ...CONFIG }];
   db.receiptSeq = [];
 });
@@ -510,8 +523,9 @@ patch('/market/stalls/:id', (c) => {
 del('/market/stalls/:id', (c) => {
   needPerm(c, 'market:manage:MarketStall');
   const s = byIdOrThrow(c.db.marketStalls, c.params.id, 'ไม่พบแผงนี้');
-  const open = c.db.marketBills.filter((b) => b.stallCode === s.stallCode && b.organizationId === ORG_ID && OPEN.includes(b.status)).length;
-  if (open) throw badRequest(`แผง ${s.stallCode} ยังมีบิลค้าง ${open} รายการ — เก็บเงินหรือยกเลิกบิลก่อนลบแผง`);
+  // ลบแผง = ยกเลิกบิลที่ยังไม่ชำระของแผงนั้นด้วย (บิลที่ชำระแล้วคงไว้เป็นประวัติ)
+  c.db.marketBills = c.db.marketBills.filter((b) => !(b.stallCode === s.stallCode && b.organizationId === ORG_ID && OPEN.includes(b.status)));
+  syncCitizenStalls(c.db); syncCitizenOutsideBills(c.db);
   Object.assign(s, { active: false, status: 'available', tenantName: null, contactPhone: null, reservedAt: null });
   return { ok: true };
 });

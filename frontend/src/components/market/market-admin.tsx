@@ -268,7 +268,7 @@ function Plan({ canManage, onBills }: { canManage: boolean; onBills: (code: stri
 
       <ConfirmDialog open={!!delTarget} onOpenChange={(o) => { if (!o) setDelTarget(null); }} loading={del.isPending}
         onConfirm={() => delTarget && del.mutate(delTarget.id)} title={`ลบแผง ${delTarget?.stallCode}?`}
-        description="แผงจะถูกเอาออกจากผัง (ต้องไม่มีบิลค้าง) ประวัติการชำระที่ผ่านมายังอยู่" confirmText="ลบแผง" />
+        description="แผงจะถูกเอาออกจากผัง และบิลที่ยังไม่ชำระของแผงนี้จะถูกยกเลิกด้วย · ประวัติการชำระที่ผ่านมายังอยู่" confirmText="ลบแผง" />
     </div>
   );
 }
@@ -462,6 +462,12 @@ function TenantsStalls({ sum }: { sum?: Summary }) {
   const { data: stalls = [] } = useQuery<Stall[]>({ queryKey: ['market', 'stalls'], queryFn: async () => (await api.get('/market/stalls')).data.data });
   const [editing, setEditing] = useState<Stall | null>(null);
   const [cancelling, setCancelling] = useState<Stall | null>(null);
+  const [delTarget, setDelTarget] = useState<Stall | null>(null);
+  const delStall = useMutation({
+    mutationFn: (id: string) => api.delete(`/market/stalls/${id}`),
+    onSuccess: () => { toast.success('ลบแผงแล้ว'); setDelTarget(null); setEditing(null); qc.invalidateQueries({ queryKey: ['market'] }); },
+    onError: (e) => { toast.error(getErrorMessage(e)); setDelTarget(null); },
+  });
   const cancelStall = useMutation({
     mutationFn: (s: Stall) => api.patch(`/market/stalls/${s.id}`, { status: 'available' }),
     onSuccess: () => { toast.success('ยกเลิกผู้เช่าแล้ว แผงกลับเป็นว่าง'); setCancelling(null); qc.invalidateQueries({ queryKey: ['market'] }); },
@@ -494,6 +500,9 @@ function TenantsStalls({ sum }: { sum?: Summary }) {
         description={`ผู้เช่า ${cancelling?.tenantName ?? ''} จะถูกลบออกและแผงกลับเป็นว่าง บิลเดิมยังเก็บไว้`}
         confirmText="ยกเลิกผู้เช่า"
       />
+      <ConfirmDialog open={!!delTarget} onOpenChange={(o) => { if (!o) setDelTarget(null); }} loading={delStall.isPending}
+        onConfirm={() => delTarget && delStall.mutate(delTarget.id)} title={`ลบแผง ${delTarget?.stallCode}?`}
+        description="แผงจะถูกเอาออกจากผัง และบิลที่ยังไม่ชำระของแผงนี้จะถูกยกเลิกด้วย · ประวัติการชำระที่ผ่านมายังอยู่" confirmText="ลบแผง" />
       {editing && (
         <div className="mb-4">
           <StallEditor
@@ -502,7 +511,7 @@ function TenantsStalls({ sum }: { sum?: Summary }) {
             saving={saveStall.isPending}
             onClose={() => setEditing(null)}
             onBills={() => setEditing(null)}
-            onDelete={() => toast.error('ลบแผงทำที่แท็บผังแผง')}
+            onDelete={() => setDelTarget(editing)}
             onSave={(body) => saveStall.mutate({ id: editing.id, body })}
           />
         </div>
@@ -540,6 +549,7 @@ function TenantsStalls({ sum }: { sum?: Summary }) {
                   <td className="whitespace-nowrap px-4 py-2 text-right">
                     <RowMenu items={[
                       { label: 'แก้ไขแผง / ดูรายละเอียด', onClick: () => setEditing(s) },
+                      { label: 'ลบแผง', danger: true, onClick: () => setDelTarget(s) },
                       ...(s.status !== 'available' ? [{ label: 'ยกเลิกผู้เช่า', danger: true, disabled: !!a, hint: a ? 'ค้างชำระอยู่' : undefined, onClick: () => setCancelling(s) }] : []),
                     ]} />
                   </td>
