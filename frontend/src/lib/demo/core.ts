@@ -30,6 +30,7 @@ const seedParts: SeedPart[] = [];
 let db: Db | null = null;
 let loading: Promise<void> | null = null;
 let timer: ReturnType<typeof setTimeout> | null = null;
+let keepSettings: Row[] | undefined;
 let loadFailed = false; // โหลดข้อมูลกลางไม่ได้ → ห้ามเขียนทับ
 let saving: Promise<unknown> = Promise.resolve();
 let lastSaved = ''; // JSON ของสถานะที่ส่งไปฐานกลางล่าสุด — ไม่ส่งซ้ำถ้าไม่เปลี่ยน
@@ -76,8 +77,9 @@ export function ensureLoaded(): Promise<void> {
     try {
       const saved = remoteEnabled ? await remoteLoad() : await idbGet(KEY);
       if ((saved as Row | null)?._meta?.[0]?.version === DB_VERSION) db = saved as Db;
+      else keepSettings = (saved as Row | null)?.payConfig; // seed ใหม่ต้องไม่ทับตั้งค่าที่เจ้าหน้าที่ตั้งไว้ (บัญชีรับเงิน/โทเคนสลิป)
     } catch { loadFailed = remoteEnabled; /* ใช้ข้อมูลตั้งต้น (เชื่อมฐานกลางไม่ได้ก็ไม่เขียนทับ) */ }
-    if (!db) { db = fresh(); persist(true); }
+    if (!db) { db = fresh(); if (keepSettings?.length) db.payConfig = keepSettings; persist(true); }
     else if (remoteEnabled) lastSaved = JSON.stringify(db);
     await (globalThis as unknown as { smartKvInit?: (c: unknown) => Promise<void> }).smartKvInit?.(kvConfig); // คีย์ฝั่งประชาชนต้องดึงก่อน ให้เจ้าหน้าที่เห็นการจองและการชำระล่าสุด
     if (remoteEnabled && !loadFailed) startRemotePoll();
@@ -130,7 +132,9 @@ export function persist(now = false) {
 /** ล้างข้อมูลที่ทดลองไว้ทั้งหมดกลับเป็นข้อมูลตั้งต้น (ไม่ล็อกเอาต์) */
 export async function resetDemoData() {
   await ensureLoaded();
+  const settings = db?.payConfig; // รีเซ็ตข้อมูลตัวอย่างต้องไม่ลบตั้งค่าการรับเงิน
   db = fresh();
+  if (settings?.length) db.payConfig = settings;
   if (timer) clearTimeout(timer);
   if (!loadFailed) { try { if (remoteEnabled) { const json = JSON.stringify(db); await remoteSave(json); lastSaved = json; } else await idbSet(KEY, db); } catch { /* ignore */ } }
 }
