@@ -99,11 +99,15 @@ registerSeed((db) => {
     receiptNo: status === 'paid' ? `MK-${per.slice(-2)}-SEED${code}${kind === 'waste' ? 'W' : ''}` : null,
     submittedMethod: null, submittedAt: null, slipUrl: null, reviewNote: null, ...extra,
   });
-  db.marketBills = [...OCCUPIED, ...RESERVED].flatMap((code) => [-2, -1, 0].map((off) => {
+  db.marketBills = [...OCCUPIED, ...RESERVED].flatMap((code) => [-2, -1, 0].flatMap((off) => {
+    const waste = bill(code, 'waste', period(off), NORMAL_PRICE.has(code) ? String(CONFIG.wasteStallFee) : '1', 'unpaid'); // ค่าขยะแผง: ปกติ 30 · ราย 1 บาทคิด 1 บาท
+    const rent = (() => {
     const latest = off === 0;
-    if (latest && PENDING_RENT.has(code)) return bill(code, 'rent', period(off), rate(code), 'pending', { submittedMethod: 'transfer', submittedAt: nowIso(), slipUrl: SLIP_SAMPLE });
-    if (latest && MISMATCH_RENT.has(code)) return bill(code, 'rent', period(off), rate(code), 'mismatch', { submittedMethod: 'transfer', submittedAt: nowIso(), slipUrl: SLIP_SAMPLE, reviewNote: 'ยอดในสลิปไม่ตรงกับบิล' });
-    return bill(code, 'rent', period(off), rate(code), 'unpaid');
+      if (latest && PENDING_RENT.has(code)) return bill(code, 'rent', period(off), rate(code), 'pending', { submittedMethod: 'transfer', submittedAt: nowIso(), slipUrl: SLIP_SAMPLE });
+      if (latest && MISMATCH_RENT.has(code)) return bill(code, 'rent', period(off), rate(code), 'mismatch', { submittedMethod: 'transfer', submittedAt: nowIso(), slipUrl: SLIP_SAMPLE, reviewNote: 'ยอดในสลิปไม่ตรงกับบิล' });
+      return bill(code, 'rent', period(off), rate(code), 'unpaid');
+    })();
+    return [rent, waste];
   }));
   db.marketOutsideLocations = [
     { id: 'outside-1', organizationId: ORG_ID, name: 'หน้าตลาดสด (ลานหน้าอาคาร)', rentRate: '40', rentPeriod: 'daily', enabled: true, active: true, createdAt: nowIso() },
