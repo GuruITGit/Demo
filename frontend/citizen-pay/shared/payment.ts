@@ -168,9 +168,9 @@ function openBankApp(i: number) {
   // เบราว์เซอร์ในแอป (LINE/Facebook) บล็อกการเปิดแอปอื่น → ให้เปิดในเบราว์เซอร์ปกติก่อน
   if (/Line\/|FBAN|FBAV|Instagram/i.test(navigator.userAgent)) return toast('เปิดแอปธนาคารจากในแอปนี้ไม่ได้ · กด ⋮ แล้วเลือก “เปิดในเบราว์เซอร์” หรือบันทึกรูป QR ไปสแกนในแอปธนาคาร');
   const name = bank.scheme.replace('://', '');
-  // Android: intent URL เปิดแอปที่รับ scheme นี้ ถ้าไม่มีแอปให้ไปค้นหาใน Play Store · iPhone: เปิดด้วย scheme ตรง ๆ
-  // Android: เปิดแอปตามชื่อแพ็กเกจ (แม่นกว่า scheme) ไม่มีแอป/แพ็กเกจผิด -> ไป Play Store
-  const url = /Android/i.test(navigator.userAgent) ? (bank.pkg ? `intent:#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=${bank.pkg};end` : `intent://#Intent;scheme=${name};end`) : bank.scheme;
+  // Android Chrome ยอมเปิดเฉพาะกิจกรรมที่ประกาศรับลิงก์ (BROWSABLE) → เปิดด้วย scheme ของแอป + ชื่อแพ็กเกจ (แบบ MAIN/LAUNCHER ถูก Chrome บล็อก จึงเคยพาไป Play Store)
+  // iPhone: เปิดด้วย scheme ตรง ๆ
+  const url = /Android/i.test(navigator.userAgent) ? `intent://#Intent;scheme=${name};${bank.pkg ? `package=${bank.pkg};` : ''}end` : bank.scheme;
   let left = false; const onHide = () => { if (document.hidden) left = true; };
   document.addEventListener('visibilitychange', onHide); window.addEventListener('pagehide', onHide);
   const link = document.createElement('a'); link.href = url; link.rel = 'noopener'; document.body.appendChild(link); link.click(); link.remove(); // คลิกจริงจากการแตะ — เบราว์เซอร์ยอมให้เปิดแอป
