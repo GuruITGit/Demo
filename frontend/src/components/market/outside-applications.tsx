@@ -86,7 +86,7 @@ export function OutsideApplications({ canManage, locationId, filter: shared }: {
                   <span className="keep-name text-base">{a.applicantName}</span>
                   <span className="text-[13px] font-normal text-gray-500">{a.appCode}</span>
                   <span className="whitespace-nowrap rounded-sm bg-gray-100 px-2 py-0.5 text-xs font-normal text-gray-700">{a.tenancyType === 'temporary' ? 'ชั่วคราว' : 'ประจำ'}</span>
-                  <span className={`whitespace-nowrap rounded-sm px-2 py-0.5 text-xs font-medium ${a.status === 'pending' ? 'bg-blue-50 text-blue-700' : a.status === 'approved' ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-600'}`}>{STATUS_LABEL[a.status]}</span>
+                  <span className={`whitespace-nowrap rounded-sm px-1.5 py-0 text-[11px] font-medium ${a.status === 'pending' ? 'bg-blue-50 text-blue-700' : a.status === 'approved' ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-600'}`}>{STATUS_LABEL[a.status]}</span>
                 </p>
                 <p className="mt-0.5 text-[13px] text-gray-600">
                   {a.location?.name ?? '—'} · โทร {a.phone} · {a.startDate ? `เริ่ม ${thDate(a.startDate)}` : 'ไม่ระบุวันเริ่ม'} · {a.days} วัน

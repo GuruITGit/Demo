@@ -155,7 +155,7 @@ export function RowMenu({ items }: { items: RowMenuItem[] }) {
     <>
       <button type="button" aria-haspopup="menu" aria-expanded={!!pos}
         onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); setPos(pos ? null : { x: Math.max(8, r.right - 224), y: r.bottom + 4 }); }}
-        className="inline-flex items-center gap-1 whitespace-nowrap rounded-md border border-gray-300 bg-white px-3 py-1.5 text-[13px] font-medium text-gray-700 hover:bg-gray-50">
+        className="inline-flex items-center gap-1 whitespace-nowrap rounded-sm border border-gray-300 bg-white px-2 py-0.5 text-xs font-medium text-gray-700 hover:bg-gray-50">
         จัดการ <span aria-hidden className="text-xs text-gray-400">▾</span>
       </button>
       {pos && (

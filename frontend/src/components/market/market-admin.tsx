@@ -518,7 +518,7 @@ function TenantsStalls({ sum }: { sum?: Summary }) {
         </div>
       )}
       <div className="mb-3 flex flex-wrap gap-2">
-        <select value={st} onChange={(e) => setSt(e.target.value as 'all' | Stall['status'])} className={`${inputCls} bg-white text-gray-900`} style={{ colorScheme: 'light' }} aria-label="กรองสถานะ">
+        <select value={st} onChange={(e) => setSt(e.target.value as 'all' | Stall['status'])} className={`${inputCls} w-auto! min-w-[10rem] bg-white text-gray-900`} style={{ colorScheme: 'light' }} aria-label="กรองสถานะ">
           <option value="all" className="bg-white text-gray-900">ทุกสถานะ</option>
           <option value="occupied" className="bg-white text-gray-900">มีผู้เช่า</option>
           <option value="reserved" className="bg-white text-gray-900">จอง</option>
@@ -541,7 +541,7 @@ function TenantsStalls({ sum }: { sum?: Summary }) {
                 <tr key={s.id} className="border-t border-gray-100">
                   <td className="whitespace-nowrap px-3 py-1.5 font-medium">{s.stallCode}</td>
                   <td className="whitespace-nowrap px-3 py-1.5">{s.zone}</td>
-                  <td className="whitespace-nowrap px-3 py-1.5"><span className={cn('inline-block whitespace-nowrap rounded-sm border px-2 py-0.5 text-xs', STALL_TONE[s.status])}>{STALL_LABEL[s.status]}</span></td>
+                  <td className="whitespace-nowrap px-3 py-1.5"><span className={cn('inline-block whitespace-nowrap rounded-sm border px-1.5 py-0 text-[11px]', STALL_TONE[s.status])}>{STALL_LABEL[s.status]}</span></td>
                   <td className="whitespace-nowrap px-3 py-1.5">{s.tenantName || '—'}</td>
                   <td className="whitespace-nowrap px-3 py-1.5">{s.contactPhone || '—'}</td>
                   <td className="whitespace-nowrap px-3 py-1.5 text-right">{money(Number(s.monthlyRate))}</td>

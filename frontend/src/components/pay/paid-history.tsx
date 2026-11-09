@@ -99,13 +99,13 @@ export function PaidHistory({ kind }: { kind: 'market' | 'waste' }) {
             <input className={inputCls} value={q} onChange={(e) => setQ(e.target.value)} placeholder={kind === 'market' ? 'ชื่อ / รหัสแผง / เลขใบเสร็จ' : 'ชื่อ / บ้านเลขที่ / เลขใบเสร็จ'} />
           </Field>
           <Field label="งวด" className="w-44">
-            <select className={inputCls} value={period} onChange={(e) => setPeriod(e.target.value)}>
+            <select className={`${inputCls} w-auto! min-w-[9rem]`} value={period} onChange={(e) => setPeriod(e.target.value)}>
               <option value="">ทุกงวด</option>
               {periods.map((p) => <option key={p} value={p}>{periodLabel(p)}</option>)}
             </select>
           </Field>
           <Field label="ผู้ตรวจ/วิธีรับ" className="w-52">
-            <select className={inputCls} value={how} onChange={(e) => setHow(e.target.value as '' | Row['how'])}>
+            <select className={`${inputCls} w-auto! min-w-[9rem]`} value={how} onChange={(e) => setHow(e.target.value as '' | Row['how'])}>
               <option value="">ทั้งหมด</option>
               <option value="auto">ระบบตรวจสลิปอัตโนมัติ</option>
               <option value="staff">เจ้าหน้าที่ยืนยัน</option>

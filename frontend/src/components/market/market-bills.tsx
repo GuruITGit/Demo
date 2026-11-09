@@ -135,7 +135,7 @@ export function MarketBills({ canManage, orgName, initialStall, initialStatus }:
                   <td className="whitespace-nowrap px-3 py-1.5">{periodLabel(b.period)}</td>
                   <td className="whitespace-nowrap px-3 py-1.5 text-right tabular-nums">{money(b.amount)}</td>
                   <td className="whitespace-nowrap px-3 py-1.5">
-                    <span className={`inline-block whitespace-nowrap rounded-sm px-2 py-0.5 text-xs font-medium ${STATUS_TONE[b.status] ?? 'bg-gray-100 text-gray-600'}`}>{BILL_STATUS[b.status] ?? b.status}</span>
+                    <span className={`inline-block whitespace-nowrap rounded-sm px-1.5 py-0 text-[11px] font-medium ${STATUS_TONE[b.status] ?? 'bg-gray-100 text-gray-600'}`}>{BILL_STATUS[b.status] ?? b.status}</span>
                     {b.status === 'paid' && <span className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-gray-500"><span>{PAY_METHOD[b.paidMethod ?? ''] ?? b.paidMethod} · {b.receiptNo}</span><SlipButton url={b.slipUrl} method={b.paidMethod} /></span>}
                     {b.status === 'mismatch' && b.reviewNote && <span className="mt-1 block text-xs text-orange-700">{b.reviewNote}</span>}
                   </td>
