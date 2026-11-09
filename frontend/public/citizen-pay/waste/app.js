@@ -85,10 +85,12 @@ function searchBills(q) { searchTerm = q.trim(); resetSelection(); render(); }
 function billListHTML(o) {
     const { matches } = o;
     if (searchTerm !== autoSelectedTerm) {
-        autoSelectedTerm = searchTerm;
+        const pay = matches.filter(b => PAYABLE.includes(b.status));
         selectedBills.clear();
-        matches.filter(b => PAYABLE.includes(b.status)).forEach(b => selectedBills.add(b.id));
-    }
+        pay.forEach(b => selectedBills.add(b.id));
+        if (pay.length)
+            autoSelectedTerm = searchTerm;
+    } // ยังไม่มีบิล (กำลังโหลด) = ยังไม่ถือว่าเลือกอัตโนมัติแล้ว ไม่งั้นบิลที่มาทีหลังไม่ถูกติ๊ก
     // แสดงเดือนที่ยังค้าง + เดือนที่ส่งไปแล้วรอผล (จะได้เห็นว่าส่งแล้ว ไม่ใช่หายไปเฉยๆ)
     const grouped = groupBillsByPayerMonth(matches).filter(g => g.bills.some(b => ['unpaid', 'mismatch', 'pending', 'cash'].includes(b.status)));
     const totalDue = matches.filter(b => PAYABLE.includes(b.status)).reduce((n, b) => n + b.amount, 0);

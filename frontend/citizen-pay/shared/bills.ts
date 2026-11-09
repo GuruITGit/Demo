@@ -29,7 +29,7 @@ interface BillListOptions { title: string; matches: Bill[]; promptText: string; 
 /** รายการบิลแยกเดือน + ยอดรวม + ปุ่มจ่าย (หรือข้อความ "ไม่พบ"/"พิมพ์เพื่อค้นหา") */
 function billListHTML(o:BillListOptions){
  const {matches}=o;
- if(searchTerm!==autoSelectedTerm){autoSelectedTerm=searchTerm;selectedBills.clear();matches.filter(b=>PAYABLE.includes(b.status)).forEach(b=>selectedBills.add(b.id))}
+ if(searchTerm!==autoSelectedTerm){const pay=matches.filter(b=>PAYABLE.includes(b.status));selectedBills.clear();pay.forEach(b=>selectedBills.add(b.id));if(pay.length)autoSelectedTerm=searchTerm} // ยังไม่มีบิล (กำลังโหลด) = ยังไม่ถือว่าเลือกอัตโนมัติแล้ว ไม่งั้นบิลที่มาทีหลังไม่ถูกติ๊ก
  // แสดงเดือนที่ยังค้าง + เดือนที่ส่งไปแล้วรอผล (จะได้เห็นว่าส่งแล้ว ไม่ใช่หายไปเฉยๆ)
  const grouped=groupBillsByPayerMonth(matches).filter(g=>g.bills.some(b=>['unpaid','mismatch','pending','cash'].includes(b.status)));
  const totalDue=matches.filter(b=>PAYABLE.includes(b.status)).reduce((n,b)=>n+b.amount,0);
