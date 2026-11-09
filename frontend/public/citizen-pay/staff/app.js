@@ -403,9 +403,9 @@ function openBankApp(i) {
     if (/Line\/|FBAN|FBAV|Instagram/i.test(navigator.userAgent))
         return toast('เปิดแอปธนาคารจากในแอปนี้ไม่ได้ · กด ⋮ แล้วเลือก “เปิดในเบราว์เซอร์” หรือบันทึกรูป QR ไปสแกนในแอปธนาคาร');
     const name = bank.scheme.replace('://', '');
-    // Android Chrome ยอมเปิดเฉพาะกิจกรรมที่ประกาศรับลิงก์ (BROWSABLE) → เปิดด้วย scheme ของแอป + ชื่อแพ็กเกจ (แบบ MAIN/LAUNCHER ถูก Chrome บล็อก จึงเคยพาไป Play Store)
+    // Android Chrome ยอมเปิดเฉพาะกิจกรรมที่ประกาศรับลิงก์ (BROWSABLE) → เปิดด้วย scheme ของแอป · ห้ามใส่ package= เพราะถ้าไม่มีแอป Chrome จะพาไป Play Store เอง
     // iPhone: เปิดด้วย scheme ตรง ๆ
-    const url = /Android/i.test(navigator.userAgent) ? `intent://#Intent;scheme=${name};${bank.pkg ? `package=${bank.pkg};` : ''}end` : bank.scheme;
+    const url = /Android/i.test(navigator.userAgent) ? `intent://#Intent;scheme=${name};end` : bank.scheme;
     let left = false;
     const onHide = () => { if (document.hidden)
         left = true; };
