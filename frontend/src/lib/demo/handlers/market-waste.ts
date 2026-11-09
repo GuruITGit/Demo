@@ -886,8 +886,8 @@ patch('/waste/households/:id', (c) => {
 del('/waste/households/:id', (c) => {
   needPerm(c, 'waste:manage:WasteBill');
   const h = one(c.db.wasteHouseholds, (x) => x.id === c.params.id && x.active && x.organizationId === ORG_ID, 'ไม่พบครัวเรือนนี้');
-  const open = c.db.wasteBills.filter((b) => b.householdRef === h.householdRef && OPEN.includes(b.status)).length;
-  if (open) throw badRequest(`ครัวเรือน ${h.householdRef} ยังมีบิลค้าง ${open} รายการ — เก็บเงินหรือยกเลิกบิลก่อนลบ`);
+  // ลบครัวเรือน = ยกเลิกบิลที่ยังไม่ชำระด้วย (บิลที่ชำระแล้วคงไว้เป็นประวัติ)
+  c.db.wasteBills = c.db.wasteBills.filter((b) => !(b.householdRef === h.householdRef && OPEN.includes(b.status)));
   h.active = false;
   return { ok: true };
 });

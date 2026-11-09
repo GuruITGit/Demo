@@ -222,12 +222,11 @@ export class WasteService {
     return this.households.save(h);
   }
 
-  /** ลบครัวเรือนออกจากทะเบียน (ซ่อน) — มีบิลค้างอยู่ห้ามลบ · บิลที่ชำระแล้วคงไว้เป็นประวัติ */
+  /** ลบครัวเรือนออกจากทะเบียน (ซ่อน) — บิลที่ยังไม่ชำระถูกยกเลิกไปด้วย · บิลที่ชำระแล้วคงไว้เป็นประวัติ */
   async removeHousehold(orgId: string, id: string) {
     const h = await this.households.findOne({ where: { id, organizationId: orgId, active: true } });
     if (!h) throw new NotFoundException('ไม่พบครัวเรือนนี้');
-    const open = await this.bills.count({ where: { organizationId: orgId, householdRef: h.householdRef, status: In(OPEN) } });
-    if (open) throw new BadRequestException(`ครัวเรือน ${h.householdRef} ยังมีบิลค้าง ${open} รายการ — เก็บเงินหรือยกเลิกบิลก่อนลบ`);
+    await this.bills.delete({ organizationId: orgId, householdRef: h.householdRef, status: In(OPEN) }); // ลบครัวเรือน = ยกเลิกบิลที่ยังไม่ชำระด้วย
     h.active = false;
     await this.households.save(h);
     return { ok: true };

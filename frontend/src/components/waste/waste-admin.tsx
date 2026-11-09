@@ -260,7 +260,7 @@ function Households({ canManage, onBills }: { canManage: boolean; onBills: (ref:
       </Panel>
       <ConfirmDialog open={!!del} onOpenChange={(o) => { if (!o) setDel(null); }} loading={remove.isPending}
         onConfirm={() => del && remove.mutate(del.id)} title={`ลบครัวเรือน ${del?.householdRef}?`}
-        description={`${del?.holderName ?? ''} · บ้านเลขที่ ${del?.houseNo ?? ''} หมู่ ${del ? Number(del.moo) : ''} — ต้องไม่มีบิลค้าง ประวัติการชำระที่ผ่านมายังอยู่`} confirmText="ลบครัวเรือน" />
+        description={`${del?.holderName ?? ''} · บ้านเลขที่ ${del?.houseNo ?? ''} หมู่ ${del ? Number(del.moo) : ''} — บิลที่ยังไม่ชำระของบ้านนี้จะถูกยกเลิกด้วย · ประวัติที่ชำระแล้วยังอยู่`} confirmText="ลบครัวเรือน" />
     </div>
   );
 }
