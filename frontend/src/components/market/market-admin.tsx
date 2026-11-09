@@ -1,4 +1,5 @@
 'use client';
+import { usePaySeen } from '@/hooks/use-pay-seen';
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { PaidHistory } from '@/components/pay/paid-history';
@@ -62,6 +63,7 @@ export function MarketAdmin() {
 
   const { data: sum } = useQuery<Summary>({ queryKey: ['market', 'summary'], queryFn: async () => (await api.get('/market/summary')).data.data, refetchInterval: 60_000 });
   const pendingCount = sum?.byStatus.find((s) => s.status === 'pending')?.count ?? 0;
+  const { unseenPaid } = usePaySeen('market');
   const { data: pendingOutside = [] } = useQuery<unknown[]>({ queryKey: ['market', 'outside', 'apps', 'pending'], queryFn: async () => (await api.get('/market/outside/applications', { params: { status: 'pending' } })).data.data, refetchInterval: 15_000 });
   const { data: reservations = [] } = useQuery<unknown[]>({ queryKey: ['market', 'reservations'], queryFn: async () => (await api.get('/market/reservations')).data.data, refetchInterval: 15_000 });
 
@@ -75,7 +77,7 @@ export function MarketAdmin() {
         tabs={[
           { key: 'overview', label: 'ภาพรวม' },
           { key: 'queue', label: 'รอตรวจ', badge: pendingCount },
-          { key: 'paid', label: 'ชำระแล้ว' },
+          { key: 'paid', label: 'ชำระแล้ว', badge: unseenPaid },
           { key: 'reserve', label: 'จองแผง', badge: reservations.length + pendingOutside.length },
           { key: 'plan', label: 'ผังแผง' },
           { key: 'tenants', label: 'ผู้เช่าทั้งหมด' },

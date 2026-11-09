@@ -1,4 +1,5 @@
 'use client';
+import { usePaySeen } from '@/hooks/use-pay-seen';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, getErrorMessage } from '@/lib/api';
@@ -53,6 +54,7 @@ export function WasteAdmin() {
   const [billSeed, setBillSeed] = useState<{ q: string; status: string; n: number }>({ q: '', status: '', n: 0 });
   const { data: sum } = useQuery<Summary>({ queryKey: ['waste', 'summary'], queryFn: async () => (await api.get('/waste/summary')).data.data, refetchInterval: 60_000 });
   const pending = sum?.byStatus.find((s) => s.status === 'pending')?.count ?? 0;
+  const { unseenPaid } = usePaySeen('waste');
   const goBills = (q: string, status = '') => { setBillSeed({ q, status, n: billSeed.n + 1 }); setTab('bills'); };
 
   return (
@@ -63,7 +65,7 @@ export function WasteAdmin() {
         tabs={[
           { key: 'overview', label: 'ภาพรวม' },
           { key: 'queue', label: 'รอตรวจ', badge: pending },
-          { key: 'paid', label: 'ชำระแล้ว' },
+          { key: 'paid', label: 'ชำระแล้ว', badge: unseenPaid },
           { key: 'households', label: 'ครัวเรือน' },
           { key: 'bills', label: 'บิล' },
           { key: 'dues', label: 'ค้างชำระ' },

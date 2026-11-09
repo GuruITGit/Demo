@@ -1,5 +1,6 @@
 'use client';
-import { useMemo, useState } from 'react';
+import { usePaySeen } from '@/hooks/use-pay-seen';
+import { useMemo, useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
@@ -29,6 +30,7 @@ const fmtTime = (iso: string | null) =>
  */
 export function PaidHistory({ kind }: { kind: 'market' | 'waste' }) {
   const orgName = useOrgName();
+  const { markSeen } = usePaySeen(kind);
   const periods = recentPeriods(12);
   const [q, setQ] = useState('');
   const [period, setPeriod] = useState('');
@@ -40,6 +42,8 @@ export function PaidHistory({ kind }: { kind: 'market' | 'waste' }) {
     queryFn: async () => (await api.get(`/${kind}/bills`, { params: { status: 'paid', period: period || undefined } })).data.data,
     refetchInterval: 20_000,
   });
+
+  useEffect(() => { markSeen(); }, [data, markSeen]); // เปิดแท็บนี้อยู่ = ถือว่าอ่านแล้ว ป้ายแดงหาย
 
   // ชื่อแผง: แผงประจำ = โซน · แผงลอย = ชื่อจุดที่เช่า (บิลมีแต่รหัส OUT-xxxx / รหัสแผง)
   const { data: stalls = [] } = useQuery<{ stallCode: string; zone: string }[]>({ queryKey: ['market', 'stalls'], queryFn: async () => (await api.get('/market/stalls')).data.data, enabled: kind === 'market', staleTime: 60_000 });

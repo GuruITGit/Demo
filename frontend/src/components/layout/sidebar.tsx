@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth.store';
 import { useDisabledModules } from '@/hooks/use-modules';
+import { usePaySeen } from '@/hooks/use-pay-seen';
 import { MODULES, NAV_GROUP_ORDER } from '@/lib/modules';
 
 // เมนูซ้ายสร้างจากทะเบียนโมดูลกลาง (lib/modules.ts) — เพิ่มโมดูลใหม่ที่นั่นแล้วเมนูขึ้นเอง
@@ -97,7 +98,9 @@ export function Sidebar({ mobileOpen = false, onClose }: { mobileOpen?: boolean;
     enabled: showWaste,
     refetchInterval: 60_000,
   });
-  const todoOf = (key: string) => (key === 'market' ? marketTodo : key === 'waste' ? wasteTodo : 0) || 0;
+  const { unseenPaid: marketPaid } = usePaySeen('market', showMarket);
+  const { unseenPaid: wastePaid } = usePaySeen('waste', showWaste);
+  const todoOf = (key: string) => (key === 'market' ? (marketTodo || 0) + marketPaid : key === 'waste' ? (wasteTodo || 0) + wastePaid : 0) || 0;
 
   const groups = NAV_GROUP_ORDER
     .map((g) => ({ name: g, items: visible.filter((i) => i.navGroup === g) }))
@@ -154,7 +157,7 @@ export function Sidebar({ mobileOpen = false, onClose }: { mobileOpen?: boolean;
                   )}
                   {todoOf(item.key) > 0 && (
                     <span
-                      className="min-w-5 text-center text-[11px] font-semibold bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full shrink-0"
+                      className="min-w-5 text-center text-[11px] font-semibold bg-red-500 text-white px-1.5 py-0.5 rounded-full shrink-0"
                       title={`งานค้าง ${todoOf(item.key)} รายการ`}
                       aria-label={`มีงานค้าง ${todoOf(item.key)} รายการ`}
                     >
