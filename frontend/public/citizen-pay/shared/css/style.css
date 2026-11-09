@@ -745,3 +745,15 @@
   .payment-shortcut:only-child small{font-size:11px}
   .payment-shortcut:only-child::after{font-size:22px}
 }
+
+/* ป้าย BETA ของแท็บแอปธนาคาร */
+.beta-tag{display:inline-block;margin-left:5px;padding:1px 5px;border-radius:3px;background:#FFF1D6;border:1px solid #F2C96B;color:#8A5A00;font-style:normal;font-size:9px;font-weight:700;letter-spacing:.08em;line-height:1.5;vertical-align:middle}
+.pay-methods button.active .beta-tag{background:#fff;border-color:#F2C96B}
+.beta-note{display:flex;gap:10px;align-items:flex-start;margin-top:10px;padding:9px 11px;border:1px solid #F2D9A0;border-left:3px solid #E5A500;border-radius:6px;background:#FFFBF0}
+.beta-note .beta-tag{margin:2px 0 0;flex:none}
+.beta-note b{display:block;font-size:13px;color:#6B4700}
+.beta-note small{display:block;margin-top:2px;font-size:11.5px;line-height:1.5;color:#7A6A45}
+.bank-steps{list-style:none;margin:10px 0 8px;padding:0;display:grid;gap:6px;counter-reset:bs}
+.bank-steps li{counter-increment:bs;display:flex;align-items:center;gap:9px;font-size:12.5px;color:#334155}
+.bank-steps li::before{content:counter(bs);flex:none;width:20px;height:20px;border-radius:4px;background:#E6F1FA;color:#0369a1;display:grid;place-items:center;font-size:11px;font-weight:700}
+.bank-steps+.save-qr{width:100%;min-height:36px;margin-bottom:10px}

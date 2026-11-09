@@ -348,7 +348,7 @@ function renderPaymentModal() {
     const total = payTotal();
     const grouped = groupBillsByPayerMonth(items);
     const methods = hasPromptpay() ? [['qr', 'สแกน QR'], ['app', 'แอปธนาคาร'], ['cash', 'เงินสด']] : [['cash', 'เงินสด']];
-    const tabs = `<div class="pay-methods" role="tablist">${methods.map(([m, label]) => `<button type="button" role="tab" aria-selected="${payMethod === m}" class="${payMethod === m ? 'active' : ''}" onclick="setPayMethod('${m}')">${label}</button>`).join('')}</div>`;
+    const tabs = `<div class="pay-methods" role="tablist">${methods.map(([m, label]) => `<button type="button" role="tab" aria-selected="${payMethod === m}" class="${payMethod === m ? 'active' : ''}" onclick="setPayMethod('${m}')">${label}${m === 'app' ? '<i class="beta-tag">BETA</i>' : ''}</button>`).join('')}</div>`;
     const summary = `<div class="pay-hero"><small>ยอดที่ต้องชำระ · ${grouped.length} เดือน</small><b>${money(total)} บาท</b></div><div class="payment-months">${grouped.map(g => `<div><span>${escapeHTML(g.month)}</span><b>${money(g.bills.reduce((n, b) => n + b.amount, 0))} บาท</b></div>`).join('')}</div>`;
     const demoNote = PAYMENT.demo ? `<p class="privacy-note">ระบบสาธิต · เลขพร้อมเพย์เป็นเลขตัวอย่าง โอนจริงไม่ได้</p>` : '';
     let body = '', actions = '';
@@ -367,7 +367,9 @@ function renderPaymentModal() {
         else {
             // แตะโลโก้ = เด้งเข้าแอปทันที · แอปไม่รับยอดจากเว็บ → ในแอปให้สแกน QR จากรูปที่บันทึกไว้
             const logos = `<p class="bank-title">แตะธนาคารที่ใช้ เพื่อเปิดแอป</p><div class="bank-grid">${PAYMENT.banks.map((b, i) => `<button type="button" class="bank-tile" onclick="openBankApp(${i})" aria-label="เปิดแอป${escapeHTML(b.name)}">${b.logo ? `<img src="${escapeHTML(b.logo)}" alt="">` : `<span class="bank-logo" style="background:${b.color};color:${b.ink || '#fff'}">${escapeHTML(b.short)}</span>`}<span>${escapeHTML(b.name)}</span></button>`).join('')}</div>${isMobile() ? '' : '<p class="help">เปิดแอปได้บนมือถือเท่านั้น · บนคอมพิวเตอร์ให้ใช้แท็บ “สแกน QR”</p>'}`;
-            body = logos + slip;
+            const betaNote = `<div class="beta-note"><i class="beta-tag">BETA</i><div><b>ฟังก์ชันนี้อยู่ระหว่างทดลอง</b><small>ธนาคารยังไม่รองรับกรอกยอดให้อัตโนมัติ · ถ้าแอปไม่เปิด ให้บันทึกรูป QR แล้วเปิดแอปธนาคารเอง หรือใช้แท็บ “สแกน QR”</small></div></div>`;
+            const steps = `<ol class="bank-steps"><li>บันทึกรูป QR ลงเครื่อง</li><li>แตะธนาคารเพื่อเปิดแอป</li><li>ในแอปเลือกสแกนจากรูปภาพ แล้วแนบสลิปด้านล่าง</li></ol><button type="button" class="secondary small save-qr" onclick="saveQrImage()">บันทึกรูป QR ลงเครื่อง</button>`;
+            body = betaNote + steps + logos + slip;
         }
         actions = `<button class="secondary" onclick="modal.close()">กลับ</button><button onclick="submitTransferPayment()" ${slipFile ? '' : 'disabled'}>โอนแล้ว ส่งสลิป</button>`;
     }
@@ -413,9 +415,8 @@ function openBankApp(i) {
         return toast('เปิดแอปธนาคารจากในแอปนี้ไม่ได้ · กด ⋮ แล้วเลือก “เปิดในเบราว์เซอร์” หรือบันทึกรูป QR ไปสแกนในแอปธนาคาร');
     const name = bank.scheme.replace('://', '');
     // Android: intent URL เปิดแอปที่รับ scheme นี้ ถ้าไม่มีแอปให้ไปค้นหาใน Play Store · iPhone: เปิดด้วย scheme ตรง ๆ
-    const store = 'https://play.google.com/store/search?c=apps&q=' + encodeURIComponent(bank.name + ' mobile banking');
     // Android: เปิดแอปตามชื่อแพ็กเกจ (แม่นกว่า scheme) ไม่มีแอป/แพ็กเกจผิด -> ไป Play Store
-    const url = /Android/i.test(navigator.userAgent) ? (bank.pkg ? `intent:#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=${bank.pkg};S.browser_fallback_url=${encodeURIComponent(bank.pkg ? "https://play.google.com/store/apps/details?id=" + bank.pkg : store)};end` : `intent://#Intent;scheme=${name};S.browser_fallback_url=${encodeURIComponent(store)};end`) : bank.scheme;
+    const url = /Android/i.test(navigator.userAgent) ? (bank.pkg ? `intent:#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=${bank.pkg};end` : `intent://#Intent;scheme=${name};end`) : bank.scheme;
     let left = false;
     const onHide = () => { if (document.hidden)
         left = true; };
