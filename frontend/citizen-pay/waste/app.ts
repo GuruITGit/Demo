@@ -167,4 +167,5 @@ applySavedPayments();
 if (new URLSearchParams(location.search).has('house')) qrHouse = houseFromQr(location.href);
 if (qrHouse) { const nm = (new URLSearchParams(location.search).get('name') || '').trim(); if (nm) verifiedName = nm; } // QR มีชื่อ → ใส่ชื่อให้เลย
 // ถ้าเข้าถึงระบบจริงได้: ใช้ช่องทางรับเงินจริงและส่งการแจ้งชำระเข้าระบบ · ไม่ได้ (เดโม่) ใช้ข้อมูลตัวอย่างเดิม
+window.addEventListener('kv-pulled', () => { applyDemoPayConfig(); render(); }); // ข้อมูลกลางมาถึงหลังเปิดหน้า → วาดใหม่ (ไม่รีโหลดทั้งหน้า)
 (async () => { const c = await payApi<any>("/config").catch(() => null); if (c) { applyPayConfig(c); billSubmitter = submitWasteBills; } else applyDemoPayConfig(); render(); const urlName = (new URLSearchParams(location.search).get('name') || '').trim(); if (qrHouse && urlName.length >= 4) { const q = qrHouse; qrHouse = ''; void searchWasteBills(urlName, q); } else if (qrHouse && PAYMENT.demo) fillDemoHouse(); const hk = parseHouseKeyLink(location.href); if (hk) void searchWasteByKey(hk.ref, hk.key); })();

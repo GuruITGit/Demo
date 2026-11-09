@@ -3,7 +3,6 @@
 // ไฟล์นี้เป็น script ไม่ใช่ module (หน้า static รวมด้วย outFile) จึงห่อใน IIFE และตั้ง window.smartKvInit ให้หน้า Next เรียกได้
 (function () {
     const KV_KEYS = ['market:payments', 'lamplaimat:demo-reservations', 'lamplaimat:demo-outside-apps', 'lamplaimat:demo-stalls', 'lamplaimat:outside-locations', 'market:rates', 'lamplaimat:demo-outside-bills'];
-    const RELOAD_FLAG = 'kv:reloaded';
     const rawSet = Storage.prototype.setItem;
     const rawRemove = Storage.prototype.removeItem;
     let cfg = null;
@@ -40,7 +39,7 @@
         Storage.prototype.removeItem = function (k) { rawRemove.call(this, k); if (this === localStorage)
             schedule(k); };
     }
-    /** ดึงข้อมูลกลางลงเครื่อง · ถ้ามีค่าเปลี่ยน (หน้าเปิดค่าไว้ตั้งแต่ก่อนดึง) โหลดหน้าใหม่ 1 ครั้ง */
+    /** ดึงข้อมูลกลางลงเครื่อง · ถ้ามีค่าเปลี่ยนส่งอีเวนต์ kv-pulled ให้หน้าวาดใหม่ */
     async function initKv(c) {
         if (!c?.url || !c.key || typeof localStorage === 'undefined')
             return;
@@ -75,15 +74,9 @@
                 pulling = false;
             }
             ready = true;
-            try {
-                if (changed && !sessionStorage.getItem(RELOAD_FLAG)) {
-                    sessionStorage.setItem(RELOAD_FLAG, '1');
-                    location.reload();
-                    return;
-                }
-                sessionStorage.removeItem(RELOAD_FLAG);
-            }
-            catch { /* โหมดส่วนตัว: ไม่รีโหลดซ้ำ */ }
+            // ไม่รีโหลดหน้า (เดิมทำให้หน้ากระพริบ 2 รอบตอนรีเฟรช) → แจ้งให้หน้า static วาดใหม่ด้วยข้อมูลที่เพิ่งดึงมาแทน
+            if (changed)
+                window.dispatchEvent(new Event('kv-pulled'));
         }
         catch { /* เชื่อมฐานกลางไม่ได้ → ใช้ข้อมูลในเครื่อง ไม่ส่งขึ้น */ }
     }
