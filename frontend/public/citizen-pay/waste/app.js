@@ -367,7 +367,7 @@ function renderPaymentModal() {
         else {
             // แตะโลโก้ = เด้งเข้าแอปทันที · แอปไม่รับยอดจากเว็บ → ในแอปให้สแกน QR จากรูปที่บันทึกไว้
             const logos = `<p class="bank-title">แตะธนาคารที่ใช้ เพื่อเปิดแอป</p><div class="bank-grid">${PAYMENT.banks.map((b, i) => `<button type="button" class="bank-tile" onclick="openBankApp(${i})" aria-label="เปิดแอป${escapeHTML(b.name)}">${b.logo ? `<img src="${escapeHTML(b.logo)}" alt="">` : `<span class="bank-logo" style="background:${b.color};color:${b.ink || '#fff'}">${escapeHTML(b.short)}</span>`}<span>${escapeHTML(b.name)}</span></button>`).join('')}</div>${isMobile() ? '' : '<p class="help">เปิดแอปได้บนมือถือเท่านั้น · บนคอมพิวเตอร์ให้ใช้แท็บ “สแกน QR”</p>'}`;
-            const steps = `<ol class="bank-steps"><li>บันทึกรูป QR ลงเครื่อง</li><li>แตะธนาคารเพื่อเปิดแอป</li><li>ในแอปเลือกสแกนจากรูปภาพ แล้วแนบสลิปด้านล่าง</li></ol><button type="button" class="secondary small save-qr" onclick="saveQrImage()">บันทึกรูป QR ลงเครื่อง</button>`;
+            const steps = `<ol class="bank-steps"><li>บันทึกรูป QR ลงเครื่อง</li><li>แตะธนาคาร แล้วเลือกแอปในรายการที่เด้งขึ้น</li><li>ในแอปเลือกสแกนจากรูปภาพ แล้วแนบสลิปด้านล่าง</li></ol><button type="button" class="secondary small save-qr" onclick="saveQrImage()">บันทึกรูป QR ลงเครื่อง</button>`;
             body = steps + logos + slip;
         }
         actions = `<button class="secondary" onclick="modal.close()">กลับ</button><button onclick="submitTransferPayment()" ${slipFile ? '' : 'disabled'}>โอนแล้ว ส่งสลิป</button>`;
@@ -403,7 +403,7 @@ async function saveQrImage() {
     setTimeout(() => URL.revokeObjectURL(url), 4000);
     toast('บันทึกรูป QR แล้ว');
 }
-function openBankApp(i) {
+async function openBankApp(i) {
     const bank = PAYMENT.banks[i];
     if (!bank)
         return;
@@ -412,6 +412,24 @@ function openBankApp(i) {
     // เบราว์เซอร์ในแอป (LINE/Facebook) บล็อกการเปิดแอปอื่น → ให้เปิดในเบราว์เซอร์ปกติก่อน
     if (/Line\/|FBAN|FBAV|Instagram/i.test(navigator.userAgent))
         return toast('เปิดแอปธนาคารจากในแอปนี้ไม่ได้ · กด ⋮ แล้วเลือก “เปิดในเบราว์เซอร์” หรือบันทึกรูป QR ไปสแกนในแอปธนาคาร');
+    // ลิงก์ตรงของแอปธนาคารเปิดได้แต่แอปมักตอบ "ไม่สามารถดำเนินการต่อได้" (ไม่รู้ว่าจะพาไปหน้าไหน) → ส่งรูป QR ไปแอปธนาคารผ่านแผ่นแชร์ของมือถือแทน (แอปเปิดพร้อมรูป สแกนต่อได้เลย)
+    const total = payTotal();
+    const blob = await qrPngBlob(promptpayPayload(PAYMENT.promptpayId, total, PAYMENT.promptpayType), `${money(total)} บาท`);
+    if (blob) {
+        const file = new File([blob], `qr-${money(total)}.png`, { type: 'image/png' });
+        const nav = navigator;
+        if (nav.canShare?.({ files: [file] })) {
+            try {
+                toast(`เลือก ${bank.name} ในรายการ แล้วสแกนรูป QR`);
+                await navigator.share({ files: [file], title: `จ่ายผ่าน ${bank.name}` });
+                return;
+            }
+            catch (e) {
+                if (e.name === 'AbortError')
+                    return;
+            }
+        }
+    }
     const name = bank.scheme.replace('://', '');
     // Android Chrome ยอมเปิดเฉพาะกิจกรรมที่ประกาศรับลิงก์ (BROWSABLE) → เปิดด้วย scheme ของแอป · ห้ามใส่ package= เพราะถ้าไม่มีแอป Chrome จะพาไป Play Store เอง
     // iPhone: เปิดด้วย scheme ตรง ๆ
