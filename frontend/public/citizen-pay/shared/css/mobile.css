@@ -194,3 +194,45 @@ input,select,textarea{font-size:16px!important}
 .id-upload{font-size:14px;min-height:48px}
 .id-card-preview img{width:96px;height:62px}
 .id-card-preview .text-link{min-height:36px;padding:0;border:0;background:none;color:var(--red);font:inherit;font-size:13px}
+
+/* ===== มือถือ: ย่อให้เห็นพอดีจอ ไม่ต้องเลื่อนเยอะ ===== */
+.shortcut-text{display:flex;flex-direction:column;min-width:0;flex:1}
+@media(max-width:767px){
+  /* การ์ดสแกน QR: รูปเล็กซ้าย ข้อความขวา */
+  .payment-shortcut:only-child{flex-direction:row;align-items:center;gap:12px;min-height:0;padding:8px 10px}
+  .payment-shortcut:only-child .shortcut-art{width:104px;height:66px;flex:none;margin:0;object-fit:cover;object-position:right center;border-radius:8px}
+  .payment-shortcut:only-child b{font-size:15px;white-space:nowrap}
+  .payment-shortcut:only-child small{min-height:0;margin-top:2px;font-size:11px}
+  /* รายการบิลแต่ละเดือน */
+  .month-card{padding:8px 10px;margin-top:6px;border-radius:10px}
+  .month-card-info small{display:none}
+  .month-select{padding:3px 8px;border-radius:8px;font-size:12px;gap:6px}
+  .month-select input{width:18px;height:18px}
+  .month-card .charge-lines{margin-top:5px;padding:0}
+  .month-card .charge-line{padding:3px 0;gap:6px;font-size:13px}
+  .month-card .charge-line .status,.charge-line .status{font-size:11px;padding:1px 7px}
+  .month-card .month-due{margin-top:2px;font-size:12px}
+  .due-total-row{padding:8px 10px;font-size:13px}
+  .pay-summary{padding:8px 10px}
+  /* หน้าต่างชำระเงิน */
+  .modal-inner{padding:10px}
+  .modal-body{margin-top:6px}
+  .modal .pay-hero{padding:8px 12px}
+  .modal .pay-hero b{font-size:21px}
+  .modal .payment-months>div{padding:4px 10px;font-size:12px}
+  .modal .pay-methods{margin-top:8px}
+  .modal .pay-methods button{min-height:30px;font-size:12px}
+  .modal .pay-qr{margin-top:8px;padding:8px}
+  .modal .pay-qr .qr-svg{width:128px;height:128px}
+  .modal .pay-qr b{margin-top:4px;font-size:16px}
+  .modal .pay-account{margin-top:8px;padding:8px 10px}
+  .modal .pay-account b{font-size:16px;margin:1px 0}
+  .modal .pay-account button{min-height:32px;padding:0 10px;font-size:12px}
+  .modal .save-qr{min-height:32px;margin-top:6px;font-size:12px}
+  .modal .help{margin:6px 0 0;font-size:11px}
+  .modal .upload{margin-top:8px;padding:8px;font-size:13px;position:relative}
+  .modal .upload input[type=file]{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;margin:0}
+  .modal .modal-actions{margin-top:8px}
+  .modal .modal-actions button{min-height:40px;font-size:14px}
+  .modal .privacy-note{font-size:10px;margin:6px 0 0}
+}
