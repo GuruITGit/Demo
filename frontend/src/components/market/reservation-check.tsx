@@ -37,17 +37,17 @@ export function ReservationCheck({ canManage, filter = 'pending' }: { canManage:
 
   return (
     <Panel
-      title={<>การจองแผงที่รอยืนยัน <span className="text-sm font-normal text-gray-500">({rows.length})</span></>}
+      title={<>การจองแผงที่รอยืนยัน <span className="text-[13px] font-normal text-gray-500">({rows.length})</span></>}
       actions={canManage && rows.length > 0 && <Button size="sm" variant="outline" loading={notify.isPending} onClick={() => notify.mutate()}>แจ้งเตือนผู้จัดการตลาด</Button>}
     >
       {!showReserved ? (
         occupied.length === 0 ? <Empty>ไม่มีแผงที่มีผู้เช่าในแผงประจำ</Empty> : (
           <ul>
             {occupied.map((s) => (
-              <li key={s.id} className="flex flex-wrap items-center gap-3 border-t border-gray-100 px-4 py-3 first:border-t-0">
+              <li key={s.id} className="flex flex-wrap items-center gap-3 border-t border-gray-100 px-3 py-2 first:border-t-0">
                 <div className="min-w-0 flex-1">
                   <p className="font-semibold">แผง {s.stallCode} <span className="font-normal text-gray-500">· โซน {s.zone} · <span className="keep-name">{s.tenantName || "—"}</span></span></p>
-                  <p className="text-sm text-gray-500">โทร {s.contactPhone || '—'} · ค่าเช่า {Number(s.monthlyRate).toLocaleString('th-TH')} บาท/เดือน</p>
+                  <p className="text-[13px] text-gray-500">โทร {s.contactPhone || '—'} · ค่าเช่า {Number(s.monthlyRate).toLocaleString('th-TH')} บาท/เดือน</p>
                 </div>
               </li>
             ))}
@@ -58,14 +58,14 @@ export function ReservationCheck({ canManage, filter = 'pending' }: { canManage:
       ) : (
         <ul>
           {rows.map((r) => (
-            <li key={r.id} className="flex items-center gap-3 border-t border-gray-100 px-4 py-3 first:border-t-0">
+            <li key={r.id} className="flex items-center gap-3 border-t border-gray-100 px-3 py-2 first:border-t-0">
               <div className="min-w-0 flex-1">
                 <p className="font-semibold">แผง {r.stallCode} <span className="font-normal text-gray-500">· โซน {r.zone} · <span className="keep-name">{r.tenantName || "—"}</span></span></p>
-                <p className="text-sm text-gray-500">
+                <p className="text-[13px] text-gray-500">
                   โทร {r.contactPhone ? <a href={`tel:${r.contactPhone}`} className="text-sky-700 underline">{r.contactPhone}</a> : '—'}
                   {r.reservedAt && ` · จองเมื่อ ${new Date(r.reservedAt).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' })}`}
                 </p>
-                <p className="text-sm text-gray-500">
+                <p className="text-[13px] text-gray-500">
                   {r.reserveStartDate ? `เริ่มเช่า ${thDate(r.reserveStartDate)}${r.reserveDays ? ` · ${r.reserveDays} วัน` : ''}` : 'ไม่ได้ระบุวันเริ่มเช่า'}
                   {' · '}
                   {r.reserveCardUrl

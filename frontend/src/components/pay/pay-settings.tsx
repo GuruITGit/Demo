@@ -35,7 +35,7 @@ export function PaySettings({ kind, canManage }: { kind: 'market' | 'waste'; can
     onError: (e) => toast.error(getErrorMessage(e)),
   });
 
-  if (!f) return <p className="p-6 text-sm text-gray-500">กำลังโหลด…</p>;
+  if (!f) return <p className="p-6 text-[13px] text-gray-500">กำลังโหลด…</p>;
   const set = <K extends keyof PayConfig>(k: K, v: PayConfig[K]) => setDraft({ ...f, [k]: v } as PayConfig);
   const dis = !canManage;
   const invalidPp = f.promptpayId !== '' && !/^(\d{10}|\d{13}|\d{15})$/.test(f.promptpayId);
@@ -43,7 +43,7 @@ export function PaySettings({ kind, canManage }: { kind: 'market' | 'waste'; can
   return (
     <div className="space-y-5">
       <Panel title="ราคา">
-        <div className="grid gap-4 p-4 sm:grid-cols-2">
+        <div className="grid gap-4 p-3 sm:grid-cols-2">
           <Field label="ค่าเก็บขยะบ้านต่อเดือน (บาท)" hint="ราคากลางทุกครัวเรือน — ตั้งราคาเฉพาะครัวเรือนได้ที่แท็บครัวเรือน">
             <input type="number" min={0} className={inputCls} disabled={dis} value={f.householdFee} onChange={(e) => set('householdFee', Number(e.target.value))} />
           </Field>
@@ -51,11 +51,11 @@ export function PaySettings({ kind, canManage }: { kind: 'market' | 'waste'; can
             <input type="number" min={0} className={inputCls} disabled={dis} value={f.wasteStallFee} onChange={(e) => set('wasteStallFee', Number(e.target.value))} />
           </Field>
         </div>
-        <p className="border-t border-gray-100 px-4 py-3 text-xs text-gray-500">ราคาที่เปลี่ยนมีผลกับบิลที่ออกต่อจากนี้ ไม่แก้บิลที่ออกไปแล้ว</p>
+        <p className="border-t border-gray-100 px-3 py-2 text-xs text-gray-500">ราคาที่เปลี่ยนมีผลกับบิลที่ออกต่อจากนี้ ไม่แก้บิลที่ออกไปแล้ว</p>
       </Panel>
 
       <Panel title="บัญชีรับเงิน (แสดงให้ประชาชนตอนชำระ)">
-        <div className="grid gap-4 p-4 sm:grid-cols-2">
+        <div className="grid gap-4 p-3 sm:grid-cols-2">
           <Field label="เลขพร้อมเพย์" hint={invalidPp ? 'ต้องเป็นเบอร์มือถือ 10 หลัก / เลขบัตรประชาชน 13 หลัก / e-Wallet 15 หลัก' : 'เว้นว่าง = ไม่รับโอน แสดงเฉพาะเงินสด'}>
             <input className={`${inputCls} ${invalidPp ? 'border-red-400' : ''}`} inputMode="numeric" disabled={dis} value={f.promptpayId} onChange={(e) => set('promptpayId', e.target.value.replace(/\D/g, ''))} />
           </Field>
@@ -73,7 +73,7 @@ export function PaySettings({ kind, canManage }: { kind: 'market' | 'waste'; can
       </Panel>
 
       <Panel title="ตรวจสลิปโอนเงินอัตโนมัติ">
-        <div className="grid gap-4 p-4 sm:grid-cols-2">
+        <div className="grid gap-4 p-3 sm:grid-cols-2">
           <Field label="ผู้ให้บริการตรวจสลิป" hint="ไม่เลือก = เจ้าหน้าที่ตรวจสลิปเอง · ผ่านเมื่อยอดตรง บัญชีผู้รับเป็นของ อบต. และสลิปไม่ซ้ำ">
             <select className={inputCls} disabled={dis} value={f.slipProvider} onChange={(e) => set('slipProvider', e.target.value)}>
               <option value="">ไม่ใช้ (ตรวจเอง)</option>
@@ -84,11 +84,11 @@ export function PaySettings({ kind, canManage }: { kind: 'market' | 'waste'; can
             <input type="password" autoComplete="off" className={inputCls} disabled={dis} value={token} onChange={(e) => setToken(e.target.value)} placeholder={f.slipTokenSet ? '••••••••' : 'วางโทเคนที่นี่'} />
           </Field>
         </div>
-        <p className="border-t border-gray-100 px-4 py-3 text-xs text-gray-500">โทเคนเก็บเป็นความลับ ไม่แสดงให้ประชาชน · ชื่อบัญชีด้านบนใช้ตรวจว่าเงินเข้า อบต. จริง</p>
+        <p className="border-t border-gray-100 px-3 py-2 text-xs text-gray-500">โทเคนเก็บเป็นความลับ ไม่แสดงให้ประชาชน · ชื่อบัญชีด้านบนใช้ตรวจว่าเงินเข้า อบต. จริง</p>
       </Panel>
 
       <Panel title="จ่ายเงินสดที่ อบต.">
-        <div className="grid gap-4 p-4 sm:grid-cols-2">
+        <div className="grid gap-4 p-3 sm:grid-cols-2">
           <Field label="สถานที่"><input className={inputCls} disabled={dis} value={f.cashPlace} onChange={(e) => set('cashPlace', e.target.value)} /></Field>
           <Field label="วัน-เวลาทำการ"><input className={inputCls} disabled={dis} value={f.cashHours} onChange={(e) => set('cashHours', e.target.value)} /></Field>
           <Field label="เบอร์ติดต่อเจ้าหน้าที่ / เหตุฉุกเฉิน" hint="แสดงท้ายหน้าประชาชนให้โทรหาได้"><input className={inputCls} disabled={dis} inputMode="tel" value={f.contactPhone ?? ''} onChange={(e) => set('contactPhone', e.target.value)} placeholder="เช่น 044-123456" /></Field>

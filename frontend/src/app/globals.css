@@ -449,3 +449,11 @@ select option { background-color: #ffffff; color: #111827; }
 .flex-wrap > .min-w-0.flex-1 { min-width: min(100%, 12rem); }
 /* ชื่อคน/รหัสไม่ตัดกลางชื่อ */
 .keep-name { white-space: nowrap; }
+
+/* หน้าเจ้าหน้าที่: ทรงเหลี่ยม + ขนาดกะทัดรัด (ปุ่ม/ป้ายสถานะไม่มนเต็ม) — ไม่กระทบหน้าประชาชน */
+.staff-square button.rounded-full,
+.staff-square a.rounded-full,
+.staff-square span.rounded-full.border { border-radius: 0.125rem !important; }
+.staff-square button.h-9 { height: 2rem; padding-inline: 0.75rem; font-size: 0.8125rem; }
+.staff-square button.h-8 { height: 1.75rem; padding-inline: 0.625rem; font-size: 0.75rem; }
+.staff-square select, .staff-square input:not([type=checkbox]):not([type=radio]), .staff-square textarea { border-radius: 0.25rem; }

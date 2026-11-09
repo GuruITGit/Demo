@@ -79,7 +79,7 @@ export function MarketBills({ canManage, orgName, initialStall, initialStatus }:
   return (
     <div className="space-y-5">
       {canManage && adding && (
-        <div className="grid gap-3 rounded-xl border border-gray-200 bg-white p-4 sm:grid-cols-5">
+        <div className="grid gap-3 rounded border border-gray-200 bg-white p-3 sm:grid-cols-5">
           <Field label="รหัสแผง"><input className={inputCls} value={draft.stallCode} onChange={(e) => setDraft({ ...draft, stallCode: e.target.value })} placeholder="A06" /></Field>
           <Field label="รายการ">
             <select className={inputCls} value={draft.kind} onChange={(e) => setDraft({ ...draft, kind: e.target.value as Bill['kind'] })}>
@@ -99,14 +99,14 @@ export function MarketBills({ canManage, orgName, initialStall, initialStatus }:
       <Panel
         title="รายการบิล"
         actions={<div className="flex flex-wrap items-center justify-end gap-3">
-            <span className="text-sm text-gray-500">ยอดยังไม่ชำระในรายการนี้ <b className="text-gray-800">{money(openTotal)}</b> บาท</span>
+            <span className="text-[13px] text-gray-500">ยอดยังไม่ชำระในรายการนี้ <b className="text-gray-800">{money(openTotal)}</b> บาท</span>
             {canManage && (<>
               <Button size="sm" variant="outline" onClick={() => setAdding((v) => !v)}>{adding ? 'ปิดฟอร์ม' : '+ เพิ่มบิลเอง'}</Button>
               <Button size="sm" loading={generate.isPending} title="ออกให้ทุกแผงที่มีผู้เช่า · ใช้งวดจากตัวกรอง (ไม่เลือก = เดือนปัจจุบัน) · กดซ้ำไม่ออกบิลซ้ำ" onClick={() => generate.mutate()}>ออกบิลค่าเช่า + ค่าขยะแผง · {periodLabel(genPeriod)}</Button>
             </>)}
           </div>}
       >
-        <div className="flex flex-wrap items-center gap-3 border-b border-gray-100 p-4">
+        <div className="flex flex-wrap items-center gap-3 border-b border-gray-100 p-3">
           <select value={status} onChange={(e) => setStatus(e.target.value)} className={`${inputCls} w-auto!`}>
             <option value="">ทุกสถานะ</option>
             {Object.entries(BILL_STATUS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
@@ -119,27 +119,27 @@ export function MarketBills({ canManage, orgName, initialStall, initialStatus }:
           <input value={stall} onChange={(e) => setStall(e.target.value)} placeholder="รหัสแผง เช่น A06" className={`${inputCls} w-40!`} />
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-[13px]">
             <thead className="bg-gray-50 text-left text-gray-600">
               <tr>
-                <th className="whitespace-nowrap px-4 py-2">แผง</th><th className="whitespace-nowrap px-4 py-2">ผู้เช่า</th><th className="whitespace-nowrap px-4 py-2">รายการ</th><th className="whitespace-nowrap px-4 py-2">งวด</th>
-                <th className="whitespace-nowrap px-4 py-2 text-right">ยอด (บาท)</th><th className="whitespace-nowrap px-4 py-2">สถานะ</th><th className="whitespace-nowrap px-4 py-2 text-right">จัดการ</th>
+                <th className="whitespace-nowrap px-3 py-1.5">แผง</th><th className="whitespace-nowrap px-3 py-1.5">ผู้เช่า</th><th className="whitespace-nowrap px-3 py-1.5">รายการ</th><th className="whitespace-nowrap px-3 py-1.5">งวด</th>
+                <th className="whitespace-nowrap px-3 py-1.5 text-right">ยอด (บาท)</th><th className="whitespace-nowrap px-3 py-1.5">สถานะ</th><th className="whitespace-nowrap px-3 py-1.5 text-right">จัดการ</th>
               </tr>
             </thead>
             <tbody>
               {rows.map((b) => (
                 <tr key={b.id} className="border-t border-gray-100 align-middle">
-                  <td className="whitespace-nowrap px-4 py-2 font-medium">{b.stallCode}</td>
-                  <td className="whitespace-nowrap px-4 py-2">{b.payerName}</td>
-                  <td className="whitespace-nowrap px-4 py-2">{KIND_LABEL[b.kind]}</td>
-                  <td className="whitespace-nowrap px-4 py-2">{periodLabel(b.period)}</td>
-                  <td className="whitespace-nowrap px-4 py-2 text-right tabular-nums">{money(b.amount)}</td>
-                  <td className="whitespace-nowrap px-4 py-2">
-                    <span className={`inline-block whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_TONE[b.status] ?? 'bg-gray-100 text-gray-600'}`}>{BILL_STATUS[b.status] ?? b.status}</span>
+                  <td className="whitespace-nowrap px-3 py-1.5 font-medium">{b.stallCode}</td>
+                  <td className="whitespace-nowrap px-3 py-1.5">{b.payerName}</td>
+                  <td className="whitespace-nowrap px-3 py-1.5">{KIND_LABEL[b.kind]}</td>
+                  <td className="whitespace-nowrap px-3 py-1.5">{periodLabel(b.period)}</td>
+                  <td className="whitespace-nowrap px-3 py-1.5 text-right tabular-nums">{money(b.amount)}</td>
+                  <td className="whitespace-nowrap px-3 py-1.5">
+                    <span className={`inline-block whitespace-nowrap rounded-sm px-2 py-0.5 text-xs font-medium ${STATUS_TONE[b.status] ?? 'bg-gray-100 text-gray-600'}`}>{BILL_STATUS[b.status] ?? b.status}</span>
                     {b.status === 'paid' && <span className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-gray-500"><span>{PAY_METHOD[b.paidMethod ?? ''] ?? b.paidMethod} · {b.receiptNo}</span><SlipButton url={b.slipUrl} method={b.paidMethod} /></span>}
                     {b.status === 'mismatch' && b.reviewNote && <span className="mt-1 block text-xs text-orange-700">{b.reviewNote}</span>}
                   </td>
-                  <td className="whitespace-nowrap px-4 py-2 text-right">
+                  <td className="whitespace-nowrap px-3 py-1.5 text-right">
                     {b.status === 'paid' ? (
                       <RowMenu items={[{ label: 'พิมพ์ใบเสร็จ', onClick: () => doPrint(b) }]} />
                     ) : canManage ? (
@@ -157,7 +157,7 @@ export function MarketBills({ canManage, orgName, initialStall, initialStatus }:
             </tbody>
           </table>
         </div>
-        {rows.length >= 500 && <p className="border-t border-gray-100 px-4 py-2 text-xs text-amber-700">แสดง 500 รายการล่าสุด — กรองตามสถานะ/งวด/แผงเพื่อดูส่วนที่เหลือ</p>}
+        {rows.length >= 500 && <p className="border-t border-gray-100 px-3 py-1.5 text-xs text-amber-700">แสดง 500 รายการล่าสุด — กรองตามสถานะ/งวด/แผงเพื่อดูส่วนที่เหลือ</p>}
       </Panel>
 
       <ConfirmDialog

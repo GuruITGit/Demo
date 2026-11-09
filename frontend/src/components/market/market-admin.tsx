@@ -111,7 +111,7 @@ export function MarketAdmin() {
 
 // ───────────────────────────── ภาพรวม
 function Overview({ sum, onGo }: { sum?: Summary; onGo: (t: Tab) => void }) {
-  if (!sum) return <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4" aria-busy="true">{[0, 1, 2, 3].map((i) => <div key={i} className="h-[104px] animate-pulse rounded-lg border border-gray-200 bg-gray-50" />)}</div>; // รอข้อมูลมาก่อน ไม่โชว์เลข 0 แล้วค่อยเด้งเป็นค่าจริง
+  if (!sum) return <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4" aria-busy="true">{[0, 1, 2, 3].map((i) => <div key={i} className="h-[104px] animate-pulse rounded border border-gray-200 bg-gray-50" />)}</div>; // รอข้อมูลมาก่อน ไม่โชว์เลข 0 แล้วค่อยเด้งเป็นค่าจริง
   const by = (s: string) => sum?.byStatus.find((x) => x.status === s);
   const open = (sum?.byStatus ?? []).filter((x) => x.status !== 'paid');
   const openTotal = open.reduce((a, x) => a + x.total, 0);
@@ -196,12 +196,12 @@ function Plan({ canManage, onBills }: { canManage: boolean; onBills: (code: stri
             <Button size="sm" variant={mode === 'zone' ? 'default' : 'outline'} onClick={() => setMode(mode === 'zone' ? 'none' : 'zone')}>ตั้งค่าเช่าทั้งโซน</Button>
           </>
         )}
-        <span className="ml-auto text-sm text-gray-500">ว่าง {counts.available} · จอง {counts.reserved} · มีผู้เช่า {counts.occupied}</span>
+        <span className="ml-auto text-[13px] text-gray-500">ว่าง {counts.available} · จอง {counts.reserved} · มีผู้เช่า {counts.occupied}</span>
       </div>
 
       {canManage && mode === 'one' && (
         <Panel title="เพิ่มแผงทีละล็อก">
-          <div className="grid gap-3 p-4 sm:grid-cols-4">
+          <div className="grid gap-3 p-3 sm:grid-cols-4">
             <Field label="รหัสแผง" hint="เช่น F01"><input className={inputCls} value={one.stallCode} onChange={(e) => setOne({ ...one, stallCode: e.target.value })} /></Field>
             <Field label="โซน" hint="ว่าง = ตัดจากรหัส"><input className={inputCls} value={one.zone} onChange={(e) => setOne({ ...one, zone: e.target.value })} /></Field>
             <Field label="ค่าเช่าต่อเดือน (บาท)"><input type="number" min={0} className={inputCls} value={one.monthlyRate} onChange={(e) => setOne({ ...one, monthlyRate: e.target.value })} /></Field>
@@ -211,7 +211,7 @@ function Plan({ canManage, onBills }: { canManage: boolean; onBills: (code: stri
       )}
       {canManage && mode === 'bulk' && (
         <Panel title="เพิ่มแผงเป็นช่วง">
-          <div className="grid gap-3 p-4 sm:grid-cols-5">
+          <div className="grid gap-3 p-3 sm:grid-cols-5">
             <Field label="โซน"><input className={inputCls} value={bulk.zone} onChange={(e) => setBulk({ ...bulk, zone: e.target.value })} placeholder="เช่น F" /></Field>
             <Field label="ล็อกที่"><input type="number" min={1} className={inputCls} value={bulk.from} onChange={(e) => setBulk({ ...bulk, from: e.target.value })} /></Field>
             <Field label="ถึงล็อกที่"><input type="number" min={1} className={inputCls} value={bulk.to} onChange={(e) => setBulk({ ...bulk, to: e.target.value })} /></Field>
@@ -223,7 +223,7 @@ function Plan({ canManage, onBills }: { canManage: boolean; onBills: (code: stri
       )}
       {canManage && mode === 'zone' && (
         <Panel title="ตั้งค่าเช่าทั้งโซน">
-          <div className="grid gap-3 p-4 sm:grid-cols-4">
+          <div className="grid gap-3 p-3 sm:grid-cols-4">
             <Field label="โซน">
               <select className={inputCls} value={zoneRate.zone} onChange={(e) => setZoneRate({ ...zoneRate, zone: e.target.value })}>
                 <option value="">— เลือกโซน —</option>
@@ -252,12 +252,12 @@ function Plan({ canManage, onBills }: { canManage: boolean; onBills: (code: stri
       )}
 
       {isLoading ? <Empty>กำลังโหลด…</Empty> : byZone.length === 0 ? <Empty>ยังไม่มีแผงในผัง{canManage ? ' — กด “เพิ่มแผง” หรือ “เพิ่มเป็นช่วง”' : ''}</Empty> : byZone.map(([zone, list]) => (
-        <section key={zone} className="rounded-xl border border-gray-200 bg-white p-4">
-          <h2 className="mb-3 font-semibold text-gray-800">แถว {zone} <span className="text-sm font-normal text-gray-400">· {list.length} ล็อก</span></h2>
+        <section key={zone} className="rounded border border-gray-200 bg-white p-3">
+          <h2 className="mb-3 font-semibold text-gray-800">แถว {zone} <span className="text-[13px] font-normal text-gray-400">· {list.length} ล็อก</span></h2>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-5 lg:grid-cols-10">
             {list.map((s) => (
               <button type="button" key={s.id} title={s.tenantName ?? ''} onClick={() => setEditing(s)}
-                className={`rounded-lg border p-2 text-center text-xs hover:ring-2 hover:ring-blue-300 ${STALL_TONE[s.status]} ${editing?.id === s.id ? 'ring-2 ring-blue-500' : ''}`}>
+                className={`rounded border p-2 text-center text-xs hover:ring-2 hover:ring-blue-300 ${STALL_TONE[s.status]} ${editing?.id === s.id ? 'ring-2 ring-blue-500' : ''}`}>
                 <div className="font-bold">{s.stallCode}</div>
                 <div>{STALL_LABEL[s.status]}</div>
                 <div className="truncate text-[11px] opacity-80">{s.tenantName ?? '—'}</div>
@@ -284,8 +284,8 @@ function StallEditor({ stall, canManage, saving, onClose, onBills, onDelete, onS
   const [rate, setRate] = useState(String(Number(stall.monthlyRate)));
   const needName = status !== 'available' && !tenant.trim();
   return (
-    <section className="rounded-xl border border-blue-300 bg-white p-4">
-      <h2 className="mb-3 font-semibold text-gray-800">แผง {stall.stallCode} <span className="text-sm font-normal text-gray-500">· โซน {stall.zone}</span></h2>
+    <section className="rounded border border-blue-300 bg-white p-3">
+      <h2 className="mb-3 font-semibold text-gray-800">แผง {stall.stallCode} <span className="text-[13px] font-normal text-gray-500">· โซน {stall.zone}</span></h2>
       <div className="grid gap-3 sm:grid-cols-3">
         <Field label="สถานะ">
           <select value={status} disabled={!canManage} onChange={(e) => setStatus(e.target.value as Stall['status'])} className={inputCls}>
@@ -299,7 +299,7 @@ function StallEditor({ stall, canManage, saving, onClose, onBills, onDelete, onS
           <input type="number" min={0} value={rate} disabled={!canManage} onChange={(e) => setRate(e.target.value)} className={inputCls} />
         </Field>
       </div>
-      {stall.contactPhone && <p className="mt-2 text-sm text-gray-500">เบอร์ติดต่อผู้จอง: {stall.contactPhone}</p>}
+      {stall.contactPhone && <p className="mt-2 text-[13px] text-gray-500">เบอร์ติดต่อผู้จอง: {stall.contactPhone}</p>}
       <div className="mt-4 flex flex-wrap justify-between gap-2">
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={onBills}>ดูบิลของแผงนี้</Button>
@@ -329,25 +329,25 @@ function Dues({ sum, onBills }: { sum?: Summary; onBills: (code: string) => void
   const printDues = () => { if (!printReport({ orgName, title: 'รายงานผู้ค้างชำระค่าแผงตลาด', subtitle: `ข้อมูล ณ วันที่พิมพ์ · ผู้ค้างชำระ ${rows.length} แผง${min ? ` · ค้างตั้งแต่ ${min} เดือนขึ้นไป` : ''}${q ? ` · ค้นหา “${q}”` : ''}`, columns: [{ label: 'รหัสแผง' }, { label: 'ผู้เช่า' }, { label: 'ค้างมา (เดือน)', align: 'right' }, { label: 'ค้างตั้งแต่' }, { label: 'ยอดค้าง (บาท)', align: 'right' }], rows: rows.map((r) => [r.stallCode, r.payerName, r.months, r.oldest ? periodLabel(r.oldest) : '—', money(r.total)]), totalRow: ['', 'รวมทั้งสิ้น', '', '', money(total)] })) toast.error('เปิดหน้าพิมพ์ไม่ได้ — อนุญาตป็อปอัปของเว็บนี้แล้วลองใหม่'); };
   return (
     <Panel
-      title={<>ผู้ค้างชำระ <span className="text-sm font-normal text-gray-500">{rows.length} แผง · รวม {money(total)} บาท</span></>}
+      title={<>ผู้ค้างชำระ <span className="text-[13px] font-normal text-gray-500">{rows.length} แผง · รวม {money(total)} บาท</span></>}
       actions={<Button size="sm" variant="outline" onClick={printDues}>พิมพ์รายงาน</Button>}
     >
       <div className="mb-2"><PlaceFilter value={place} onChange={setPlace} /></div>
       <DuesFilter min={min} setMin={setMin} q={q} setQ={setQ} placeholder="ค้นหาแผงหรือชื่อผู้เช่า" />
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full text-[13px]">
           <thead className="bg-gray-50 text-left text-gray-600">
-            <tr><th className="whitespace-nowrap px-4 py-2">แผง</th><th className="whitespace-nowrap px-4 py-2">ผู้เช่า</th><th className="whitespace-nowrap px-4 py-2 text-right">ค้างมา</th><th className="whitespace-nowrap px-4 py-2">ค้างตั้งแต่</th><th className="whitespace-nowrap px-4 py-2 text-right">ยอดค้าง (บาท)</th><th className="whitespace-nowrap px-4 py-2 no-print" /></tr>
+            <tr><th className="whitespace-nowrap px-3 py-1.5">แผง</th><th className="whitespace-nowrap px-3 py-1.5">ผู้เช่า</th><th className="whitespace-nowrap px-3 py-1.5 text-right">ค้างมา</th><th className="whitespace-nowrap px-3 py-1.5">ค้างตั้งแต่</th><th className="whitespace-nowrap px-3 py-1.5 text-right">ยอดค้าง (บาท)</th><th className="whitespace-nowrap px-3 py-1.5 no-print" /></tr>
           </thead>
           <tbody>
             {rows.map((r) => (
               <tr key={r.stallCode} className="border-t border-gray-100">
-                <td className="whitespace-nowrap px-4 py-2 font-medium">{r.stallCode}</td>
-                <td className="whitespace-nowrap px-4 py-2">{r.payerName}</td>
-                <td className={cn('whitespace-nowrap px-4 py-2 text-right', dueTone(r.months))}>{r.months} เดือน</td>
-                <td className="whitespace-nowrap px-4 py-2 text-gray-600">{r.oldest ? periodLabel(r.oldest) : '—'}</td>
-                <td className="whitespace-nowrap px-4 py-2 text-right font-semibold">{money(r.total)}</td>
-                <td className="whitespace-nowrap px-4 py-2 no-print"><Button size="sm" variant="outline" onClick={() => onBills(r.stallCode)}>ดูบิล / รับชำระ</Button></td>
+                <td className="whitespace-nowrap px-3 py-1.5 font-medium">{r.stallCode}</td>
+                <td className="whitespace-nowrap px-3 py-1.5">{r.payerName}</td>
+                <td className={cn('whitespace-nowrap px-3 py-1.5 text-right', dueTone(r.months))}>{r.months} เดือน</td>
+                <td className="whitespace-nowrap px-3 py-1.5 text-gray-600">{r.oldest ? periodLabel(r.oldest) : '—'}</td>
+                <td className="whitespace-nowrap px-3 py-1.5 text-right font-semibold">{money(r.total)}</td>
+                <td className="whitespace-nowrap px-3 py-1.5 no-print"><Button size="sm" variant="outline" onClick={() => onBills(r.stallCode)}>ดูบิล / รับชำระ</Button></td>
               </tr>
             ))}
             {!rows.length && <tr><td colSpan={6}><Empty>{min || q ? 'ไม่มีรายการตามเงื่อนไขที่เลือก' : 'ไม่มียอดค้างชำระ'}</Empty></td></tr>}
@@ -393,7 +393,7 @@ function TenantsOutside() {
     onError: (e) => { toast.error(getErrorMessage(e)); setDel(null); },
   });
   return (
-    <Panel title={<>ผู้เช่าแผงลอย <span className="text-sm font-normal text-gray-500">{list.length} ราย</span></>}>
+    <Panel title={<>ผู้เช่าแผงลอย <span className="text-[13px] font-normal text-gray-500">{list.length} ราย</span></>}>
       <div className="mb-3">
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="ค้นหาชื่อ รหัสผู้เช่า เบอร์ หรือจุด" className={inputCls} aria-label="ค้นหาผู้เช่าแผงลอย" />
         <div className="mt-2 flex flex-wrap gap-2">
@@ -403,20 +403,20 @@ function TenantsOutside() {
         </div>
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full text-[13px]">
           <thead className="bg-gray-50 text-left text-gray-600">
-            <tr><th className="whitespace-nowrap px-4 py-2">รหัสผู้เช่า</th><th className="whitespace-nowrap px-4 py-2">ชื่อ</th><th className="whitespace-nowrap px-4 py-2">เบอร์</th><th className="whitespace-nowrap px-4 py-2">จุด</th><th className="whitespace-nowrap px-4 py-2">เริ่มเช่า</th><th className="whitespace-nowrap px-4 py-2">ค้างชำระ</th><th className="whitespace-nowrap px-4 py-2" /></tr>
+            <tr><th className="whitespace-nowrap px-3 py-1.5">รหัสผู้เช่า</th><th className="whitespace-nowrap px-3 py-1.5">ชื่อ</th><th className="whitespace-nowrap px-3 py-1.5">เบอร์</th><th className="whitespace-nowrap px-3 py-1.5">จุด</th><th className="whitespace-nowrap px-3 py-1.5">เริ่มเช่า</th><th className="whitespace-nowrap px-3 py-1.5">ค้างชำระ</th><th className="whitespace-nowrap px-3 py-1.5" /></tr>
           </thead>
           <tbody>
             {list.filter((r) => kind === 'all' || r.tenancyType === kind).map((r) => (
               <tr key={r.id} className="border-t border-gray-100">
-                <td className="whitespace-nowrap px-4 py-2 font-medium">{r.appCode}</td>
-                <td className="whitespace-nowrap px-4 py-2">{r.applicantName} <span className="text-xs text-gray-500">({r.tenancyType === 'temporary' ? 'ชั่วคราว' : 'ประจำ'})</span></td>
-                <td className="whitespace-nowrap px-4 py-2">{r.phone}</td>
-                <td className="whitespace-nowrap px-4 py-2">{r.location?.name ?? '—'}</td>
-                <td className="whitespace-nowrap px-4 py-2 text-gray-600">{r.startDate ? new Date(`${r.startDate}T00:00:00`).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' }) : '—'}</td>
-                <td className={cn('whitespace-nowrap px-4 py-2', r.openDues.count > 0 && 'font-medium text-red-600')}>{r.openDues.count > 0 ? `${r.openDues.count} รายการ · ${money(r.openDues.total)} บาท` : 'ไม่มียอดค้าง'}</td>
-                <td className="whitespace-nowrap px-4 py-2 text-right">
+                <td className="whitespace-nowrap px-3 py-1.5 font-medium">{r.appCode}</td>
+                <td className="whitespace-nowrap px-3 py-1.5">{r.applicantName} <span className="text-xs text-gray-500">({r.tenancyType === 'temporary' ? 'ชั่วคราว' : 'ประจำ'})</span></td>
+                <td className="whitespace-nowrap px-3 py-1.5">{r.phone}</td>
+                <td className="whitespace-nowrap px-3 py-1.5">{r.location?.name ?? '—'}</td>
+                <td className="whitespace-nowrap px-3 py-1.5 text-gray-600">{r.startDate ? new Date(`${r.startDate}T00:00:00`).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' }) : '—'}</td>
+                <td className={cn('whitespace-nowrap px-3 py-1.5', r.openDues.count > 0 && 'font-medium text-red-600')}>{r.openDues.count > 0 ? `${r.openDues.count} รายการ · ${money(r.openDues.total)} บาท` : 'ไม่มียอดค้าง'}</td>
+                <td className="whitespace-nowrap px-3 py-1.5 text-right">
                   <div className="flex justify-end gap-2">
                     <Button size="sm" variant="outline" onClick={() => setQrFor(r)}>QR จ่ายเงิน</Button>
                     <Button size="sm" variant="outline" disabled={r.openDues.count > 0} title={r.openDues.count > 0 ? 'ต้องชำระยอดค้างให้ครบก่อน' : undefined} onClick={() => setDel(r)}>ลบผู้เช่า</Button>
@@ -429,10 +429,10 @@ function TenantsOutside() {
         </table>
       </div>
       {qrFor && (
-        <div className="mt-4 flex flex-col items-center gap-2 rounded-xl border border-gray-200 p-4 text-center">
+        <div className="mt-4 flex flex-col items-center gap-2 rounded border border-gray-200 p-3 text-center">
           <QrSvg text={qrItem(qrFor).text} label={qrItem(qrFor).title} className="w-40" />
           <b>{qrFor.appCode} · {qrFor.applicantName}</b>
-          <p className="text-sm text-gray-500">สแกนแล้วพิมพ์ชื่อผู้เช่าเพื่อดูยอดและจ่ายเงิน</p>
+          <p className="text-[13px] text-gray-500">สแกนแล้วพิมพ์ชื่อผู้เช่าเพื่อดูยอดและจ่ายเงิน</p>
           <div className="flex gap-2">
             <Button size="sm" variant="outline" onClick={() => downloadQrPng(qrItem(qrFor), 'qr-outside').catch((e) => toast.error(getErrorMessage(e)))}>บันทึกรูป</Button>
             <Button size="sm" variant="ghost" onClick={() => setQrFor(null)}>ปิด</Button>
@@ -489,7 +489,7 @@ function TenantsStalls({ sum }: { sum?: Summary }) {
   const printTenants = () => { if (!printReport({ orgName, title: 'รายงานทะเบียนผู้เช่าแผงตลาด', subtitle: `สถานะ: ${st === 'all' ? 'ทั้งหมด' : STALL_LABEL[st]}${q ? ` · ค้นหา “${q}”` : ''}`, columns: [{ label: 'แผง' }, { label: 'โซน', align: 'center' }, { label: 'สถานะ' }, { label: 'ผู้เช่า' }, { label: 'เบอร์ติดต่อ' }, { label: 'ค่าเช่า/เดือน (บาท)', align: 'right' }, { label: 'ยอดค้างชำระ', align: 'right' }], rows: rows.map((s) => { const a = arrears.get(s.stallCode); return [s.stallCode, s.zone, STALL_LABEL[s.status], s.tenantName || '—', s.contactPhone || '—', money(Number(s.monthlyRate)), a ? `${a.months} เดือน · ${money(a.total)}` : '—']; }), totalRow: ['', '', '', '', 'รวมค่าเช่า/เดือน', money(rows.reduce((n, s) => n + (s.status === 'available' ? 0 : Number(s.monthlyRate)), 0)), ''] })) toast.error('เปิดหน้าพิมพ์ไม่ได้ — อนุญาตป็อปอัปของเว็บนี้แล้วลองใหม่'); };
   return (
     <Panel
-      title={<>ผู้เช่าทั้งหมด <span className="text-sm font-normal text-gray-500">{rows.length} แผง</span></>}
+      title={<>ผู้เช่าทั้งหมด <span className="text-[13px] font-normal text-gray-500">{rows.length} แผง</span></>}
       actions={<Button size="sm" variant="outline" disabled={!stalls.length} onClick={printTenants}>พิมพ์รายงาน</Button>}
     >
       <ConfirmDialog
@@ -527,11 +527,11 @@ function TenantsStalls({ sum }: { sum?: Summary }) {
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="ค้นหาแผง ชื่อ หรือเบอร์" className={cn(inputCls, 'min-w-[12rem] flex-1')} />
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full text-[13px]">
           <thead className="bg-gray-50 text-left text-gray-600">
             <tr>
-              <th className="whitespace-nowrap px-4 py-2">แผง</th><th className="whitespace-nowrap px-4 py-2">โซน</th><th className="whitespace-nowrap px-4 py-2">สถานะ</th><th className="whitespace-nowrap px-4 py-2">ผู้เช่า</th>
-              <th className="whitespace-nowrap px-4 py-2">เบอร์ติดต่อ</th><th className="whitespace-nowrap px-4 py-2 text-right">ค่าเช่า/เดือน</th><th className="whitespace-nowrap px-4 py-2">ช่วงเช่า</th><th className="whitespace-nowrap px-4 py-2 text-right">ค้างชำระ</th><th className="whitespace-nowrap px-4 py-2" />
+              <th className="whitespace-nowrap px-3 py-1.5">แผง</th><th className="whitespace-nowrap px-3 py-1.5">โซน</th><th className="whitespace-nowrap px-3 py-1.5">สถานะ</th><th className="whitespace-nowrap px-3 py-1.5">ผู้เช่า</th>
+              <th className="whitespace-nowrap px-3 py-1.5">เบอร์ติดต่อ</th><th className="whitespace-nowrap px-3 py-1.5 text-right">ค่าเช่า/เดือน</th><th className="whitespace-nowrap px-3 py-1.5">ช่วงเช่า</th><th className="whitespace-nowrap px-3 py-1.5 text-right">ค้างชำระ</th><th className="whitespace-nowrap px-3 py-1.5" />
             </tr>
           </thead>
           <tbody>
@@ -539,15 +539,15 @@ function TenantsStalls({ sum }: { sum?: Summary }) {
               const a = arrears.get(s.stallCode);
               return (
                 <tr key={s.id} className="border-t border-gray-100">
-                  <td className="whitespace-nowrap px-4 py-2 font-medium">{s.stallCode}</td>
-                  <td className="whitespace-nowrap px-4 py-2">{s.zone}</td>
-                  <td className="whitespace-nowrap px-4 py-2"><span className={cn('inline-block whitespace-nowrap rounded-full border px-2 py-0.5 text-xs', STALL_TONE[s.status])}>{STALL_LABEL[s.status]}</span></td>
-                  <td className="whitespace-nowrap px-4 py-2">{s.tenantName || '—'}</td>
-                  <td className="whitespace-nowrap px-4 py-2">{s.contactPhone || '—'}</td>
-                  <td className="whitespace-nowrap px-4 py-2 text-right">{money(Number(s.monthlyRate))}</td>
-                  <td className="whitespace-nowrap px-4 py-2 text-gray-600">{s.reserveStartDate ? `${fmtDate(s.reserveStartDate)}${s.reserveDays ? ` · ${s.reserveDays} วัน` : ''}` : '—'}</td>
-                  <td className="whitespace-nowrap px-4 py-2 text-right">{a ? <span className={dueTone(a.months)}>{a.months} เดือน · {money(a.total)} บาท</span> : '—'}</td>
-                  <td className="whitespace-nowrap px-4 py-2 text-right">
+                  <td className="whitespace-nowrap px-3 py-1.5 font-medium">{s.stallCode}</td>
+                  <td className="whitespace-nowrap px-3 py-1.5">{s.zone}</td>
+                  <td className="whitespace-nowrap px-3 py-1.5"><span className={cn('inline-block whitespace-nowrap rounded-sm border px-2 py-0.5 text-xs', STALL_TONE[s.status])}>{STALL_LABEL[s.status]}</span></td>
+                  <td className="whitespace-nowrap px-3 py-1.5">{s.tenantName || '—'}</td>
+                  <td className="whitespace-nowrap px-3 py-1.5">{s.contactPhone || '—'}</td>
+                  <td className="whitespace-nowrap px-3 py-1.5 text-right">{money(Number(s.monthlyRate))}</td>
+                  <td className="whitespace-nowrap px-3 py-1.5 text-gray-600">{s.reserveStartDate ? `${fmtDate(s.reserveStartDate)}${s.reserveDays ? ` · ${s.reserveDays} วัน` : ''}` : '—'}</td>
+                  <td className="whitespace-nowrap px-3 py-1.5 text-right">{a ? <span className={dueTone(a.months)}>{a.months} เดือน · {money(a.total)} บาท</span> : '—'}</td>
+                  <td className="whitespace-nowrap px-3 py-1.5 text-right">
                     <RowMenu items={[
                       { label: 'แก้ไขแผง / ดูรายละเอียด', onClick: () => setEditing(s) },
                       { label: 'ลบแผง', danger: true, onClick: () => setDelTarget(s) },
@@ -610,15 +610,15 @@ function StallQr({ orgName }: { orgName: string }) {
         </>
       }
     >
-      <p className="border-b border-gray-100 px-4 py-3 text-sm text-gray-500">
+      <p className="border-b border-gray-100 px-3 py-2 text-[13px] text-gray-500">
         {kind === 'stall'
           ? 'ติดหน้าแผง — ประชาชนสแกนแล้วเห็นชื่อผู้เช่า รหัสแผง และยอดค้างทันที ไม่ต้องพิมพ์ · QR มีชื่อกับรหัสแผง ไม่มียอดเงิน'
           : 'แผงลอย — QR เก็บรหัสผู้เช่าและชื่อไว้ สแกนแล้วหน้าจ่ายเงินแสดงยอดให้ทันที · ผู้เช่าที่ถูกลบจะไม่มียอดให้ดู'}
       </p>
       {items.length === 0 ? <Empty>{kind === 'stall' ? 'ไม่มีแผง' : 'ยังไม่มีผู้เช่าแผงลอยที่อนุมัติแล้ว'}</Empty> : (
-        <div className="grid grid-cols-2 gap-3 p-4 sm:grid-cols-4 lg:grid-cols-6">
+        <div className="grid grid-cols-2 gap-3 p-3 sm:grid-cols-4 lg:grid-cols-6">
           {items.map((i) => (
-            <article key={i.code} className={`rounded-xl border p-3 text-center ${picked.has(i.code) ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200'}`}>
+            <article key={i.code} className={`rounded border p-3 text-center ${picked.has(i.code) ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200'}`}>
               <button type="button" onClick={() => toggle(i.code)} className="block w-full" aria-pressed={picked.has(i.code)} aria-label={`เลือก QR ${i.title}`}>
                 <QrSvg text={i.text} label={i.title} className="mx-auto w-full max-w-[140px]" />
               </button>

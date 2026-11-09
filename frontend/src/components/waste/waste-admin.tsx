@@ -84,7 +84,7 @@ export function WasteAdmin() {
 }
 
 function Overview({ sum, onGo }: { sum?: Summary; onGo: (t: Tab) => void }) {
-  if (!sum) return <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4" aria-busy="true">{[0, 1, 2, 3].map((i) => <div key={i} className="h-[104px] animate-pulse rounded-lg border border-gray-200 bg-gray-50" />)}</div>; // รอข้อมูลมาก่อน ไม่โชว์เลข 0 แล้วค่อยเด้งเป็นค่าจริง
+  if (!sum) return <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4" aria-busy="true">{[0, 1, 2, 3].map((i) => <div key={i} className="h-[104px] animate-pulse rounded border border-gray-200 bg-gray-50" />)}</div>; // รอข้อมูลมาก่อน ไม่โชว์เลข 0 แล้วค่อยเด้งเป็นค่าจริง
   const by = (s: string) => sum?.byStatus.find((x) => x.status === s);
   return (
     <div className="space-y-5">
@@ -207,7 +207,7 @@ function Households({ canManage, onBills }: { canManage: boolean; onBills: (ref:
         )}
       >
         {editId && canManage && (
-          <div className="grid gap-3 border-b border-gray-100 p-4 sm:grid-cols-6">
+          <div className="grid gap-3 border-b border-gray-100 p-3 sm:grid-cols-6">
             <Field label="ชื่อผู้รับบิล" className="sm:col-span-2" hint="ประชาชนต้องกรอกชื่อนี้ให้ตรงตอนจ่าย"><input className={inputCls} value={form.holderName} onChange={(e) => setForm({ ...form, holderName: e.target.value })} /></Field>
             <Field label="บ้านเลขที่"><input className={inputCls} value={form.houseNo} onChange={(e) => setForm({ ...form, houseNo: e.target.value })} placeholder="18 หรือ 12/3" /></Field>
             <Field label="หมู่ที่"><input className={inputCls} inputMode="numeric" value={form.moo} onChange={(e) => setForm({ ...form, moo: e.target.value.replace(/\D/g, '') })} /></Field>
@@ -219,30 +219,30 @@ function Households({ canManage, onBills }: { canManage: boolean; onBills: (ref:
             </div>
           </div>
         )}
-        <form onSubmit={search} className="flex flex-wrap items-center gap-2 border-b border-gray-100 p-4">
+        <form onSubmit={search} className="flex flex-wrap items-center gap-2 border-b border-gray-100 p-3">
           <input value={input} onChange={(e) => setInput(e.target.value)} placeholder="บ้านเลขที่และหมู่ เช่น 18 หมู่ 2 · ชื่อ · เบอร์โทร · หมู่ 3" className={`${inputCls} min-w-[260px] flex-1`} />
           <Button type="submit">ค้นหา</Button>
           {q && <Button type="button" variant="ghost" onClick={() => { setInput(''); setQ(''); }}>ล้าง</Button>}
-          <span className="text-sm text-gray-500">{data.length} หลัง{data.length >= 500 ? ' (แสดง 500 แรก)' : ''}</span>
+          <span className="text-[13px] text-gray-500">{data.length} หลัง{data.length >= 500 ? ' (แสดง 500 แรก)' : ''}</span>
         </form>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-[13px]">
             <thead className="bg-gray-50 text-left text-gray-600">
               <tr>
-                <th className="whitespace-nowrap px-4 py-2">รหัส</th><th className="whitespace-nowrap px-4 py-2">ผู้รับบิล</th><th className="whitespace-nowrap px-4 py-2">บ้านเลขที่</th><th className="whitespace-nowrap px-4 py-2">เบอร์โทร</th>
-                <th className="whitespace-nowrap px-4 py-2 text-right">ค่าขยะ/เดือน</th><th className="whitespace-nowrap px-4 py-2 text-right">ค้างชำระ</th><th className="whitespace-nowrap px-4 py-2" />
+                <th className="whitespace-nowrap px-3 py-1.5">รหัส</th><th className="whitespace-nowrap px-3 py-1.5">ผู้รับบิล</th><th className="whitespace-nowrap px-3 py-1.5">บ้านเลขที่</th><th className="whitespace-nowrap px-3 py-1.5">เบอร์โทร</th>
+                <th className="whitespace-nowrap px-3 py-1.5 text-right">ค่าขยะ/เดือน</th><th className="whitespace-nowrap px-3 py-1.5 text-right">ค้างชำระ</th><th className="whitespace-nowrap px-3 py-1.5" />
               </tr>
             </thead>
             <tbody>
               {data.map((h) => (
                 <tr key={h.id} className="border-t border-gray-100">
-                  <td className="whitespace-nowrap px-4 py-2 font-medium">{h.householdRef}</td>
-                  <td className="whitespace-nowrap px-4 py-2">{h.holderName}</td>
-                  <td className="whitespace-nowrap px-4 py-2">{h.houseNo} หมู่ {Number(h.moo)}</td>
-                  <td className="whitespace-nowrap px-4 py-2">{h.phone ?? '—'}</td>
-                  <td className="whitespace-nowrap px-4 py-2 text-right">{h.monthlyFee != null ? <span title="ราคาเฉพาะครัวเรือน">{money(h.monthlyFee)} *</span> : <span className="text-gray-400">ราคากลาง</span>}</td>
-                  <td className="whitespace-nowrap px-4 py-2 text-right">{h.owedTotal ? <span className="font-semibold text-red-600">{money(h.owedTotal)} ({h.owedMonths} เดือน)</span> : <span className="text-gray-400">—</span>}</td>
-                  <td className="whitespace-nowrap px-4 py-2">
+                  <td className="whitespace-nowrap px-3 py-1.5 font-medium">{h.householdRef}</td>
+                  <td className="whitespace-nowrap px-3 py-1.5">{h.holderName}</td>
+                  <td className="whitespace-nowrap px-3 py-1.5">{h.houseNo} หมู่ {Number(h.moo)}</td>
+                  <td className="whitespace-nowrap px-3 py-1.5">{h.phone ?? '—'}</td>
+                  <td className="whitespace-nowrap px-3 py-1.5 text-right">{h.monthlyFee != null ? <span title="ราคาเฉพาะครัวเรือน">{money(h.monthlyFee)} *</span> : <span className="text-gray-400">ราคากลาง</span>}</td>
+                  <td className="whitespace-nowrap px-3 py-1.5 text-right">{h.owedTotal ? <span className="font-semibold text-red-600">{money(h.owedTotal)} ({h.owedMonths} เดือน)</span> : <span className="text-gray-400">—</span>}</td>
+                  <td className="whitespace-nowrap px-3 py-1.5">
                     <div className="flex justify-end gap-2">
                       <Button size="sm" variant="outline" onClick={() => onBills(h.householdRef)}>บิล</Button>
                       {canManage && <Button size="sm" variant="outline" onClick={() => startEdit(h)}>แก้ไข</Button>}
@@ -318,7 +318,7 @@ function Bills({ canManage, orgName, seedQ, seedStatus }: { canManage: boolean; 
   return (
     <div className="space-y-5">
       {canManage && adding && (
-        <div className="grid gap-3 rounded-xl border border-gray-200 bg-white p-4 sm:grid-cols-4">
+        <div className="grid gap-3 rounded border border-gray-200 bg-white p-3 sm:grid-cols-4">
           <Field label="รหัสครัวเรือน"><input className={inputCls} value={draft.householdRef} onChange={(e) => setDraft({ ...draft, householdRef: e.target.value })} placeholder="HH-014" /></Field>
           <Field label="งวด">
             <select className={inputCls} value={draft.period} onChange={(e) => setDraft({ ...draft, period: e.target.value })}>
@@ -331,13 +331,13 @@ function Bills({ canManage, orgName, seedQ, seedStatus }: { canManage: boolean; 
       )}
 
       <Panel title="รายการบิล" actions={<div className="flex flex-wrap items-center justify-end gap-3">
-            <span className="text-sm text-gray-500">ยอดยังไม่ชำระในรายการนี้ <b className="text-gray-800">{money(openTotal)}</b> บาท</span>
+            <span className="text-[13px] text-gray-500">ยอดยังไม่ชำระในรายการนี้ <b className="text-gray-800">{money(openTotal)}</b> บาท</span>
             {canManage && (<>
               <Button size="sm" variant="outline" onClick={() => setAdding((v) => !v)}>{adding ? 'ปิดฟอร์ม' : '+ เพิ่มบิลเอง'}</Button>
               <Button size="sm" loading={generate.isPending} title="ออกให้ทุกครัวเรือนในทะเบียน · ใช้งวดจากตัวกรอง (ไม่เลือก = เดือนปัจจุบัน) · กดซ้ำไม่ออกบิลซ้ำ" onClick={() => generate.mutate()}>ออกบิลค่าขยะบ้านทุกครัวเรือน · {periodLabel(genPeriod)}</Button>
             </>)}
           </div>}>
-        <form onSubmit={(e) => { e.preventDefault(); setQ(input.trim()); }} className="flex flex-wrap items-center gap-2 border-b border-gray-100 p-4">
+        <form onSubmit={(e) => { e.preventDefault(); setQ(input.trim()); }} className="flex flex-wrap items-center gap-2 border-b border-gray-100 p-3">
           <input value={input} onChange={(e) => setInput(e.target.value)} placeholder="บ้านเลขที่และหมู่ · ชื่อ · เบอร์ · รหัส (เว้นว่าง = ล่าสุด)" className={`${inputCls} min-w-[240px] flex-1`} />
           <select value={status} onChange={(e) => setStatus(e.target.value)} className={`${inputCls} w-auto!`}>
             <option value="">ทุกสถานะ</option>
@@ -350,24 +350,24 @@ function Bills({ canManage, orgName, seedQ, seedStatus }: { canManage: boolean; 
           <Button type="submit">ค้นหา</Button>
         </form>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-[13px]">
             <thead className="bg-gray-50 text-left text-gray-600">
-              <tr><th className="whitespace-nowrap px-4 py-2">รหัส</th><th className="whitespace-nowrap px-4 py-2">ผู้รับบิล</th><th className="whitespace-nowrap px-4 py-2">บ้านเลขที่</th><th className="whitespace-nowrap px-4 py-2">งวด</th><th className="whitespace-nowrap px-4 py-2 text-right">ยอด (บาท)</th><th className="whitespace-nowrap px-4 py-2">สถานะ</th><th className="whitespace-nowrap px-4 py-2 text-right">จัดการ</th></tr>
+              <tr><th className="whitespace-nowrap px-3 py-1.5">รหัส</th><th className="whitespace-nowrap px-3 py-1.5">ผู้รับบิล</th><th className="whitespace-nowrap px-3 py-1.5">บ้านเลขที่</th><th className="whitespace-nowrap px-3 py-1.5">งวด</th><th className="whitespace-nowrap px-3 py-1.5 text-right">ยอด (บาท)</th><th className="whitespace-nowrap px-3 py-1.5">สถานะ</th><th className="whitespace-nowrap px-3 py-1.5 text-right">จัดการ</th></tr>
             </thead>
             <tbody>
               {data.map((b) => (
                 <tr key={b.id} className="border-t border-gray-100 align-middle">
-                  <td className="whitespace-nowrap px-4 py-2 font-medium">{b.householdRef}</td>
-                  <td className="whitespace-nowrap px-4 py-2">{b.holderName}</td>
-                  <td className="whitespace-nowrap px-4 py-2">{b.houseNo} หมู่ {Number(b.moo)}</td>
-                  <td className="whitespace-nowrap px-4 py-2">{periodLabel(b.period)}</td>
-                  <td className="whitespace-nowrap px-4 py-2 text-right tabular-nums">{money(b.amount)}</td>
-                  <td className="whitespace-nowrap px-4 py-2">
-                    <span className={`inline-block whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_TONE[b.status] ?? 'bg-gray-100 text-gray-600'}`}>{BILL_STATUS[b.status] ?? b.status}</span>
+                  <td className="whitespace-nowrap px-3 py-1.5 font-medium">{b.householdRef}</td>
+                  <td className="whitespace-nowrap px-3 py-1.5">{b.holderName}</td>
+                  <td className="whitespace-nowrap px-3 py-1.5">{b.houseNo} หมู่ {Number(b.moo)}</td>
+                  <td className="whitespace-nowrap px-3 py-1.5">{periodLabel(b.period)}</td>
+                  <td className="whitespace-nowrap px-3 py-1.5 text-right tabular-nums">{money(b.amount)}</td>
+                  <td className="whitespace-nowrap px-3 py-1.5">
+                    <span className={`inline-block whitespace-nowrap rounded-sm px-2 py-0.5 text-xs font-medium ${STATUS_TONE[b.status] ?? 'bg-gray-100 text-gray-600'}`}>{BILL_STATUS[b.status] ?? b.status}</span>
                     {b.status === 'paid' && <span className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-gray-500"><span>{PAY_METHOD[b.paidMethod ?? ''] ?? b.paidMethod} · {b.receiptNo}</span><SlipButton url={b.slipUrl} method={b.paidMethod} /></span>}
                     {b.status === 'mismatch' && b.reviewNote && <span className="mt-1 block text-xs text-orange-700">{b.reviewNote}</span>}
                   </td>
-                  <td className="whitespace-nowrap px-4 py-2 text-right">
+                  <td className="whitespace-nowrap px-3 py-1.5 text-right">
                     {b.status === 'paid' ? (
                       <RowMenu items={[{ label: 'พิมพ์ใบเสร็จ', onClick: () => doPrint(b) }]} />
                     ) : canManage ? (
@@ -383,7 +383,7 @@ function Bills({ canManage, orgName, seedQ, seedStatus }: { canManage: boolean; 
             </tbody>
           </table>
         </div>
-        {data.length >= 200 && <p className="border-t border-gray-100 px-4 py-2 text-xs text-amber-700">แสดง 200 รายการแรก — ค้นหาหรือกรองให้แคบลงเพื่อดูส่วนที่เหลือ</p>}
+        {data.length >= 200 && <p className="border-t border-gray-100 px-3 py-1.5 text-xs text-amber-700">แสดง 200 รายการแรก — ค้นหาหรือกรองให้แคบลงเพื่อดูส่วนที่เหลือ</p>}
       </Panel>
       <ConfirmDialog open={!!cancelId} onOpenChange={(o) => { if (!o) setCancelId(null); }} loading={remove.isPending}
         onConfirm={() => cancelId && remove.mutate(cancelId)} title="ยกเลิกบิลนี้?"
@@ -403,26 +403,26 @@ function Dues({ onBills }: { onBills: (ref: string) => void }) {
   const printDues = () => { if (!printReport({ orgName, title: 'รายงานผู้ค้างชำระค่าธรรมเนียมเก็บขยะ', subtitle: `ผู้ค้างชำระ ${rows.length} หลังคาเรือน${min ? ` · ค้างตั้งแต่ ${min} เดือนขึ้นไป` : ''}${q ? ` · ค้นหา “${q}”` : ''}`, columns: [{ label: 'รหัส' }, { label: 'ผู้รับบิล' }, { label: 'บ้านเลขที่' }, { label: 'เบอร์โทร' }, { label: 'ค้างมา (เดือน)', align: 'right' }, { label: 'ค้างตั้งแต่' }, { label: 'ยอดค้าง (บาท)', align: 'right' }], rows: rows.map((r) => [r.householdRef, r.holderName, `${r.houseNo} หมู่ ${Number(r.moo)}`, r.phone || '—', r.months, r.oldest ? periodLabel(r.oldest) : '—', money(r.total)]), totalRow: ['', '', '', '', '', 'รวมทั้งสิ้น', money(total)] })) toast.error('เปิดหน้าพิมพ์ไม่ได้ — อนุญาตป็อปอัปของเว็บนี้แล้วลองใหม่'); };
   return (
     <Panel
-      title={<>ผู้ค้างชำระ <span className="text-sm font-normal text-gray-500">{rows.length} หลัง · รวม {money(total)} บาท</span></>}
+      title={<>ผู้ค้างชำระ <span className="text-[13px] font-normal text-gray-500">{rows.length} หลัง · รวม {money(total)} บาท</span></>}
       actions={<Button size="sm" variant="outline" onClick={printDues}>พิมพ์รายงาน</Button>}
     >
       <DuesFilter min={min} setMin={setMin} q={q} setQ={setQ} placeholder="ค้นหาชื่อ บ้านเลขที่ หมู่ หรือเบอร์" />
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full text-[13px]">
           <thead className="bg-gray-50 text-left text-gray-600">
-            <tr><th className="whitespace-nowrap px-4 py-2">รหัส</th><th className="whitespace-nowrap px-4 py-2">ผู้รับบิล</th><th className="whitespace-nowrap px-4 py-2">บ้านเลขที่</th><th className="whitespace-nowrap px-4 py-2">เบอร์โทร</th><th className="whitespace-nowrap px-4 py-2 text-right">ค้างมา</th><th className="whitespace-nowrap px-4 py-2">ค้างตั้งแต่</th><th className="whitespace-nowrap px-4 py-2 text-right">ยอดค้าง (บาท)</th><th className="whitespace-nowrap px-4 py-2 no-print" /></tr>
+            <tr><th className="whitespace-nowrap px-3 py-1.5">รหัส</th><th className="whitespace-nowrap px-3 py-1.5">ผู้รับบิล</th><th className="whitespace-nowrap px-3 py-1.5">บ้านเลขที่</th><th className="whitespace-nowrap px-3 py-1.5">เบอร์โทร</th><th className="whitespace-nowrap px-3 py-1.5 text-right">ค้างมา</th><th className="whitespace-nowrap px-3 py-1.5">ค้างตั้งแต่</th><th className="whitespace-nowrap px-3 py-1.5 text-right">ยอดค้าง (บาท)</th><th className="whitespace-nowrap px-3 py-1.5 no-print" /></tr>
           </thead>
           <tbody>
             {rows.map((r) => (
               <tr key={r.householdRef} className="border-t border-gray-100">
-                <td className="whitespace-nowrap px-4 py-2 font-medium">{r.householdRef}</td>
-                <td className="whitespace-nowrap px-4 py-2">{r.holderName}</td>
-                <td className="whitespace-nowrap px-4 py-2">{r.houseNo} หมู่ {Number(r.moo)}</td>
-                <td className="whitespace-nowrap px-4 py-2">{r.phone ? <a href={`tel:${r.phone}`} className="text-sky-700 underline">{r.phone}</a> : '—'}</td>
-                <td className={cn('whitespace-nowrap px-4 py-2 text-right', dueTone(r.months))}>{r.months} เดือน</td>
-                <td className="whitespace-nowrap px-4 py-2 text-gray-600">{r.oldest ? periodLabel(r.oldest) : '—'}</td>
-                <td className="whitespace-nowrap px-4 py-2 text-right font-semibold">{money(r.total)}</td>
-                <td className="whitespace-nowrap px-4 py-2 no-print"><Button size="sm" variant="outline" onClick={() => onBills(r.householdRef)}>ดูบิล / รับชำระ</Button></td>
+                <td className="whitespace-nowrap px-3 py-1.5 font-medium">{r.householdRef}</td>
+                <td className="whitespace-nowrap px-3 py-1.5">{r.holderName}</td>
+                <td className="whitespace-nowrap px-3 py-1.5">{r.houseNo} หมู่ {Number(r.moo)}</td>
+                <td className="whitespace-nowrap px-3 py-1.5">{r.phone ? <a href={`tel:${r.phone}`} className="text-sky-700 underline">{r.phone}</a> : '—'}</td>
+                <td className={cn('whitespace-nowrap px-3 py-1.5 text-right', dueTone(r.months))}>{r.months} เดือน</td>
+                <td className="whitespace-nowrap px-3 py-1.5 text-gray-600">{r.oldest ? periodLabel(r.oldest) : '—'}</td>
+                <td className="whitespace-nowrap px-3 py-1.5 text-right font-semibold">{money(r.total)}</td>
+                <td className="whitespace-nowrap px-3 py-1.5 no-print"><Button size="sm" variant="outline" onClick={() => onBills(r.householdRef)}>ดูบิล / รับชำระ</Button></td>
               </tr>
             ))}
             {!rows.length && <tr><td colSpan={8}>{isLoading ? <Empty>กำลังโหลด…</Empty> : <Empty>{min || q ? 'ไม่มีรายการตามเงื่อนไขที่เลือก' : 'ไม่มียอดค้างชำระ'}</Empty>}</td></tr>}
@@ -470,18 +470,18 @@ function HouseQr({ orgName }: { orgName: string }) {
         </>
       }
     >
-      <p className="border-b border-gray-100 px-4 py-3 text-sm text-gray-500">
+      <p className="border-b border-gray-100 px-3 py-2 text-[13px] text-gray-500">
         ติดหน้าบ้าน — ประชาชนสแกนแล้วเห็นชื่อและยอดค่าขยะเพื่อชำระได้ทันที · QR มีชื่อผู้รับบิลกับรหัสบ้าน ไม่มียอดเงิน · แสดงเฉพาะบ้านที่มียอดค้าง เลือกบางหลังเพื่อพิมพ์ได้
       </p>
       {items.length === 0 ? <Empty>{key || moo ? 'ไม่พบครัวเรือนตามที่ค้นหา' : 'ไม่มีครัวเรือนที่มียอดค้าง'}</Empty> : (
-        <div className="grid grid-cols-2 gap-3 p-4 sm:grid-cols-4 lg:grid-cols-6">
+        <div className="grid grid-cols-2 gap-3 p-3 sm:grid-cols-4 lg:grid-cols-6">
           {items.map((i) => (
-            <article key={i.code} className={`rounded-xl border p-3 text-center ${picked.has(i.code) ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200'}`}>
+            <article key={i.code} className={`rounded border p-3 text-center ${picked.has(i.code) ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200'}`}>
               <button type="button" onClick={() => toggle(i.code)} className="block w-full" aria-pressed={picked.has(i.code)} aria-label={`เลือก QR ${i.title}`}>
                 <QrSvg text={i.text} label={i.title} className="mx-auto w-full max-w-[140px]" />
               </button>
-              <b className="mt-1 block text-sm">{i.title}</b>
-              <span className="block text-sm text-gray-800">{nameOf.get(i.code)}</span>
+              <b className="mt-1 block text-[13px]">{i.title}</b>
+              <span className="block text-[13px] text-gray-800">{nameOf.get(i.code)}</span>
               <small className="block text-gray-500">{i.sub}</small>
               <Button size="sm" variant="outline" className="mt-2 w-full" onClick={() => downloadQrPng(i, 'qr-waste').catch((e) => toast.error(getErrorMessage(e)))}>บันทึกรูป</Button>
             </article>

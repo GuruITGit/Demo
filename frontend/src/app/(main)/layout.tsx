@@ -44,7 +44,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       <TopNav onMenuClick={() => setMobileNavOpen(true)} />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar mobileOpen={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
-        <main className="flex-1 flex flex-col overflow-hidden">
+        <main className="staff-square flex-1 flex flex-col overflow-hidden">
           {children}
         </main>
       </div>

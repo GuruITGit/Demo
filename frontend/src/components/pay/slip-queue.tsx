@@ -78,19 +78,19 @@ export function SlipQueue({ kind, canManage }: { kind: 'market' | 'waste'; canMa
       : `บ้านเลขที่ ${b.houseNo} หมู่ ${Number(b.moo)} · ${b.householdRef}`;
     const group = b.submittedMethod === 'cash' ? cash.filter((x) => groupKey(x) === groupKey(b)) : [];
     return (
-      <article key={b.id} className="flex items-start gap-4 border-t border-gray-100 p-4 first:border-t-0">
+      <article key={b.id} className="flex items-start gap-4 border-t border-gray-100 p-3 first:border-t-0">
         {b.slipUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={b.slipUrl} alt="สลิปโอนเงิน" onClick={() => setZoom(b.slipUrl)} className="h-24 w-24 shrink-0 cursor-zoom-in rounded-lg border border-gray-200 object-cover" />
+          <img src={b.slipUrl} alt="สลิปโอนเงิน" onClick={() => setZoom(b.slipUrl)} className="h-24 w-24 shrink-0 cursor-zoom-in rounded border border-gray-200 object-cover" />
         ) : (
-          <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-lg border border-dashed border-gray-300 px-2 text-center text-xs text-gray-400">{b.submittedMethod === 'cash' ? <>ไม่มีสลิป<br />(จ่ายเงินสด)</> : <>โอน<br />ไม่มีรูปสลิป</>}</div>
+          <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded border border-dashed border-gray-300 px-2 text-center text-xs text-gray-400">{b.submittedMethod === 'cash' ? <>ไม่มีสลิป<br />(จ่ายเงินสด)</> : <>โอน<br />ไม่มีรูปสลิป</>}</div>
         )}
         <div className="min-w-0 flex-1">
           <p className="font-semibold text-gray-900">{who}</p>
-          <p className="text-sm text-gray-600">{place}</p>
-          <p className="text-sm text-gray-500">งวด {periodLabel(b.period)} · แจ้งเมื่อ {fmtTime(b.submittedAt)}</p>
-          <p className="mt-1 text-lg font-bold text-blue-700">{money(b.amount)} บาท</p>
-          {b.reviewNote && <p className="mt-1 text-sm text-amber-700">ตรวจอัตโนมัติ: {b.reviewNote}</p>}
+          <p className="text-[13px] text-gray-600">{place}</p>
+          <p className="text-[13px] text-gray-500">งวด {periodLabel(b.period)} · แจ้งเมื่อ {fmtTime(b.submittedAt)}</p>
+          <p className="mt-1 text-base font-bold text-blue-700">{money(b.amount)} บาท</p>
+          {b.reviewNote && <p className="mt-1 text-[13px] text-amber-700">ตรวจอัตโนมัติ: {b.reviewNote}</p>}
         </div>
         {canManage && (
           <div className="flex shrink-0 flex-col gap-2 sm:ml-auto">
@@ -114,26 +114,26 @@ export function SlipQueue({ kind, canManage }: { kind: 'market' | 'waste'; canMa
       {kind === 'market' && <PlaceFilter value={place} onChange={setPlace} />}
       {batch && (
         <Panel
-          title={<>ผลตรวจสลิป <span className="text-sm font-normal text-gray-500">ผ่าน {batch.results.filter((r) => r.ok).length} · ไม่ผ่าน {batch.results.filter((r) => !r.ok).length}</span></>}
+          title={<>ผลตรวจสลิป <span className="text-[13px] font-normal text-gray-500">ผ่าน {batch.results.filter((r) => r.ok).length} · ไม่ผ่าน {batch.results.filter((r) => !r.ok).length}</span></>}
           actions={<Button size="sm" variant="outline" onClick={() => setBatch(null)}>ปิด</Button>}
         >
           <ul>
             {batch.results.map((r, i) => (
-              <li key={i} className="flex flex-wrap items-start gap-3 border-t border-gray-100 px-4 py-3 first:border-t-0">
-                <span className={r.ok ? 'rounded-full bg-green-100 px-2.5 py-0.5 text-sm font-semibold text-green-700' : 'rounded-full bg-red-100 px-2.5 py-0.5 text-sm font-semibold text-red-700'}>{r.ok ? 'ผ่าน' : 'ไม่ผ่าน'}</span>
+              <li key={i} className="flex flex-wrap items-start gap-3 border-t border-gray-100 px-3 py-2 first:border-t-0">
+                <span className={r.ok ? 'rounded-sm bg-green-100 px-2.5 py-0.5 text-[13px] font-semibold text-green-700' : 'rounded-sm bg-red-100 px-2.5 py-0.5 text-[13px] font-semibold text-red-700'}>{r.ok ? 'ผ่าน' : 'ไม่ผ่าน'}</span>
                 <div className="min-w-0 flex-1">
                   <p className="font-medium">{r.label} <span className="font-normal text-gray-500">· {money(r.amount)} บาท</span></p>
-                  <p className="text-sm text-gray-500">{r.ok ? `ชำระแล้ว · ใบเสร็จ ${r.receiptNos.join(', ')}` : `${r.reason} — ยังอยู่ในคิว ให้ดูรูปสลิปแล้วกดยืนยันหรือตีกลับเอง`}</p>
+                  <p className="text-[13px] text-gray-500">{r.ok ? `ชำระแล้ว · ใบเสร็จ ${r.receiptNos.join(', ')}` : `${r.reason} — ยังอยู่ในคิว ให้ดูรูปสลิปแล้วกดยืนยันหรือตีกลับเอง`}</p>
                 </div>
               </li>
             ))}
             {!batch.results.length && <li><Empty>ไม่มีสลิปให้ตรวจ</Empty></li>}
           </ul>
-          {batch.remaining > 0 && <p className="border-t border-gray-100 px-4 py-3 text-sm text-amber-700">ตรวจรอบนี้ {batch.results.length} รายการ เหลืออีก {batch.remaining} รายการ — กดตรวจอีกครั้งเพื่อตรวจต่อ</p>}
+          {batch.remaining > 0 && <p className="border-t border-gray-100 px-3 py-2 text-[13px] text-amber-700">ตรวจรอบนี้ {batch.results.length} รายการ เหลืออีก {batch.remaining} รายการ — กดตรวจอีกครั้งเพื่อตรวจต่อ</p>}
         </Panel>
       )}
       <Panel
-        title={<>สลิปโอนรอตรวจ <span className="text-sm font-normal text-gray-500">({slips.length})</span></>}
+        title={<>สลิปโอนรอตรวจ <span className="text-[13px] font-normal text-gray-500">({slips.length})</span></>}
         actions={canManage && slips.length > 0 && (
           <Button size="sm" disabled={!tokenSet} loading={verifyAll.isPending} onClick={() => verifyAll.mutate()}
             title={tokenSet ? 'ส่งสลิปทั้งหมดไปตรวจกับผู้ให้บริการ' : 'ผูกโทเคนตรวจสลิปที่แท็บ "ตั้งค่า" ก่อน'}>
@@ -141,17 +141,17 @@ export function SlipQueue({ kind, canManage }: { kind: 'market' | 'waste'; canMa
           </Button>
         )}
       >
-        {canManage && slips.length > 0 && !tokenSet && <p className="border-b border-gray-100 px-4 py-2 text-sm text-gray-500">อยากให้ระบบตรวจสลิปให้ทั้งหมดในคลิกเดียว? ผูกโทเคน Slip2Go ที่แท็บ “ตั้งค่า” ก่อน</p>}
+        {canManage && slips.length > 0 && !tokenSet && <p className="border-b border-gray-100 px-3 py-1.5 text-[13px] text-gray-500">อยากให้ระบบตรวจสลิปให้ทั้งหมดในคลิกเดียว? ผูกโทเคน Slip2Go ที่แท็บ “ตั้งค่า” ก่อน</p>}
         {isLoading ? <Empty>กำลังโหลด…</Empty> : slips.length ? slips.map(card) : <Empty>ไม่มีสลิปรอตรวจ</Empty>}
       </Panel>
-      <Panel title={<>แจ้งจ่ายเงินสด รอรับที่ อบต. <span className="text-sm font-normal text-gray-500">({cash.length})</span></>}>
+      <Panel title={<>แจ้งจ่ายเงินสด รอรับที่ อบต. <span className="text-[13px] font-normal text-gray-500">({cash.length})</span></>}>
         {isLoading ? <Empty>กำลังโหลด…</Empty> : cash.length ? cash.map(card) : <Empty>ไม่มีรายการรอรับเงินสด</Empty>}
       </Panel>
 
       <Dialog open={!!rejecting} onOpenChange={(o) => { if (!o) setRejecting(null); }}>
         <DialogContent className="max-w-md">
           <DialogHeader><DialogTitle>ตีกลับรายการ</DialogTitle></DialogHeader>
-          <p className="text-sm text-gray-600">เหตุผลนี้จะแสดงให้ผู้จ่ายเห็นตอนค้นหาบิล เพื่อแก้ไขแล้วแจ้งชำระใหม่</p>
+          <p className="text-[13px] text-gray-600">เหตุผลนี้จะแสดงให้ผู้จ่ายเห็นตอนค้นหาบิล เพื่อแก้ไขแล้วแจ้งชำระใหม่</p>
           <textarea value={note} onChange={(e) => setNote(e.target.value)} maxLength={300} rows={3} placeholder="เช่น ยอดในสลิปไม่ตรงกับบิล / สลิปไม่ชัด"
             className={inputCls} />
           <DialogFooter className="gap-2">
@@ -162,9 +162,9 @@ export function SlipQueue({ kind, canManage }: { kind: 'market' | 'waste'; canMa
       </Dialog>
 
       {zoom && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4" onClick={() => setZoom(null)} role="dialog" aria-label="ดูสลิป">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-3" onClick={() => setZoom(null)} role="dialog" aria-label="ดูสลิป">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={zoom} alt="สลิปโอนเงิน" className="max-h-full max-w-full rounded-lg bg-white" />
+          <img src={zoom} alt="สลิปโอนเงิน" className="max-h-full max-w-full rounded bg-white" />
         </div>
       )}
     </div>

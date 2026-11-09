@@ -94,7 +94,7 @@ export function PaidHistory({ kind }: { kind: 'market' | 'waste' }) {
       </div>
 
       <Panel title="รายการที่ชำระแล้ว" actions={<Button size="sm" variant="outline" onClick={printList}>พิมพ์รายงาน</Button>}>
-        <div className="flex flex-wrap items-end gap-3 border-b border-gray-100 p-4">
+        <div className="flex flex-wrap items-end gap-3 border-b border-gray-100 p-3">
           <Field label="ค้นหา" className="min-w-52 flex-1">
             <input className={inputCls} value={q} onChange={(e) => setQ(e.target.value)} placeholder={kind === 'market' ? 'ชื่อ / รหัสแผง / เลขใบเสร็จ' : 'ชื่อ / บ้านเลขที่ / เลขใบเสร็จ'} />
           </Field>
@@ -114,30 +114,30 @@ export function PaidHistory({ kind }: { kind: 'market' | 'waste' }) {
           </Field>
         </div>
 
-        {isLoading ? <p className="p-6 text-sm text-gray-500">กำลังโหลด…</p> : shown.length === 0 ? <Empty>ยังไม่มีรายการที่ชำระแล้วตามที่เลือก</Empty> : (
+        {isLoading ? <p className="p-6 text-[13px] text-gray-500">กำลังโหลด…</p> : shown.length === 0 ? <Empty>ยังไม่มีรายการที่ชำระแล้วตามที่เลือก</Empty> : (
           <ul>
             {shown.map((r) => (
-              <li key={r.id} className="flex items-start gap-4 border-t border-gray-100 p-4 first:border-t-0">
+              <li key={r.id} className="flex items-start gap-4 border-t border-gray-100 p-3 first:border-t-0">
                 {r.slipUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={r.slipUrl} alt="สลิปโอนเงิน" onClick={() => setZoom(r.slipUrl)} className="h-16 w-16 shrink-0 cursor-zoom-in rounded-lg border border-gray-200 object-cover" />
+                  <img src={r.slipUrl} alt="สลิปโอนเงิน" onClick={() => setZoom(r.slipUrl)} className="h-16 w-16 shrink-0 cursor-zoom-in rounded border border-gray-200 object-cover" />
                 ) : (
-                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg border border-dashed border-gray-300 px-1 text-center text-[11px] text-gray-400">{r.paidMethod === 'cash' ? 'เงินสด' : 'ไม่มีรูปสลิป'}</div>
+                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded border border-dashed border-gray-300 px-1 text-center text-[11px] text-gray-400">{r.paidMethod === 'cash' ? 'เงินสด' : 'ไม่มีรูปสลิป'}</div>
                 )}
                 <div className="min-w-0 flex-1">
                   <p className="font-semibold text-gray-900">{r.who}</p>
-                  <p className="text-sm text-gray-600">{r.place}</p>
-                  <p className="text-sm text-gray-500">{r.item} · งวด {periodLabel(r.period)}</p>
+                  <p className="text-[13px] text-gray-600">{r.place}</p>
+                  <p className="text-[13px] text-gray-500">{r.item} · งวด {periodLabel(r.period)}</p>
                   <div className="mt-1 flex flex-wrap items-center gap-2 text-xs">
                     <MethodChip method={r.paidMethod} />
-                    <span className={`rounded-full px-2 py-0.5 font-medium ${HOW_TONE[r.how]}`}>{HOW_LABEL[r.how]}</span>
+                    <span className={`rounded-sm px-2 py-0.5 font-medium ${HOW_TONE[r.how]}`}>{HOW_LABEL[r.how]}</span>
                     <span className="text-gray-500">{fmtTime(r.paidAt)}</span>
                     {r.receiptNo && <span className="text-gray-500">ใบเสร็จ {r.receiptNo}</span>}
                     {r.slipTransRef && <span className="text-gray-400">อ้างอิงสลิป {r.slipTransRef}</span>}
                   </div>
                 </div>
                 <div className="flex shrink-0 flex-col items-end gap-2 sm:ml-auto">
-                  <p className="text-lg font-bold text-green-700">{money(r.amount)} บาท</p>
+                  <p className="text-base font-bold text-green-700">{money(r.amount)} บาท</p>
                   <div className="flex items-center gap-2"><SlipButton url={r.slipUrl} method={r.paidMethod} /><Button size="sm" variant="outline" onClick={() => print(r)}>พิมพ์ใบเสร็จ</Button></div>
                 </div>
               </li>
@@ -147,9 +147,9 @@ export function PaidHistory({ kind }: { kind: 'market' | 'waste' }) {
       </Panel>
 
       {zoom && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={() => setZoom(null)} role="dialog" aria-label="รูปสลิป">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-3" onClick={() => setZoom(null)} role="dialog" aria-label="รูปสลิป">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={zoom} alt="สลิปโอนเงิน" className="max-h-full max-w-full rounded-lg bg-white" />
+          <img src={zoom} alt="สลิปโอนเงิน" className="max-h-full max-w-full rounded bg-white" />
         </div>
       )}
     </div>

@@ -87,7 +87,7 @@ export function MarketOutside({ canManageStall, canManageBill, orgName }: { canM
     <div className="space-y-5">
       <Panel title="จุดแผงลอย" actions={canManageStall && <Button size="sm" onClick={() => startEdit('new')}>+ เปิดจุดใหม่</Button>}>
         {editId && canManageStall && (
-          <div className="grid gap-3 border-b border-gray-100 p-4 sm:grid-cols-4">
+          <div className="grid gap-3 border-b border-gray-100 p-3 sm:grid-cols-4">
             <Field label="ชื่อจุด" className="sm:col-span-2"><input className={inputCls} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="เช่น หน้าตลาด / ลานจอดรถ" /></Field>
             <Field label="ค่าเช่า (บาท)"><input type="number" min={0} className={inputCls} value={form.rentRate} onChange={(e) => setForm({ ...form, rentRate: e.target.value })} /></Field>
             <Field label="คิดค่าเช่า">
@@ -107,12 +107,12 @@ export function MarketOutside({ canManageStall, canManageBill, orgName }: { canM
         {locs.length ? (
           <ul>
             {locs.map((l) => (
-              <li key={l.id} onClick={() => setSelLoc(l.id)} aria-selected={selLoc === l.id} className={`flex cursor-pointer flex-wrap items-center gap-3 border-t border-gray-100 px-4 py-3 first:border-t-0 ${selLoc === l.id ? 'bg-blue-50' : 'hover:bg-gray-50'}`}>
+              <li key={l.id} onClick={() => setSelLoc(l.id)} aria-selected={selLoc === l.id} className={`flex cursor-pointer flex-wrap items-center gap-3 border-t border-gray-100 px-3 py-2 first:border-t-0 ${selLoc === l.id ? 'bg-blue-50' : 'hover:bg-gray-50'}`}>
                 <div className="min-w-0 flex-1">
                   <p className="font-semibold text-gray-900">{l.name}</p>
-                  <p className="text-sm text-gray-500">{money(l.rentRate)} บาท {PERIOD_LABEL[l.rentPeriod]}{windowText(l) && <> · {windowText(l)}</>}{l.capacity ? <> · ผู้เช่า {l.taken ?? 0}/{l.capacity}</> : null}</p>
+                  <p className="text-[13px] text-gray-500">{money(l.rentRate)} บาท {PERIOD_LABEL[l.rentPeriod]}{windowText(l) && <> · {windowText(l)}</>}{l.capacity ? <> · ผู้เช่า {l.taken ?? 0}/{l.capacity}</> : null}</p>
                 </div>
-                <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${l.enabled && !outsideWindowNow(l) && !isFull(l) ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500'}`}>{!l.enabled ? 'ปิดอยู่' : outsideWindowNow(l) ? 'นอกช่วงเปิดให้เช่า' : isFull(l) ? 'จองเต็มแล้ว' : 'เปิดอยู่'}</span>
+                <span className={`rounded-sm px-2.5 py-0.5 text-xs font-medium ${l.enabled && !outsideWindowNow(l) && !isFull(l) ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500'}`}>{!l.enabled ? 'ปิดอยู่' : outsideWindowNow(l) ? 'นอกช่วงเปิดให้เช่า' : isFull(l) ? 'จองเต็มแล้ว' : 'เปิดอยู่'}</span>
                 {canManageStall && (
                   <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                     <Button size="sm" variant="outline" loading={toggle.isPending && toggle.variables?.id === l.id} onClick={() => toggle.mutate(l)}>{l.enabled ? 'ปิดจุด' : 'เปิดจุด'}</Button>
@@ -134,7 +134,7 @@ export function MarketOutside({ canManageStall, canManageBill, orgName }: { canM
 
       <Panel title="เก็บเงินแผงลอย">
         {canManageBill && (
-          <div className="grid gap-3 border-b border-gray-100 p-4 sm:grid-cols-5">
+          <div className="grid gap-3 border-b border-gray-100 p-3 sm:grid-cols-5">
             <Field label="จุด">
               <select className={inputCls} value={selLoc} onChange={(e) => { setSelLoc(e.target.value); setAmount(''); }}>
                 <option value="">— เลือกจุด —</option>
@@ -149,29 +149,29 @@ export function MarketOutside({ canManageStall, canManageBill, orgName }: { canM
             <div className="sm:col-span-5"><Button loading={collect.isPending} disabled={!selLoc || !vendor.trim()} onClick={() => collect.mutate()}>บันทึกการเก็บเงิน</Button></div>
           </div>
         )}
-        <div className="flex flex-wrap items-center gap-3 border-b border-gray-100 p-4">
+        <div className="flex flex-wrap items-center gap-3 border-b border-gray-100 p-3">
           <select className={`${inputCls} w-auto!`} value={selLoc} onChange={(e) => setSelLoc(e.target.value)}>
             <option value="">ทุกจุด</option>
             {locs.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
           </select>
-          <label className="flex items-center gap-2 text-sm text-gray-600">ตั้งแต่ <input type="date" className={`${inputCls} w-auto!`} value={from} onChange={(e) => setFrom(e.target.value)} /></label>
-          <label className="flex items-center gap-2 text-sm text-gray-600">ถึง <input type="date" className={`${inputCls} w-auto!`} value={to} onChange={(e) => setTo(e.target.value)} /></label>
-          <span className="ml-auto text-sm text-gray-500">รวม <b className="text-gray-800">{money(cols?.total ?? 0)}</b> บาท · {cols?.rows.length ?? 0} รายการ</span>
+          <label className="flex items-center gap-2 text-[13px] text-gray-600">ตั้งแต่ <input type="date" className={`${inputCls} w-auto!`} value={from} onChange={(e) => setFrom(e.target.value)} /></label>
+          <label className="flex items-center gap-2 text-[13px] text-gray-600">ถึง <input type="date" className={`${inputCls} w-auto!`} value={to} onChange={(e) => setTo(e.target.value)} /></label>
+          <span className="ml-auto text-[13px] text-gray-500">รวม <b className="text-gray-800">{money(cols?.total ?? 0)}</b> บาท · {cols?.rows.length ?? 0} รายการ</span>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-[13px]">
             <thead className="bg-gray-50 text-left text-gray-600">
-              <tr><th className="whitespace-nowrap px-4 py-2">วันที่</th><th className="whitespace-nowrap px-4 py-2">จุด</th><th className="whitespace-nowrap px-4 py-2">ผู้ค้า</th><th className="whitespace-nowrap px-4 py-2 text-right">ยอด (บาท)</th><th className="whitespace-nowrap px-4 py-2">ใบเสร็จ</th><th className="whitespace-nowrap px-4 py-2" /></tr>
+              <tr><th className="whitespace-nowrap px-3 py-1.5">วันที่</th><th className="whitespace-nowrap px-3 py-1.5">จุด</th><th className="whitespace-nowrap px-3 py-1.5">ผู้ค้า</th><th className="whitespace-nowrap px-3 py-1.5 text-right">ยอด (บาท)</th><th className="whitespace-nowrap px-3 py-1.5">ใบเสร็จ</th><th className="whitespace-nowrap px-3 py-1.5" /></tr>
             </thead>
             <tbody>
               {(cols?.rows ?? []).map((c) => (
                 <tr key={c.id} className="border-t border-gray-100">
-                  <td className="whitespace-nowrap px-4 py-2">{thDate(c.collectedOn)}</td>
-                  <td className="whitespace-nowrap px-4 py-2">{locName(c.locationId)}</td>
-                  <td className="whitespace-nowrap px-4 py-2">{c.vendorName}</td>
-                  <td className="whitespace-nowrap px-4 py-2 text-right">{money(c.amount)}</td>
-                  <td className="whitespace-nowrap px-4 py-2 text-gray-500">{c.receiptNo}</td>
-                  <td className="whitespace-nowrap px-4 py-2">
+                  <td className="whitespace-nowrap px-3 py-1.5">{thDate(c.collectedOn)}</td>
+                  <td className="whitespace-nowrap px-3 py-1.5">{locName(c.locationId)}</td>
+                  <td className="whitespace-nowrap px-3 py-1.5">{c.vendorName}</td>
+                  <td className="whitespace-nowrap px-3 py-1.5 text-right">{money(c.amount)}</td>
+                  <td className="whitespace-nowrap px-3 py-1.5 text-gray-500">{c.receiptNo}</td>
+                  <td className="whitespace-nowrap px-3 py-1.5">
                     <div className="flex gap-2">
                       <Button size="sm" variant="outline" onClick={() => {
                         if (!printReceipt({ orgName, receiptNo: c.receiptNo, payer: c.vendorName, place: `แผงลอย ${locName(c.locationId)}`, lines: [{ label: `ค่าที่แผงลอย ${thDate(c.collectedOn)}`, amount: c.amount }], method: 'cash', paidAt: `${c.collectedOn}T12:00:00` }))

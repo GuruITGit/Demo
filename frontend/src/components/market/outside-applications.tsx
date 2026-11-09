@@ -66,32 +66,32 @@ export function OutsideApplications({ canManage, locationId, filter: shared }: {
   });
 
   return (
-    <Panel title={<>ใบสมัครแผงลอย <span className="text-sm font-normal text-gray-500">({rows.length})</span></>}>
+    <Panel title={<>ใบสมัครแผงลอย <span className="text-[13px] font-normal text-gray-500">({rows.length})</span></>}>
       {!controlled && (
-      <div className="flex flex-wrap gap-2 border-b border-gray-100 px-4 py-3">
+      <div className="flex flex-wrap gap-2 border-b border-gray-100 px-3 py-2">
         {FILTERS.map((f) => (
           <Button key={f.key} size="sm" variant={filter === f.key ? 'default' : 'outline'} onClick={() => setFilter(f.key)}>{f.label}</Button>
         ))}
       </div>
       )}
-      <div className="border-b border-gray-100 px-4 py-2"><Segmented label="ประเภท" value={kindFilter} onChange={setKindFilter} options={[['all', 'ทุกประเภท'], ['regular', 'ประจำ'], ['temporary', 'ชั่วคราว']] as const} /></div>
+      <div className="border-b border-gray-100 px-3 py-1.5"><Segmented label="ประเภท" value={kindFilter} onChange={setKindFilter} options={[['all', 'ทุกประเภท'], ['regular', 'ประจำ'], ['temporary', 'ชั่วคราว']] as const} /></div>
       {rows.length === 0 ? (
         <Empty>ไม่มีใบสมัครในสถานะนี้</Empty>
       ) : (
         <ul>
           {rows.map((a) => (
-            <li key={a.id} className="flex items-center gap-3 border-t border-gray-100 px-4 py-3 first:border-t-0">
+            <li key={a.id} className="flex items-center gap-3 border-t border-gray-100 px-3 py-2 first:border-t-0">
               <div className="min-w-0 flex-1">
                 <p className="flex flex-wrap items-center gap-2 font-semibold">
                   <span className="keep-name text-base">{a.applicantName}</span>
-                  <span className="text-sm font-normal text-gray-500">{a.appCode}</span>
-                  <span className="whitespace-nowrap rounded-full bg-gray-100 px-2 py-0.5 text-xs font-normal text-gray-700">{a.tenancyType === 'temporary' ? 'ชั่วคราว' : 'ประจำ'}</span>
-                  <span className={`whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium ${a.status === 'pending' ? 'bg-blue-50 text-blue-700' : a.status === 'approved' ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-600'}`}>{STATUS_LABEL[a.status]}</span>
+                  <span className="text-[13px] font-normal text-gray-500">{a.appCode}</span>
+                  <span className="whitespace-nowrap rounded-sm bg-gray-100 px-2 py-0.5 text-xs font-normal text-gray-700">{a.tenancyType === 'temporary' ? 'ชั่วคราว' : 'ประจำ'}</span>
+                  <span className={`whitespace-nowrap rounded-sm px-2 py-0.5 text-xs font-medium ${a.status === 'pending' ? 'bg-blue-50 text-blue-700' : a.status === 'approved' ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-600'}`}>{STATUS_LABEL[a.status]}</span>
                 </p>
-                <p className="mt-0.5 text-sm text-gray-600">
+                <p className="mt-0.5 text-[13px] text-gray-600">
                   {a.location?.name ?? '—'} · โทร {a.phone} · {a.startDate ? `เริ่ม ${thDate(a.startDate)}` : 'ไม่ระบุวันเริ่ม'} · {a.days} วัน
                 </p>
-                <p className="text-sm text-gray-500">
+                <p className="text-[13px] text-gray-500">
                   {a.status === 'approved' && (a.openDues.count > 0
                     ? <span className="font-medium text-amber-700">ค้าง {a.openDues.count} รายการ {Number(a.openDues.total).toLocaleString('th-TH', { minimumFractionDigits: 2 })} บาท · </span>
                     : <span className="text-green-700">ไม่มียอดค้าง · </span>)}
@@ -101,7 +101,7 @@ export function OutsideApplications({ canManage, locationId, filter: shared }: {
                     : 'ไม่ได้แนบบัตร'}
                 </p>
                 {(() => { const b = billOf(a.appCode); if (!b) return null; const m = b.paidMethod ?? b.submittedMethod; return (
-                  <p className="mt-1 flex flex-wrap items-center gap-2 text-sm">
+                  <p className="mt-1 flex flex-wrap items-center gap-2 text-[13px]">
                     <span className="text-gray-500">การชำระเงิน:</span>
                     {b.status === 'paid' ? <span className="font-medium text-green-700">ชำระแล้ว</span> : b.status === 'pending' ? <span className="font-medium text-blue-700">แจ้งชำระแล้ว · รอตรวจ</span> : <span className="font-medium text-amber-700">ยังไม่ชำระ</span>}
                     {m && <MethodChip method={m} />}
