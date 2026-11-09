@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Landmark, ShieldCheck } from 'lucide-react';
 import { api } from '@/lib/api';
 
@@ -14,6 +15,7 @@ export default function CitizenLayout({ children }: { children: React.ReactNode 
     api.get('/organizations/by-host').then((r) => { if (r.data?.data?.found) setBrand(r.data.data); }).catch(() => {});
   }, []);
   const orgName = brand?.nameTh || 'บริการประชาชนออนไลน์';
+  const showNav = usePathname() === '/citizen'; // เมนู บริการ/ข่าว/ติดต่อ/เจ้าหน้าที่ แสดงเฉพาะหน้าหลัก
 
   return (
     <div className="flex min-h-screen flex-col bg-[#F5FAFF] font-[family-name:var(--font-plex)] text-[#0F2A44]">
@@ -34,7 +36,7 @@ export default function CitizenLayout({ children }: { children: React.ReactNode 
               <small className="block text-sm text-[#64748B] max-[720px]:text-[12px]">บริการประชาชนออนไลน์</small>
             </span>
           </Link>
-          <nav className="flex items-center gap-x-5 text-base font-medium max-[720px]:w-full max-[720px]:justify-between max-[720px]:gap-x-1 max-[720px]:border-t max-[720px]:border-[#EAF5FE] max-[720px]:pt-1.5 max-[720px]:text-[14px]" aria-label="เมนูหลัก">
+          {showNav && <nav className="flex items-center gap-x-5 text-base font-medium max-[720px]:w-full max-[720px]:justify-between max-[720px]:gap-x-1 max-[720px]:border-t max-[720px]:border-[#EAF5FE] max-[720px]:pt-1.5 max-[720px]:text-[14px]" aria-label="เมนูหลัก">
             <Link href="/citizen#services" className="px-1 py-2 hover:underline">บริการ</Link>
             <Link href="/citizen#news" className="px-1 py-2 hover:underline">ข่าว<span className="max-[720px]:hidden">ประชาสัมพันธ์</span></Link>
             <Link href="/citizen#contact" className="px-1 py-2 hover:underline">ติดต่อ<span className="max-[720px]:hidden"> อบต.</span></Link>
@@ -42,7 +44,7 @@ export default function CitizenLayout({ children }: { children: React.ReactNode 
               className="inline-flex min-h-[44px] items-center gap-1.5 whitespace-nowrap rounded-xl border border-[#CFE4F6] px-4 text-sm font-semibold text-sky-700 transition hover:border-sky-600 hover:bg-sky-600 hover:text-white max-[720px]:min-h-[36px] max-[720px]:rounded-lg max-[720px]:px-2.5 max-[720px]:text-[13px]">
               <ShieldCheck className="h-4 w-4" /> สำหรับเจ้าหน้าที่
             </Link>
-          </nav>
+          </nav>}
         </div>
       </header>
 
