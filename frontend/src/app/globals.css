@@ -81,11 +81,11 @@ html, body, #__next { height: 100%; }
 .cz-delay-4 { animation-delay: .32s; }
 
 /* ── Route transition (ใช้ผ่าน template.tsx ทุก section) — เนื้อหา fade+เลื่อนขึ้นนุ่ม ๆ ทุกครั้งที่เปลี่ยนหน้า ── */
-@keyframes cz-page-enter { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+@keyframes cz-page-enter { from { opacity: 0; } to { opacity: 1; } }
 /* ไม่ใส่ fill-mode both: ถ้าค้างเฟรมท้ายที่มี transform (แม้ translateY(0)/none → identity matrix)
    .cz-page จะกลายเป็น containing block ของ position:fixed ทำให้ popup (modal) ยึดกล่องนี้แทน viewport
    → พออนิเมชันจบให้ transform กลับเป็น none จริง (base) modal จะยึดทั้งจอ */
-.cz-page { animation: cz-page-enter .42s cubic-bezier(.22,1,.36,1); }
+.cz-page { animation: cz-page-enter .15s ease-out; }
 
 /* ── Stagger: ลูกในคอนเทนเนอร์ไล่ขึ้นทีละชิ้น (การ์ด/รายการ) ── */
 .cz-stagger > * { animation: cz-fade-up .5s cubic-bezier(.22,1,.36,1) both; }

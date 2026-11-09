@@ -111,6 +111,7 @@ export function MarketAdmin() {
 
 // ───────────────────────────── ภาพรวม
 function Overview({ sum, onGo }: { sum?: Summary; onGo: (t: Tab) => void }) {
+  if (!sum) return <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4" aria-busy="true">{[0, 1, 2, 3].map((i) => <div key={i} className="h-[104px] animate-pulse rounded-lg border border-gray-200 bg-gray-50" />)}</div>; // รอข้อมูลมาก่อน ไม่โชว์เลข 0 แล้วค่อยเด้งเป็นค่าจริง
   const by = (s: string) => sum?.byStatus.find((x) => x.status === s);
   const open = (sum?.byStatus ?? []).filter((x) => x.status !== 'paid');
   const openTotal = open.reduce((a, x) => a + x.total, 0);

@@ -92,6 +92,10 @@ export function TopNav({ onMenuClick }: { onMenuClick?: () => void }) {
   });
 
   useEffect(() => { setSoundOn(localStorage.getItem('sg-notif-sound') !== 'off'); }, []);
+  // ชื่อหน่วยงานรอบก่อน — ใช้ระหว่างรอโหลด ไม่ให้หัวเว็บสลับจาก Smart SAO เป็นชื่อ อบต. ตอนรีเฟรช
+  const [cachedOrg, setCachedOrg] = useState('');
+  useEffect(() => { try { setCachedOrg(localStorage.getItem('sao-org-name') || ''); } catch { /* ไม่มี storage = ข้าม */ } }, []);
+  useEffect(() => { if (org?.nameTh) try { localStorage.setItem('sao-org-name', org.nameTh); } catch { /* ข้าม */ } }, [org?.nameTh]);
 
   // ── นับแจ้งเตือนที่ยังไม่อ่าน + เล่นเสียงเมื่อมีใหม่ ──
   useQuery({
@@ -179,7 +183,7 @@ export function TopNav({ onMenuClick }: { onMenuClick?: () => void }) {
           </div>
           <div className="hidden sm:block min-w-0">
             {/* ชื่อย่อ อบต. จากข้อมูลองค์กร (ตั้งที่ /hub หรือ /settings) — ยังไม่มีข้อมูลใช้ชื่อระบบ */}
-            <p className="text-sm font-bold text-white leading-tight">{org?.nameTh ? org.nameTh.replace(/^องค์การบริหารส่วนตำบล\s*/, 'อบต.') : 'Smart SAO'}</p>
+            <p className="text-sm font-bold text-white leading-tight">{(org?.nameTh || cachedOrg) ? (org?.nameTh || cachedOrg).replace(/^องค์การบริหารส่วนตำบล\s*/, 'อบต.') : 'Smart SAO'}</p>
             <p className="text-[11px] text-white/80 leading-tight">ระบบบริหารงานภายใน</p>
           </div>
         </Link>
