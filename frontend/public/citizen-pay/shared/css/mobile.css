@@ -236,3 +236,16 @@ input,select,textarea{font-size:16px!important}
   .modal .modal-actions button{min-height:40px;font-size:14px}
   .modal .privacy-note{font-size:10px;margin:6px 0 0}
 }
+@media(max-width:767px){
+  .page-heading{padding:8px 2px 6px}
+  .page-heading.with-photo{padding:8px 12px;border-radius:12px}
+  .page-heading h1,.page-heading.with-photo h1{font-size:18px}
+  .page-heading p{font-size:11px;margin-top:2px}
+  .search-card,.panel{padding:10px 12px;margin-bottom:8px;border-radius:12px}
+  .search-card label{font-size:13px;margin-bottom:5px}
+  .search-row input,.search-row button{min-height:40px}
+  #app:has(.scan-who) .search-card .help{display:none}
+  .scan-who{flex-wrap:nowrap!important;gap:8px!important;padding:8px 12px!important;margin:6px 0!important}
+  .scan-who button{min-height:32px;padding:0 10px;font-size:12px;white-space:nowrap}
+  .bill-title{margin-bottom:2px}
+}
