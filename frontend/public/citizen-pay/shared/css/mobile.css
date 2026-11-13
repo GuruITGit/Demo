@@ -256,3 +256,4 @@ input,select,textarea{font-size:16px!important}
 }
 
 @media(max-width:767px){.payment-shortcut.photo-only:only-child{display:block;padding:0}.payment-shortcut.photo-only:only-child .shortcut-art{width:100%;height:auto;object-position:center}}
+@media(max-width:767px){.payment-shortcut.photo-only:only-child{width:240px;max-width:100%;justify-self:center}}
