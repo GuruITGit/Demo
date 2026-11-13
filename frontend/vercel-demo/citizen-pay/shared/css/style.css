@@ -728,4 +728,4 @@
 .payment-shortcut.photo-only,.payment-shortcut.photo-only:only-child{display:block;padding:0;min-height:0;border:0;background:none;box-shadow:none;overflow:hidden;border-radius:16px}
 .payment-shortcut.photo-only .shortcut-art,.payment-shortcut.photo-only:only-child .shortcut-art{display:block;width:100%;height:auto;margin:0;border-radius:16px;object-fit:cover}
 .payment-shortcut.photo-only::after{content:none!important}
-@media(min-width:768px){.payment-shortcuts:has(>.payment-shortcut.photo-only){grid-template-columns:minmax(0,520px)!important}}
+@media(min-width:768px){.payment-shortcuts:has(>.payment-shortcut.photo-only){grid-template-columns:minmax(0,420px)!important}}
