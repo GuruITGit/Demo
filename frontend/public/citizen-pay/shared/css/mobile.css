@@ -200,8 +200,8 @@ input,select,textarea{font-size:16px!important}
 @media(max-width:767px){
   /* การ์ดสแกน QR: รูปเล็กซ้าย ข้อความขวา */
   .payment-shortcut:only-child{flex-direction:row;align-items:center;gap:12px;min-height:0;padding:8px 10px}
-  .payment-shortcut:only-child .shortcut-art{width:104px;height:66px;flex:none;margin:0;object-fit:cover;object-position:right center;border-radius:8px}
-  .payment-shortcut:only-child b{font-size:15px;white-space:nowrap}
+  .payment-shortcut:only-child .shortcut-art{width:150px;height:95px;flex:none;margin:0;object-fit:cover;object-position:center;border-radius:8px}
+  .payment-shortcut:only-child b{font-size:14px;white-space:nowrap}
   .payment-shortcut:only-child small{min-height:0;margin-top:2px;font-size:11px}
   /* รายการบิลแต่ละเดือน */
   .month-card{padding:8px 10px;margin-top:6px;border-radius:10px}

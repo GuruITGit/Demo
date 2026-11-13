@@ -738,12 +738,12 @@
   .payment-shortcut:only-child::after{content:'›';margin-left:auto;font-size:26px;color:#0369a1;line-height:1}
 }
 @media(min-width:768px){
-  .payment-shortcuts:has(>.payment-shortcut:only-child){grid-template-columns:minmax(0,600px)!important}
-  .payment-shortcut:only-child{padding:12px 20px;gap:18px}
-  .payment-shortcut:only-child .shortcut-art{width:168px;height:106px;border-radius:10px}
-  .payment-shortcut:only-child b{font-size:19px}
-  .payment-shortcut:only-child small{font-size:14px;margin-top:4px}
-  .payment-shortcut:only-child::after{font-size:32px}
+  .payment-shortcuts:has(>.payment-shortcut:only-child){grid-template-columns:minmax(0,640px)!important}
+  .payment-shortcut:only-child{padding:10px 20px 10px 10px;gap:20px}
+  .payment-shortcut:only-child .shortcut-art{width:280px;height:176px;object-fit:cover;object-position:center;border-radius:12px}
+  .payment-shortcut:only-child b{font-size:17px}
+  .payment-shortcut:only-child small{font-size:13px;margin-top:3px}
+  .payment-shortcut:only-child::after{font-size:28px}
 }
 
 /* ป้าย BETA ของแท็บแอปธนาคาร */
