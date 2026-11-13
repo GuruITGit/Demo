@@ -254,3 +254,5 @@ input,select,textarea{font-size:16px!important}
   .modal .pay-qr small{display:none}
   .modal .pay-qr+.pay-account+.save-qr+.help{display:none}
 }
+
+@media(max-width:767px){.payment-shortcut.photo-only:only-child{display:block;padding:0}.payment-shortcut.photo-only:only-child .shortcut-art{width:100%;height:auto;object-position:center}}
